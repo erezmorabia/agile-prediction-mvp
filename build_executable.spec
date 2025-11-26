@@ -3,8 +3,9 @@
 import os
 from pathlib import Path
 
-# Get project root directory
-project_root = Path(__file__).parent.absolute()
+# Get project root directory (spec file is in project root)
+# When running from project root is the current working directory
+project_root = Path(os.getcwd()).absolute()
 
 block_cipher = None
 
