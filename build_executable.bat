@@ -78,10 +78,10 @@ echo ==========================================
 echo Build completed successfully!
 echo ==========================================
 echo.
-echo Executable location: dist\AgilePredictionSystem.exe
+echo Executable location: dist\AgilePredictionSystem-Windows.exe
 echo.
 echo To run the executable:
-echo   dist\AgilePredictionSystem.exe
+echo   dist\AgilePredictionSystem-Windows.exe
 echo.
 echo The executable will:
 echo   1. Start the web server

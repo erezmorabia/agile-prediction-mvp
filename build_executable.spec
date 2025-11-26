@@ -53,6 +53,13 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
+# Determine OS-specific executable name
+import platform
+if platform.system() == 'Windows':
+    exe_name = 'AgilePredictionSystem-Windows'
+else:
+    exe_name = 'AgilePredictionSystem-macOS'
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -60,7 +67,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='AgilePredictionSystem',
+    name=exe_name,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
