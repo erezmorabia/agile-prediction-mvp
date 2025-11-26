@@ -397,6 +397,90 @@ Or simply:
 python src/main.py
 ```
 
+**Option C: Standalone Executable (No Python installation required)**
+
+Build a standalone executable that includes everything:
+
+**On macOS:**
+```bash
+./build_executable.sh
+# Then run: ./dist/AgilePredictionSystem
+```
+
+**On Windows:**
+```cmd
+build_executable.bat
+# Then run: dist\AgilePredictionSystem.exe
+```
+
+The executable will automatically start the server and open your browser. See the "Building Executables" section below for more details.
+
+## Building Executables
+
+You can build standalone executables that don't require Python installation. This is ideal for distributing the application to users who don't have Python installed.
+
+### Prerequisites
+
+- Python 3.8+ (only needed for building, not for running the executable)
+- PyInstaller (automatically installed by build scripts)
+
+### Building
+
+**macOS:**
+```bash
+./build_executable.sh
+```
+
+**Windows:**
+```cmd
+build_executable.bat
+```
+
+The build process will:
+1. Check/install PyInstaller if needed
+2. Bundle all Python dependencies
+3. Include web static files and data files
+4. Create executable in `dist/` directory
+
+### Running the Executable
+
+**macOS:**
+```bash
+./dist/AgilePredictionSystem
+```
+
+**Windows:**
+```cmd
+dist\AgilePredictionSystem.exe
+```
+
+The executable will:
+- Start the web server automatically
+- Open your default browser to http://localhost:8000
+- Display server logs in the console window
+- Press Ctrl+C to stop the server
+
+### Distribution
+
+To distribute the application:
+1. Build the executable for the target platform
+2. Share the entire `dist/AgilePredictionSystem` folder (macOS) or `dist/AgilePredictionSystem.exe` + supporting files (Windows)
+3. The executable includes all dependencies and data files
+
+**File Size:** ~50-100 MB (includes Python runtime and all dependencies)
+
+**Note:** Executables are platform-specific. You need to build separately for macOS and Windows.
+
+### Development Mode Still Works
+
+All existing development workflows remain unchanged:
+- `python3 src/web_main.py data/raw/combined_dataset.xlsx` - Still works
+- `./run_web.sh` - Still works
+- `run_web.bat` - Still works
+- Running from IDE/editor - Still works
+
+The executable build is an additional option, not a replacement for development.
+
 ## Project Structure
 
 ```

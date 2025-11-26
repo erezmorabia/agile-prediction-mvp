@@ -23,6 +23,28 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 
+def get_resource_path(relative_path: str) -> str:
+    """
+    Get absolute path to resource, works for dev and for PyInstaller.
+    
+    When running as PyInstaller executable, resources are extracted to a temp folder
+    and the path is stored in sys._MEIPASS. In development mode, use project root.
+    
+    Args:
+        relative_path: Path relative to project root (e.g., 'data/raw/combined_dataset.xlsx')
+        
+    Returns:
+        Absolute path to the resource
+    """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        # Development mode: use project root
+        base_path = project_root
+    return os.path.join(base_path, relative_path)
+
+
 def main() -> int:
     """
     Main entry point for the web interface of the Agile Practice Prediction System.
@@ -76,14 +98,19 @@ def main() -> int:
     if len(sys.argv) > 1:
         excel_file = sys.argv[1]
     else:
-        # Look for file in data/raw directory
-        excel_file = "data/raw/combined_dataset.xlsx"
+        # Try bundled path first (PyInstaller executable mode), then relative path (development mode)
+        excel_file = get_resource_path("data/raw/combined_dataset.xlsx")
         if not os.path.exists(excel_file):
-            excel_file = "data/raw/20250204_Cleaned_Dataset.xlsx"
+            excel_file = get_resource_path("data/raw/20250204_Cleaned_Dataset.xlsx")
             if not os.path.exists(excel_file):
-                print("Error: Usage: python src/web_main.py <path_to_excel_file>")
-                print(f"   File not found: {excel_file}")
-                return 1
+                # Fallback to relative path (for development)
+                excel_file = "data/raw/combined_dataset.xlsx"
+                if not os.path.exists(excel_file):
+                    excel_file = "data/raw/20250204_Cleaned_Dataset.xlsx"
+                    if not os.path.exists(excel_file):
+                        print("Error: Usage: python src/web_main.py <path_to_excel_file>")
+                        print(f"   File not found: {excel_file}")
+                        return 1
 
     if not os.path.exists(excel_file):
         print(f"Error: File not found: {excel_file}")
@@ -93,6 +120,8 @@ def main() -> int:
     print(f"   Loading: {excel_file}")
 
     # Import components
+    import time
+    import webbrowser
     import uvicorn
 
     from src.api import APIService
@@ -174,6 +203,23 @@ def main() -> int:
         print("=" * 60 + "\n")
 
         # Start server with increased timeout settings for long-running requests
+        # Use threading to allow browser opening after server starts
+        import threading
+        
+        def open_browser_after_delay():
+            """Open browser after server has had time to start"""
+            time.sleep(2.0)  # Wait for server to be ready
+            try:
+                webbrowser.open('http://localhost:8000')
+            except Exception:
+                # Browser opening failed, but continue anyway
+                pass
+        
+        # Start browser opener in background thread
+        browser_thread = threading.Thread(target=open_browser_after_delay, daemon=True)
+        browser_thread.start()
+        
+        # Start server (this will block until Ctrl+C)
         uvicorn.run(
             app,
             host="0.0.0.0",

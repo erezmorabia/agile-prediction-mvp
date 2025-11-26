@@ -4,6 +4,7 @@ FastAPI application for web interface.
 
 import logging
 import os
+import sys
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -68,7 +69,15 @@ def create_app(service: APIService) -> FastAPI:
     app.include_router(router)
 
     # Mount static files (frontend)
-    web_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "web")
+    # Try bundled path first (PyInstaller executable mode), then relative path (development mode)
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+        web_dir = os.path.join(base_path, "web")
+    except Exception:
+        # Development mode: use relative path from project root
+        web_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "web")
+    
     if os.path.exists(web_dir):
         app.mount("/static", StaticFiles(directory=os.path.join(web_dir, "static")), name="static")
 

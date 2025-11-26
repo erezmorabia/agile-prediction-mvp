@@ -34,6 +34,24 @@ run_web.bat
 python src/web_main.py data/raw/combined_dataset.xlsx
 ```
 
+**Option C: Standalone Executable (No Python installation required)**
+
+If you want to avoid installing Python and dependencies, you can build a standalone executable:
+
+**On macOS:**
+```bash
+./build_executable.sh
+./dist/AgilePredictionSystem
+```
+
+**On Windows:**
+```cmd
+build_executable.bat
+dist\AgilePredictionSystem.exe
+```
+
+The executable will automatically start the server and open your browser. See the "Building Executables" section in README.md for more details.
+
 ### Step 3: Open in Browser
 
 Once the server starts, you'll see:
