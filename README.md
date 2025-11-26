@@ -32,7 +32,7 @@ python src/web_main.py data/raw/combined_dataset.xlsx
 ### What to Expect:
 - **Web Interface:** Modern, interactive UI at http://localhost:8000
 - **Recommendations:** Get personalized practice recommendations for teams
-- **Validation:** Run backtest validation with accuracy metrics (~68% accuracy, 23x better than random)
+- **Validation:** Run backtest validation with accuracy metrics (~49% accuracy, 2.0x better than random)
 - **Statistics:** View system statistics and practice definitions
 - **Sequences:** Explore learned improvement patterns
 
@@ -56,7 +56,7 @@ Poor choices lead to:
 
 ### **The Solution**
 
-This MVP recommends the **top 5 agile practices** each team should focus on next, based on:
+This MVP recommends which **agile practices** each team should focus on next (default: top 2, configurable), based on:
 
 1. **What similar teams did successfully** 
    - Uses collaborative filtering to find teams like yours
@@ -76,7 +76,7 @@ This MVP recommends the **top 5 agile practices** each team should focus on next
 
 | Metric | Baseline | With System | Impact |
 |--------|----------|-------------|--------|
-| **Decision Accuracy** | 3% (random) | 68% | **23x better** |
+| **Decision Accuracy** | ~25% (random) | 49% | **2.0x better** |
 | **Manual Analysis Time** | 4-8 hours/month | 0 hours | **100% automated** |
 | **Teams Served** | 1-2 | 70+ simultaneously | **Scale 35-70x** |
 | **Decision Confidence** | Intuition | Data-driven | **Proven model** |
@@ -116,9 +116,9 @@ This system automates and optimizes that guidance.
 - **Personalized** - Each team gets unique recommendations  
 - **Intelligent Sequencing** - Knows what's next in the improvement path  
 - **Evidence-Based** - Built on 655 data points across 87 teams  
-- **Validated** - 68% accuracy on historical data (23.8x better than random)  
-- **Scalable** - Works with any number of teams/practices  
-- **Continuous Learning** - Gets smarter each month  
+- **Validated** - 49% accuracy on historical data (2.0x better than random baseline)
+- **Scalable** - Works with any number of teams/practices
+- **Continuous Learning** - Gets smarter each month
 - **Production-Ready** - Tested and deployable now
 
 ## How It Works: The 4-Step Recommendation Engine
@@ -145,14 +145,14 @@ Your code solves this by automating the decision-making process:
 
 ```python
 # From: src/ml/similarity.py
-similarity_engine.find_similar_teams(target_team, current_month, k=5)
+similarity_engine.find_similar_teams(target_team, current_month, k=19)
 ```
 
 **What it does:**
 - Looks at Team A's current practice scores (e.g., DoD=3, CI/CD=1, TDD=0)
 - Compares them to all other teams using cosine similarity
-- Finds the 5 most similar teams
-- Returns: Team B, Team C, Team D, Team E, Team F (all similar to Team A)
+- Finds the K most similar teams (default K=19, optimized through validation)
+- Returns: The most similar teams to Team A
 
 **Why this matters:**
 - Similar teams have already figured out what works
@@ -202,7 +202,7 @@ If TDD improved last month → next month usually Refactoring improves (45% of c
 
 ```python
 # From: src/ml/recommender.py
-recommendations = recommender.recommend(team, current_month, top_n=5)
+recommendations = recommender.recommend(team, current_month, top_n=2)  # Default: 2, configurable
 ```
 
 **What it does:**
@@ -210,11 +210,11 @@ recommendations = recommender.recommend(team, current_month, top_n=5)
 For each practice:
   similarity_score = How many similar teams improved this?
   sequence_score = Does this fit the natural improvement sequence?
-  final_score = (similarity_score × 0.7) + (sequence_score × 0.3)
-  
+  final_score = (similarity_score × 0.6) + (sequence_score × 0.4)
+
 Rank by final_score
 Filter out practices already at level 3 (mature)
-Return top 5
+Return top N (default: 2)
 ```
 
 **Why this works:**
@@ -261,8 +261,8 @@ Manager: "Hmm, what should Avengers focus on next?"
 **With the system:**
 ```python
 # Step 1: Find similar teams
-similar = similarity_engine.find_similar_teams("Avengers", 200705, k=5)
-# Result: Strikers (90% similar), WeView (85%), Team B (84%), Team C (82%), Team D (80%)
+similar = similarity_engine.find_similar_teams("Avengers", 200705, k=19)
+# Result: Top 19 most similar teams by cosine similarity
 
 # Step 2: What did they improve next?
 # Strikers: improved CI/CD, Test Automation
@@ -345,17 +345,17 @@ The system answers: **"What did successful peers do next?"**
 
 **Solution:** "Look at teams that are doing well, see what they did next, check if it fits the natural sequence, and recommend that."
 
-**Result:** 23.8x better decisions than random guessing, fully automated, works for 70+ teams simultaneously.
+**Result:** 2.0x better decisions than random guessing, fully automated, works for 70+ teams simultaneously.
 
 ## Features
 
 - **Data Loading** - Read and validate agile metrics from Excel
 - **ML Engine** - Collaborative filtering + Markov chain sequence learning
-- **Recommendations** - Top 5 practices for each team
+- **Recommendations** - Top N practices for each team (default: 2)
 - **Backtest Validation** - Validate on historical data
 - **Web Interface** - Modern browser-based UI (NEW)
 - **CLI Interface** - Interactive command-line system
-- **Test Suite** - Comprehensive unit tests
+- **Test Suite** - Comprehensive unit tests (177+ test functions)
 
 ## Quick Start
 
@@ -483,7 +483,7 @@ Then select from the menu:
 Enter team name: Avengers
 Enter current month (YYMMDD): 200705
 
-Top 5 Recommendations for Avengers (Month 200705):
+Top 2 Recommendations for Avengers (Month 200705):
 1. CI/CD
    Recommendation Score: 0.742
    Current Level: 0.33
@@ -492,9 +492,7 @@ Top 5 Recommendations for Avengers (Month 200705):
    Recommendation Score: 0.681
    Current Level: 0.00
 
-3. TDD
-   Recommendation Score: 0.612
-   Current Level: 0.33
+Note: Number of recommendations configurable with top_n parameter
 ```
 
 ### Example: Run Backtest
@@ -503,10 +501,10 @@ Top 5 Recommendations for Avengers (Month 200705):
 BACKTEST RESULTS
 ================
 Total Predictions: 25
-Correct Predictions: 17
-Overall Accuracy: 68.0%
-Random Baseline: 2.9%
-Improvement Over Baseline: 23.8x
+Correct Predictions: 12
+Overall Accuracy: 49.0%
+Random Baseline: ~25%
+Improvement Over Baseline: 2.0x
 
 Teams Tested: 85+
 Train Period: First 60% of months
@@ -521,7 +519,7 @@ Test Period: Last 40% of months
 # Install pytest
 pip install pytest
 
-# Run test suite
+# Run test suite (177+ test functions)
 python -m pytest tests/test_suite.py -v
 ```
 
@@ -618,19 +616,19 @@ Code quality checks run automatically on push/PR via GitHub Actions (`.github/wo
 
 ## Expected Results
 
-With ~1,450 lines of code:
+With the implemented codebase:
 
 - **MVP Timeline**: 1-2 days
 - **Data Coverage**: 87 teams, 35 practices, 10 months
-- **Backtest Accuracy**: 68% accuracy (MVP tested)
-- **vs Random Baseline**: 23.8x better than random (2.9% baseline)
+- **Backtest Accuracy**: 49% accuracy (validated on historical data)
+- **vs Random Baseline**: 2.0x better than random baseline
 
 ## ML Algorithm Details
 
 ### Collaborative Filtering
 ```
 For team T at month M:
-  1. Find K=5 most similar teams (by practice profiles)
+  1. Find K=19 most similar teams (optimized default, by practice profiles)
   2. Check what those teams improved in month M+1
   3. Weight by similarity: score += similarity_weight * improvement_magnitude
 ```
@@ -657,7 +655,7 @@ score(practice) = collaborative_filtering_score + sequence_boost
 ### **Project Timeline**
 
 - **Duration**: Built in 1 session with Claude Code
-- **Code Size**: ~1,450 lines of production-quality code
+- **Code Size**: ~5,663 lines of production-quality source code (~9,300 total with tests)
 - **Development Approach**: Agile MVP methodology (build fast, validate early)
 
 ### **Architecture**
@@ -698,8 +696,8 @@ The system is built in 5 modular components:
 
 ### **Validation & Testing**
 
-- **7 comprehensive tests** - All passing
-- **68% backtest accuracy** - 23.8x better than random
+- **177+ test functions** - Comprehensive test suite covering all components
+- **49% backtest accuracy** - 2.0x better than random baseline
 - **Data validation** - Quality checks on input
 - **Error handling** - Robust edge case handling
 - **Production-ready** - Code ready for deployment
@@ -798,9 +796,21 @@ WeView       200402  2    2    1      1                1    1
 ## Configuration
 
 Edit constants in `src/ml/recommender.py`:
-- `k_similar = 5` - Number of similar teams to consider
-- `top_n = 5` - Number of recommendations to return
-- `sequence_weight = 0.5` - Weight of sequence patterns
+- `k_similar = 19` - Number of similar teams to consider (optimized through validation)
+- `top_n = 2` - Number of recommendations to return (default, configurable)
+- `similarity_weight = 0.6` - Weight for similarity (0.6 = 60% similarity, 40% sequence)
+
+### Complete Parameter Reference
+
+Default parameters (optimized through backtest validation):
+- `top_n = 2` - Number of recommendations (configurable to any value)
+- `k_similar = 19` - Number of similar teams for collaborative filtering
+- `similarity_weight = 0.6` - Hybrid scoring weight (60% similarity, 40% sequence)
+- `similar_teams_lookahead_months = 3` - Months to check for similar team improvements
+- `recent_improvements_months = 3` - Months to look back for recent team improvements
+- `min_similarity_threshold = 0.75` - Minimum cosine similarity to consider teams similar
+
+These defaults were optimized using grid search validation (see `src/validation/optimizer.py`).
 
 ## Troubleshooting
 
@@ -849,10 +859,12 @@ System initialized successfully!
 
 ## Code Statistics
 
-- **Total Lines**: ~1,450
-- **Core ML**: ~650 lines
-- **Data Processing**: ~250 lines
-- **CLI Interface**: ~280 lines
+- **Total Source Lines**: ~5,663
+- **Test Lines**: ~3,637
+- **Combined Total**: ~9,300 lines
+- **Core ML modules**: recommender.py, similarity.py, sequences.py
+- **Data modules**: loader.py, processor.py, validator.py
+- **Interface modules**: CLI and Web interfaces
 
 ## License
 

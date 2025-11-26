@@ -4,7 +4,8 @@
       "Bash(python3 -c:*)",
       "Bash(make test-cov:*)",
       "Bash(python -m pytest:*)",
-      "Bash(python3 -m pytest:*)"
+      "Bash(python3 -m pytest:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
