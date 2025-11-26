@@ -43,7 +43,7 @@
                     <select id="team-select">
                         <option value="">Loading teams...</option>
                     </select>
-                    <small style="display: block; margin-top: 5px; color: #666;">The number in parentheses shows how many months of historical data are available for each team. More months typically mean more reliable recommendations.</small>
+                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">The number in parentheses shows how many months of historical data are available for each team. More months typically mean more reliable recommendations.</small>
                 </div>
 
                 <div class="form-group">
@@ -51,7 +51,7 @@
                     <select id="month-select" disabled>
                         <option value="">Select a team first</option>
                     </select>
-                    <small style="display: block; margin-top: 5px; color: #666;">Month to predict starts from month 3 (we need months 1-2 as history)</small>
+                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">Month to predict starts from month 3 (we need months 1-2 as history)</small>
                 </div>
 
                 <button id="get-recommendations-btn" class="btn btn-primary" disabled>Get Recommendations</button>
@@ -80,7 +80,7 @@
                     </ul>
                 </div>
 
-                <div class="info-box" style="background: #d4edda; border-left: 4px solid #28a745; margin-bottom: 20px;">
+                <div class="info-box" style="background: var(--success-50); border-left: 4px solid var(--success-500); margin-bottom: 20px;">
                     <strong>✅ Academic Rigor: No Data Leakage</strong>
                     <p><strong>Strict Temporal Ordering Guaranteed:</strong></p>
                     <ul>
@@ -98,7 +98,7 @@
                 </div>
 
                 <!-- Configuration Panel -->
-                <div class="config-panel" style="margin-bottom: 20px; border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: #f9f9f9;">
+                <div class="config-panel" style="margin-bottom: 20px; border: 1px solid var(--gray-300); padding: 20px; border-radius: 8px; background: var(--gray-50);">
                     <h3 style="margin-top: 0;">Fine-Tuning Configuration</h3>
                     
                     <!-- Primary Parameters -->
@@ -175,9 +175,9 @@
 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button id="run-backtest-btn" class="btn btn-primary">Run Backtest Validation with Configuration</button>
-                    <button id="find-optimal-btn" class="btn btn-secondary" style="background: #6c757d; color: white;">Find Optimal Configuration</button>
-                    <button id="view-latest-results-btn" class="btn btn-secondary" style="background: #17a2b8; color: white;">View Latest Results</button>
-                    <button id="upload-results-btn" class="btn btn-secondary" style="background: #28a745; color: white;">Upload Results</button>
+                    <button id="find-optimal-btn" class="btn btn-secondary">Find Optimal Configuration</button>
+                    <button id="view-latest-results-btn" class="btn btn-info">View Latest Results</button>
+                    <button id="upload-results-btn" class="btn btn-success">Upload Results</button>
                 </div>
                 <input type="file" id="upload-results-input" accept=".json" style="display: none;">
                 
@@ -187,12 +187,12 @@
                         <h4>Searching for Optimal Configuration...</h4>
                         <div id="optimization-progress-text">Initializing...</div>
                         <div style="margin-top: 10px;">
-                            <div style="background: #e9ecef; border-radius: 4px; height: 20px; overflow: hidden;">
-                                <div id="optimization-progress-bar" style="background: #007bff; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                            <div style="background: var(--gray-200); border-radius: 4px; height: 20px; overflow: hidden;">
+                                <div id="optimization-progress-bar" style="background: var(--primary-500); height: 100%; width: 0%; transition: width 0.3s;"></div>
                             </div>
                         </div>
                         <div style="margin-top: 15px;">
-                            <button id="cancel-optimization-btn" class="btn btn-secondary" style="background: #dc3545; color: white;">Cancel Optimization</button>
+                            <button id="cancel-optimization-btn" class="btn btn-error">Cancel Optimization</button>
                         </div>
                     </div>
                 </div>
