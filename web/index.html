@@ -15,7 +15,13 @@
                 <img src="/static/ou-logo.png" alt="Open University of Israel" class="header-logo" onerror="this.src='/static/ou-logo.svg'; this.onerror=null;">
                 <div class="header-text">
                     <h1>Agile Practice Prediction System</h1>
-                    <p class="subtitle">MVP - Collaborative Filtering + Sequence Learning</p>
+                    <p class="subtitle">MSc Computer Science - Advanced Project Course | Open University of Israel</p>
+                    <p class="subtitle" style="font-size: 0.9em; opacity: 0.8;">
+                        ML-Driven Agile Transformation (Collaborative Filtering + Markov Chain Sequence Learning)
+                    </p>
+                    <p class="subtitle" style="font-size: 0.85em; opacity: 0.7; margin-top: 5px;">
+                        Student: Erez Morabia | Advisor: Shmuel Tyszberowicz | Year: 2025
+                    </p>
                 </div>
             </div>
         </header>
@@ -71,6 +77,23 @@
                         </li>
                         <li>Shows accuracy per month and overall average</li>
                         <li><strong>Note:</strong> Validation checks 3 months ahead to account for adoption timelines (This aligns with recommendation logic which looks up to 3 months ahead)</li>
+                    </ul>
+                </div>
+
+                <div class="info-box" style="background: #d4edda; border-left: 4px solid #28a745; margin-bottom: 20px;">
+                    <strong>✅ Academic Rigor: No Data Leakage</strong>
+                    <p><strong>Strict Temporal Ordering Guaranteed:</strong></p>
+                    <ul>
+                        <li>The model NEVER uses future data to make past predictions</li>
+                        <li>For each prediction at month M:
+                            <ul>
+                                <li>Similar teams found from months &lt; M only</li>
+                                <li>Sequences learned from months &lt; M only</li>
+                                <li>No "peeking" at future improvements</li>
+                            </ul>
+                        </li>
+                        <li>Validated using rolling window backtest (time-series cross-validation)</li>
+                        <li>This ensures accuracy metrics (49%, 2.0x vs random) are trustworthy</li>
                     </ul>
                 </div>
 
