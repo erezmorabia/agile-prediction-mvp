@@ -1,0 +1,307 @@
+---
+Rule Type: Context
+Context: quality
+---
+
+# Code Quality and Error Handling Rules
+
+## Error Handling
+
+### Exception Handling Patterns
+- Use specific exception types, not generic `Exception`
+- Provide clear, actionable error messages
+- Include context in error messages (what failed and why)
+
+```python
+# ✅ Good: Specific exception with context
+if not os.path.exists(self.file_path):
+    raise FileNotFoundError(f"File not found: {self.file_path}")
+
+if month not in self.processor.get_team_history(team):
+    raise ValueError(
+        f"Team '{team}' has no data for month {month}. "
+        f"Available months: {sorted(self.processor.get_team_history(team).keys())}"
+    )
+
+# ❌ Bad: Generic exception
+try:
+    process_data()
+except Exception as e:
+    raise e
+```
+
+### Custom Exceptions
+Create custom exception classes for domain-specific errors:
+
+```python
+class DataValidationError(Exception):
+    """Raised when data validation fails."""
+    pass
+
+class RecommendationError(Exception):
+    """Raised when recommendation generation fails."""
+    pass
+
+class SimilarityCalculationError(Exception):
+    """Raised when similarity calculation fails."""
+    pass
+```
+
+### Error Messages
+- Make error messages clear and actionable
+- Include relevant context (variable values, expected ranges, etc.)
+- Use proper grammar and punctuation
+
+```python
+# ✅ Good: Clear and actionable
+raise ValueError(
+    f"Invalid similarity_weight: {weight}. "
+    f"Must be between 0.0 and 1.0, got {weight}"
+)
+
+raise KeyError(
+    f"Team '{team}' not found. "
+    f"Available teams: {', '.join(sorted(available_teams))}"
+)
+
+# ❌ Bad: Vague
+raise ValueError("Invalid weight")
+raise KeyError("Not found")
+```
+
+## Logging Standards
+
+### Setup
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+```
+
+### Log Levels
+Use appropriate log levels:
+- `DEBUG`: Detailed information for debugging
+- `INFO`: General informational messages
+- `WARNING`: Warning messages (something unexpected but handled)
+- `ERROR`: Error messages (something failed)
+- `CRITICAL`: Critical errors (system may be unable to continue)
+
+### Logging Examples
+```python
+def process_data(self):
+    logger.info(f"Processing data for {len(self.teams)} teams")
+    
+    try:
+        result = self._calculate_metrics()
+        logger.debug(f"Calculated metrics: {result}")
+        return result
+    except ValueError as e:
+        logger.error(f"Failed to calculate metrics: {str(e)}", exc_info=True)
+        raise
+    except Exception as e:
+        logger.critical(f"Unexpected error in process_data: {str(e)}", exc_info=True)
+        raise
+```
+
+## Dependencies Management
+
+### Adding New Dependencies
+- Always update `requirements.txt` when adding new packages
+- Pin versions for reproducibility: `pandas>=1.0.0,<2.0.0` or `pandas==1.5.0`
+- Document why the dependency is needed in commit message or PR
+
+### Version Pinning Strategy
+- Use `>=` for minimum version requirements
+- Consider upper bounds for major version changes
+- Test with different versions when possible
+
+```python
+# requirements.txt
+pandas>=1.0.0
+numpy>=1.18.0
+scikit-learn>=0.22.0
+fastapi>=0.104.0
+```
+
+### Dependency Organization
+Keep `requirements.txt` organized and commented:
+
+```python
+# requirements.txt
+# Core dependencies
+pandas>=1.0.0
+numpy>=1.18.0
+
+# Machine learning
+scikit-learn>=0.22.0
+scipy>=1.9.0
+
+# Web interface
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# Testing
+pytest>=6.0.0
+pytest-cov>=3.0.0  # Optional: for coverage reports
+```
+
+### Security Considerations
+- Regularly update dependencies to patch security vulnerabilities
+- Use tools like `safety` or `pip-audit` to check for known vulnerabilities
+- Avoid dependencies with known security issues
+- Prefer well-maintained packages with active development
+
+## Code Quality Checklist
+
+Before submitting code, ensure:
+
+- [ ] Code follows PEP 8 style guidelines
+- [ ] All functions have type hints
+- [ ] All public functions have docstrings
+- [ ] Tests are included/updated
+- [ ] Tests pass: `pytest tests/ -v`
+- [ ] No obvious bugs or logic errors
+- [ ] Error handling is appropriate
+- [ ] No hardcoded values (use constants or configuration)
+- [ ] Code is readable and well-organized
+- [ ] Documentation is updated if needed
+- [ ] Imports are organized correctly
+- [ ] No unused imports or variables
+
+## Linting Tools
+
+Recommended tools for maintaining code quality:
+- `pylint` - Comprehensive linting
+- `flake8` - Style guide enforcement
+- `black` - Code formatter (optional, but recommended)
+- `mypy` - Static type checking
+
+## Performance Considerations
+
+### Efficient Data Structures
+```python
+# ✅ Good: Use set for O(1) lookup
+practices_set = set(practices)
+if practice in practices_set:
+    process()
+
+# ❌ Less efficient: List lookup is O(n)
+if practice in practices:
+    process()
+```
+
+### Generators for Large Datasets
+```python
+# ✅ Good: Generator for large datasets
+def process_teams(teams):
+    for team in teams:
+        yield process_team(team)
+
+# ❌ Less efficient: Creates full list in memory
+def process_teams(teams):
+    return [process_team(team) for team in teams]
+```
+
+### Performance Guidelines
+- Profile code when performance is critical
+- Use efficient data structures (e.g., sets for membership tests)
+- Avoid premature optimization
+- Document performance-critical sections
+- Use `numpy` arrays for numerical computations when appropriate
+
+## Memory Efficiency
+
+### Guidelines
+- Be mindful of memory usage with large datasets
+- Use generators when processing large sequences
+- Release resources explicitly when needed (e.g., file handles)
+- Consider memory-efficient data structures (e.g., `numpy` arrays)
+
+```python
+# ✅ Good: Generator for memory efficiency
+def read_large_file(file_path):
+    """Read large file line by line."""
+    with open(file_path, 'r') as f:
+        for line in f:
+            yield process_line(line)
+
+# ✅ Good: Explicit resource cleanup
+def process_file(file_path):
+    """Process file with explicit cleanup."""
+    file_handle = open(file_path, 'r')
+    try:
+        data = file_handle.read()
+        return process(data)
+    finally:
+        file_handle.close()
+```
+
+## Code Complexity
+
+### Function Guidelines
+- Keep functions focused and single-purpose
+- Limit function length (aim for < 50 lines, max 100 lines)
+- Break complex functions into smaller helper functions
+- Use meaningful variable names to reduce need for comments
+
+```python
+# ✅ Good: Focused function
+def calculate_similarity(team1: str, team2: str) -> float:
+    """Calculate similarity between two teams."""
+    vector1 = get_team_vector(team1)
+    vector2 = get_team_vector(team2)
+    return cosine_similarity(vector1, vector2)
+
+# ❌ Bad: Too complex, does multiple things
+def process_and_recommend_and_validate(team, month, ...):
+    # 200 lines of mixed logic
+    pass
+```
+
+## Code Review Best Practices
+
+When reviewing code, check for:
+1. **Correctness**: Does the code do what it's supposed to do?
+2. **Style**: Does it follow project style guidelines?
+3. **Testing**: Are there appropriate tests?
+4. **Documentation**: Is it well-documented?
+5. **Error Handling**: Are errors handled appropriately?
+6. **Performance**: Are there obvious performance issues?
+7. **Security**: Are there security concerns?
+
+## Common Issues to Avoid
+
+### Hardcoded Values
+```python
+# ❌ Bad: Hardcoded values
+if similarity > 0.75:
+    process()
+
+# ✅ Good: Use constants
+MIN_SIMILARITY_THRESHOLD = 0.75
+if similarity > MIN_SIMILARITY_THRESHOLD:
+    process()
+```
+
+### Unused Imports
+```python
+# ❌ Bad: Unused import
+import os
+import sys  # Not used
+from typing import List, Dict, Tuple  # Tuple not used
+
+# ✅ Good: Only import what's needed
+import os
+from typing import List, Dict
+```
+
+### Magic Numbers
+```python
+# ❌ Bad: Magic numbers
+normalized = score / 3.0  # Why 3.0?
+
+# ✅ Good: Named constant
+MAX_PRACTICE_LEVEL = 3.0
+normalized = score / MAX_PRACTICE_LEVEL
+```

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c:*)",
+      "Bash(make test-cov:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

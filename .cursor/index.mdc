@@ -1,0 +1,216 @@
+---
+Rule Type: Always
+---
+
+# Agile Prediction MVP - Project-Wide Rules
+
+## Project Structure
+
+### Directory Organization
+The project follows this structure:
+```
+agile-prediction-mvp/
+├── src/                    # Source code
+│   ├── data/              # Data loading and processing
+│   ├── ml/                # Machine learning algorithms
+│   ├── validation/        # Validation and testing
+│   ├── api/               # Web API layer
+│   ├── interface/         # User interfaces (CLI)
+│   ├── main.py            # CLI entry point
+│   └── web_main.py        # Web server entry point
+├── tests/                 # Test files
+├── web/                   # Frontend files
+├── data/                  # Data files
+│   └── raw/              # Input data
+├── results/               # Output results
+└── scripts/               # Utility scripts
+```
+
+### File Naming
+- Python files: Use `snake_case.py` (e.g., `data_loader.py`, `recommender.py`)
+- Test files: Use `test_*.py` (e.g., `test_suite.py`)
+- Configuration files: Use lowercase with hyphens (e.g., `requirements.txt`)
+
+### Import Paths - CRITICAL
+**ALWAYS use absolute imports from `src.*`**. Never use relative imports.
+
+```python
+# ✅ CORRECT: Absolute imports
+from src.ml import RecommendationEngine
+from src.data import DataProcessor
+from src.validation import BacktestEngine
+from src.api import APIService
+
+# ❌ WRONG: Relative imports
+from ..ml import RecommendationEngine
+from .processor import DataProcessor
+```
+
+### Module Organization
+- Each module should have a single, clear responsibility
+- Group related functionality together
+- Keep modules focused and cohesive
+- Follow existing patterns in the codebase
+
+## Python Version
+- **Required**: Python 3.8 or higher
+- Check version compatibility before using new language features
+
+## File Organization
+
+### File Header Structure
+Every Python file must start with:
+1. Module-level docstring
+2. Imports (organized: standard library, third-party, local)
+
+```python
+"""
+ModuleName: Brief description of what this module does.
+
+This module provides functionality for [detailed description].
+"""
+
+# Standard library imports
+import os
+from typing import List, Dict
+
+# Third-party imports
+import numpy as np
+import pandas as pd
+
+# Local imports
+from src.ml import RecommendationEngine
+from src.data import DataProcessor
+```
+
+### Class/Function Organization
+Within a file, organize in this order:
+1. Module docstring
+2. Imports
+3. Constants (if any)
+4. Exception classes (if any)
+5. Main classes
+6. Helper functions (if any)
+7. Main execution code (if `if __name__ == '__main__'`)
+
+### Class Method Organization
+Within a class, organize methods in this order:
+1. `__init__` method
+2. Public methods (alphabetical or logical grouping)
+3. Private methods (prefixed with `_`)
+4. Special methods (`__str__`, `__repr__`, etc.)
+
+## Import Organization
+
+Order imports in the following groups, separated by blank lines:
+
+1. **Standard library imports**
+2. **Third-party imports**
+3. **Local application imports** (from `src.*`)
+
+```python
+# Standard library
+import os
+import sys
+from typing import List, Dict, Optional
+
+# Third-party
+import numpy as np
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Local imports
+from src.ml import RecommendationEngine
+from src.data import DataProcessor
+```
+
+Sort imports alphabetically within each group.
+
+## Consistency Guidelines
+
+- **Maintain consistency** with existing codebase patterns
+- When in doubt, follow existing code style in the project
+- If you see a pattern used multiple times, follow it
+- Reference existing files for examples:
+  - `src/ml/recommender.py` - ML engine patterns
+  - `src/data/loader.py` - Data loading patterns
+  - `src/api/service.py` - API service patterns
+
+## Code Quality Basics
+
+### Function Complexity
+- Keep functions focused and single-purpose
+- Limit function length (aim for < 50 lines, max 100 lines)
+- Break complex functions into smaller helper functions
+- Use meaningful variable names to reduce need for comments
+
+### Performance
+- Use efficient data structures (e.g., sets for membership tests)
+- Use generators when processing large sequences
+- Consider memory-efficient data structures (e.g., `numpy` arrays)
+- Document performance-critical sections
+
+```python
+# Good: Use set for O(1) lookup
+practices_set = set(practices)
+if practice in practices_set:
+    process()
+
+# Good: Generator for large datasets
+def process_teams(teams):
+    for team in teams:
+        yield process_team(team)
+```
+
+## Project-Specific Patterns
+
+### Data Processing
+- Use `DataProcessor` for data normalization and processing
+- Use `DataLoader` for loading Excel files
+- Normalize scores from 0-3 to 0-1 range: `normalized = raw_score / 3.0`
+
+### ML Components
+- Use `RecommendationEngine` for generating recommendations
+- Use `SimilarityEngine` for finding similar teams
+- Use `SequenceMapper` for learning improvement sequences
+- Always prevent data leakage: only use data from months <= current_month
+
+### Validation
+- Use `BacktestEngine` for validation
+- Use rolling window approach: train on past, test on future
+- Validate against 3-month window (test_month, test_month+1, test_month+2)
+
+## Error Handling Basics
+
+- Use specific exception types, not generic `Exception`
+- Provide clear, actionable error messages with context
+- Include relevant information (variable values, expected ranges, etc.)
+
+```python
+# Good: Specific exception with context
+if not os.path.exists(self.file_path):
+    raise FileNotFoundError(f"File not found: {self.file_path}")
+
+if month not in self.processor.get_team_history(team):
+    raise ValueError(
+        f"Team '{team}' has no data for month {month}. "
+        f"Available months: {sorted(self.processor.get_team_history(team).keys())}"
+    )
+```
+
+## Dependencies
+
+- Always update `requirements.txt` when adding new packages
+- Use `>=` for minimum version requirements
+- Group related dependencies together in `requirements.txt`
+- Document why dependencies are needed
+
+## When Editing Code
+
+1. Check existing patterns in similar files
+2. Follow the import organization rules
+3. Use absolute imports from `src.*`
+4. Maintain consistency with existing code style
+5. Keep functions focused and modular
+6. Add appropriate error handling
+7. Update documentation if API changes

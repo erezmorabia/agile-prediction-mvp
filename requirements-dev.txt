@@ -1,0 +1,17 @@
+# Development dependencies for static analysis and type checking
+# Install with: pip install -r requirements-dev.txt
+# Or install both: pip install -r requirements.txt -r requirements-dev.txt
+
+# Include production dependencies
+-r requirements.txt
+
+# Type checking
+mypy>=1.0.0
+
+# Static analysis
+pylint>=2.15.0
+ruff>=0.1.0
+
+# Docstring checking
+pydocstyle>=6.0.0
+

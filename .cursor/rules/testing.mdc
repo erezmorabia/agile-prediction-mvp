@@ -1,0 +1,286 @@
+---
+Rule Type: Context
+Context: testing
+---
+
+# Testing Requirements
+
+## Test File Naming
+- Test files must be named `test_*.py`
+- Place tests in the `tests/` directory
+- Mirror the `src/` directory structure when appropriate
+
+Examples:
+- `tests/test_suite.py` - Main test suite
+- `tests/test_data_loader.py` - Tests for data loading
+- `tests/test_recommender.py` - Tests for recommendation engine
+
+## Test Function Naming
+- Test functions must start with `test_`
+- Use descriptive names that explain what is being tested
+- Follow pattern: `test_<what>_<condition>_<expected_result>`
+
+```python
+def test_data_loader_loads_file():
+    """Test DataLoader can load Excel file."""
+    pass
+
+def test_recommendation_engine_returns_top_n():
+    """Test RecommendationEngine returns exactly top_n recommendations."""
+    pass
+
+def test_similarity_engine_finds_k_teams():
+    """Test SimilarityEngine finds exactly K similar teams."""
+    pass
+
+def test_data_processor_normalizes_scores():
+    """Test DataProcessor normalizes scores from 0-3 to 0-1 range."""
+    pass
+```
+
+## Test Organization
+- Group related tests in test classes
+- Use descriptive class names: `TestDataLoading`, `TestRecommendationEngine`
+- Each test class should focus on one component
+
+```python
+class TestDataLoading:
+    """Test data loading functionality."""
+    
+    def test_data_loader_initialization(self):
+        """Test DataLoader can be initialized."""
+        pass
+    
+    def test_data_loader_loads_file(self):
+        """Test DataLoader can load Excel file."""
+        pass
+    
+    def test_data_loader_identifies_practices(self):
+        """Test DataLoader correctly identifies practice columns."""
+        pass
+
+
+class TestRecommendationEngine:
+    """Test recommendation engine functionality."""
+    
+    def test_recommend_returns_list(self):
+        """Test recommend method returns a list."""
+        pass
+    
+    def test_recommend_returns_top_n(self):
+        """Test recommend returns exactly top_n items."""
+        pass
+```
+
+## Running Tests
+
+### Basic Commands
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Run specific test file
+python -m pytest tests/test_suite.py -v
+
+# Run specific test class
+python -m pytest tests/test_suite.py::TestDataLoading -v
+
+# Run specific test
+python -m pytest tests/test_suite.py::TestDataLoading::test_data_loader_loads_file -v
+```
+
+### With Coverage
+```bash
+# Run tests with coverage report
+pytest --cov=src tests/
+
+# Generate HTML coverage report
+pytest --cov=src --cov-report=html tests/
+```
+
+## Test Coverage
+
+### Targets
+- Aim for high test coverage (target: 80%+)
+- Focus on testing:
+  - Core business logic
+  - Edge cases and error conditions
+  - Public API methods
+  - Critical data processing functions
+
+### What to Test
+```python
+# ✅ Test core functionality
+def test_recommend_returns_correct_format():
+    """Test recommendations are in correct format."""
+    recommendations = engine.recommend("TeamA", 200105, top_n=2)
+    assert isinstance(recommendations, list)
+    assert len(recommendations) == 2
+    assert all(isinstance(r, tuple) and len(r) == 3 for r in recommendations)
+
+# ✅ Test edge cases
+def test_recommend_handles_unknown_team():
+    """Test recommend raises error for unknown team."""
+    with pytest.raises(ValueError):
+        engine.recommend("UnknownTeam", 200105)
+
+# ✅ Test error conditions
+def test_data_loader_raises_on_missing_file():
+    """Test DataLoader raises FileNotFoundError for missing file."""
+    with pytest.raises(FileNotFoundError):
+        loader = DataLoader("nonexistent.xlsx")
+        loader.load()
+```
+
+## Test Fixtures
+
+Use `@pytest.fixture` for reusable test data:
+
+```python
+import pytest
+from src.data import DataLoader, DataProcessor
+
+@pytest.fixture
+def sample_data():
+    """Create sample data for testing."""
+    loader = DataLoader('data/raw/combined_dataset.xlsx')
+    df = loader.load()
+    return df
+
+@pytest.fixture
+def processor(sample_data):
+    """Create DataProcessor from sample data."""
+    loader = DataLoader('data/raw/combined_dataset.xlsx')
+    df = loader.load()
+    processor = DataProcessor(df, loader.practices)
+    processor.process()
+    return processor
+
+@pytest.fixture
+def recommender(processor):
+    """Create RecommendationEngine for testing."""
+    from src.ml import SimilarityEngine, SequenceMapper, RecommendationEngine
+    
+    similarity_engine = SimilarityEngine(processor)
+    sequence_mapper = SequenceMapper(processor, loader.practices)
+    sequence_mapper.learn_sequences()
+    
+    recommender = RecommendationEngine(
+        similarity_engine,
+        sequence_mapper,
+        loader.practices
+    )
+    return recommender
+```
+
+### Using Fixtures
+```python
+def test_recommendations(recommender):
+    """Test recommendations using fixture."""
+    recommendations = recommender.recommend("TeamA", 200105, top_n=2)
+    assert len(recommendations) == 2
+```
+
+## Test Data
+
+### Using Real Data
+- Use real data files when possible (from `data/raw/`)
+- Ensure test data is included in repository or clearly documented
+- Use actual Excel files for integration tests
+
+```python
+def test_with_real_data():
+    """Test with actual project data file."""
+    loader = DataLoader('data/raw/combined_dataset.xlsx')
+    df = loader.load()
+    assert len(df) > 0
+    assert 'Team Name' in df.columns
+```
+
+### Creating Minimal Test Data
+- Create minimal test data for unit tests
+- Use fixtures to set up test data
+- Clean up after tests if needed
+
+```python
+@pytest.fixture
+def minimal_data():
+    """Create minimal test data."""
+    data = {
+        'Team Name': ['TeamA', 'TeamB'],
+        'Month': [200101, 200101],
+        'Practice1': [1, 2],
+        'Practice2': [2, 3]
+    }
+    return pd.DataFrame(data)
+```
+
+## Test Patterns from Codebase
+
+Reference `tests/test_suite.py` for examples:
+- Test class organization
+- Fixture usage
+- Test data setup
+- Assertion patterns
+
+## Assertions
+
+### Use Clear Assertions
+```python
+# Good: Clear assertion with message
+assert len(recommendations) == top_n, f"Expected {top_n} recommendations, got {len(recommendations)}"
+
+# Good: Specific checks
+assert isinstance(recommendations, list)
+assert all(isinstance(r, tuple) for r in recommendations)
+assert all(len(r) == 3 for r in recommendations)
+
+# Good: Value checks
+assert recommendations[0][1] >= recommendations[1][1], "Recommendations should be sorted by score"
+```
+
+### Testing Exceptions
+```python
+def test_raises_value_error():
+    """Test function raises ValueError for invalid input."""
+    with pytest.raises(ValueError, match="Invalid team"):
+        engine.recommend("", 200105)
+
+def test_raises_file_not_found():
+    """Test raises FileNotFoundError for missing file."""
+    with pytest.raises(FileNotFoundError):
+        loader = DataLoader("nonexistent.xlsx")
+        loader.load()
+```
+
+## Test Structure Best Practices
+
+1. **Arrange-Act-Assert** pattern:
+```python
+def test_recommendation_generation():
+    """Test recommendation generation."""
+    # Arrange
+    team = "TeamA"
+    month = 200105
+    top_n = 2
+    
+    # Act
+    recommendations = engine.recommend(team, month, top_n)
+    
+    # Assert
+    assert len(recommendations) == top_n
+    assert all(r[1] > 0 for r in recommendations)  # All scores > 0
+```
+
+2. **One assertion per test** (when possible):
+```python
+def test_recommendations_count():
+    """Test correct number of recommendations."""
+    recommendations = engine.recommend("TeamA", 200105, top_n=2)
+    assert len(recommendations) == 2
+
+def test_recommendations_format():
+    """Test recommendations are in correct format."""
+    recommendations = engine.recommend("TeamA", 200105, top_n=2)
+    assert all(isinstance(r, tuple) and len(r) == 3 for r in recommendations)
+```

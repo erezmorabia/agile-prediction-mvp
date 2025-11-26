@@ -1,0 +1,90 @@
+name: Code Quality Checks
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+    
+    - name: Run type checking with mypy
+      continue-on-error: true
+      run: |
+        echo "Running mypy type checking..."
+        mypy src/ || echo "Type checking found some issues (non-blocking)"
+    
+    - name: Run linting with ruff
+      continue-on-error: true
+      run: |
+        echo "Running ruff linting..."
+        ruff check src/ || echo "Ruff found some issues (non-blocking)"
+    
+    - name: Run linting with pylint
+      continue-on-error: true
+      run: |
+        echo "Running pylint..."
+        pylint src/ || echo "Pylint found some issues (non-blocking)"
+    
+    - name: Check docstring style with pydocstyle
+      continue-on-error: true
+      run: |
+        echo "Checking docstring style..."
+        pydocstyle src/ || echo "Docstring check found some issues (non-blocking)"
+    
+    - name: Check code formatting
+      continue-on-error: true
+      run: |
+        echo "Checking code formatting..."
+        ruff format --check src/ || echo "Code formatting issues found (non-blocking)"
+
+  # Separate job for formatting (can be made required later)
+  format-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+    
+    - name: Install ruff
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff
+    
+    - name: Check formatting
+      continue-on-error: true
+      run: |
+        ruff format --check src/ || echo "Formatting check complete (some issues may exist)"
+

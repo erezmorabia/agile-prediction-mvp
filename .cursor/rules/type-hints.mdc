@@ -1,0 +1,237 @@
+---
+Rule Type: Context
+Context: type-hints
+---
+
+# Type Hints and Annotations Rules
+
+## Requirements
+- **All function parameters** must have type hints
+- **All return types** must be annotated
+- Use `typing` module for complex types
+- Prefer type hints even for private methods when helpful
+
+## Basic Types
+
+```python
+def process_data(team_name: str, month: int, score: float) -> bool:
+    """Process data and return success status."""
+    pass
+
+def get_count(items: list) -> int:
+    """Return count of items."""
+    return len(items)
+
+def calculate_average(values: list) -> float:
+    """Calculate average of values."""
+    return sum(values) / len(values) if values else 0.0
+```
+
+## Complex Types from typing Module
+
+```python
+from typing import List, Dict, Tuple, Optional, Any, Set, Union
+
+# Lists
+def get_teams() -> List[str]:
+    """Return list of team names."""
+    pass
+
+# Dictionaries
+def get_team_data(team: str) -> Dict[str, Any]:
+    """Return team data dictionary."""
+    pass
+
+# Tuples
+def get_recommendations(
+    team: str,
+    month: int,
+    top_n: int = 5
+) -> List[Tuple[str, float, float]]:
+    """
+    Returns list of (practice_name, score, current_level) tuples.
+    """
+    pass
+
+# Optional values
+def find_team(name: str, default: Optional[str] = None) -> Optional[str]:
+    """Find team by name, return None if not found."""
+    pass
+
+# Sets
+def get_unique_practices(teams: List[str]) -> Set[str]:
+    """Return set of unique practices across teams."""
+    pass
+
+# Union types
+def process_value(value: Union[int, float, str]) -> str:
+    """Process value of different types."""
+    pass
+```
+
+## Type Hints in Class Methods
+
+```python
+class RecommendationEngine:
+    """Generate practice recommendations."""
+    
+    def __init__(
+        self,
+        similarity_engine: SimilarityEngine,
+        sequence_mapper: SequenceMapper,
+        practices: List[str]
+    ) -> None:
+        """Initialize recommendation engine."""
+        self.similarity_engine = similarity_engine
+        self.sequence_mapper = sequence_mapper
+        self.practices = practices
+    
+    def recommend(
+        self,
+        target_team: str,
+        current_month: int,
+        top_n: int = 2
+    ) -> List[Tuple[str, float, float]]:
+        """Generate recommendations for a team."""
+        pass
+    
+    def get_explanation(
+        self,
+        practice: str,
+        team: str,
+        month: int
+    ) -> str:
+        """Get explanation for why practice was recommended."""
+        pass
+```
+
+## Type Hints for Instance Variables
+
+```python
+class DataProcessor:
+    """Process and normalize data."""
+    
+    def __init__(self, df: pd.DataFrame, practices: List[str]) -> None:
+        """Initialize data processor."""
+        self.df: pd.DataFrame = df
+        self.practices: List[str] = practices
+        self.team_histories: Dict[str, Dict[int, List[float]]] = {}
+        self.normalized: bool = False
+```
+
+## Generic Types
+
+```python
+from typing import TypeVar, Generic
+
+T = TypeVar('T')
+
+class Cache(Generic[T]):
+    """Generic cache class."""
+    
+    def __init__(self) -> None:
+        self._data: Dict[str, T] = {}
+    
+    def get(self, key: str) -> Optional[T]:
+        """Get value from cache."""
+        return self._data.get(key)
+    
+    def set(self, key: str, value: T) -> None:
+        """Set value in cache."""
+        self._data[key] = value
+```
+
+## Callable Types
+
+```python
+from typing import Callable
+
+def apply_function(
+    data: List[float],
+    func: Callable[[float], float]
+) -> List[float]:
+    """Apply function to each element in data."""
+    return [func(x) for x in data]
+
+# Function that takes a callable
+def process_with_callback(
+    items: List[str],
+    callback: Callable[[str], bool]
+) -> List[str]:
+    """Process items using callback function."""
+    return [item for item in items if callback(item)]
+```
+
+## Type Hints for Class Attributes
+
+```python
+class SimilarityEngine:
+    """Calculate similarity between teams."""
+    
+    # Class-level type hints
+    processor: DataProcessor
+    _similarity_cache: Dict[Tuple[str, str], float]
+    
+    def __init__(self, processor: DataProcessor) -> None:
+        """Initialize similarity engine."""
+        self.processor = processor
+        self._similarity_cache = {}
+```
+
+## When Type Hints Are Optional (But Still Recommended)
+
+- Private methods (`_method_name`) may omit type hints if obvious
+- Simple getters/setters may omit if return type is clear
+- However, **prefer including type hints** for better code clarity
+
+```python
+# Acceptable: Simple getter
+def get_name(self) -> str:
+    return self.name
+
+# Better: Include type hint even for simple methods
+def _calculate_internal_metric(self) -> float:
+    """Calculate internal metric."""
+    return self._metric_value
+```
+
+## Type Hints in Existing Codebase
+
+Reference existing code for examples:
+- `src/ml/recommender.py` - Complex return types with Tuples
+- `src/api/service.py` - List and Dict type hints
+- `src/data/loader.py` - Basic type hints for data loading
+
+## Common Patterns
+
+### Returning Multiple Values
+```python
+def process_team_data(team: str) -> Tuple[List[str], Dict[str, float]]:
+    """Return practices and scores."""
+    practices = []
+    scores = {}
+    return practices, scores
+```
+
+### Optional Parameters
+```python
+def find_teams(
+    criteria: Dict[str, Any],
+    limit: Optional[int] = None
+) -> List[str]:
+    """Find teams matching criteria, optionally limit results."""
+    teams = []
+    if limit is not None:
+        teams = teams[:limit]
+    return teams
+```
+
+### Type Hints for Generators
+```python
+from typing import Iterator
+
+def process_teams(teams: List[str]) -> Iterator[Dict[str, Any]]:
+    """Process teams and yield results."""
+    for team in teams:
+        yield process_team(team)
+```

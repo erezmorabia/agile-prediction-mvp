@@ -1,0 +1,16 @@
+{
+  "optimal_config": null,
+  "model_accuracy": 0.0,
+  "random_baseline": 0.0,
+  "improvement_gap": 0.0,
+  "improvement_factor": 0.0,
+  "total_predictions": 0,
+  "correct_predictions": 0,
+  "total_combinations_tested": 1,
+  "total_combinations_available": 1,
+  "valid_combinations": 0,
+  "all_results": [],
+  "early_stopped": false,
+  "cancelled": false,
+  "timestamp": "2025-11-24T11:50:21.628770"
+}

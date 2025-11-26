@@ -1,0 +1,310 @@
+---
+Rule Type: Context
+Context: documentation
+---
+
+# Documentation Standards
+
+## Module-Level Docstrings
+
+Every Python file must start with a module-level docstring:
+
+```python
+"""
+ModuleName: Brief description of what this module does.
+
+This module provides functionality for [detailed description].
+"""
+```
+
+### Examples from Codebase
+
+```python
+"""
+RecommendationEngine: Generate practice recommendations using collaborative filtering and sequences.
+"""
+
+"""
+DataLoader: Load agile metrics from Excel files.
+"""
+
+"""
+MetricsCalculator: Calculate performance metrics for the recommendation system.
+"""
+```
+
+## Class Docstrings
+
+Every class must have a docstring describing its purpose:
+
+```python
+class RecommendationEngine:
+    """Generate practice recommendations combining similarity and sequence patterns."""
+    
+    def __init__(self, ...):
+        pass
+
+class DataProcessor:
+    """Process and normalize agile metrics data."""
+    
+    def __init__(self, ...):
+        pass
+```
+
+## Function/Method Docstrings
+
+All public functions and methods must have docstrings following this format:
+
+```python
+def recommend(
+    self,
+    target_team: str,
+    current_month: int,
+    top_n: int = 2
+) -> List[Tuple[str, float, float]]:
+    """
+    Generate recommendations for a team.
+    
+    Algorithm:
+    1. Find K similar teams
+    2. Extract improvement patterns
+    3. Apply sequence learning
+    4. Combine and rank
+    
+    Args:
+        target_team (str): Team to recommend for
+        current_month (int): Current month (yyyymmdd format)
+        top_n (int): Number of recommendations to return (default: 2)
+        
+    Returns:
+        List[Tuple[str, float, float]]: List of (practice_name, score, current_level) tuples,
+            sorted by score (descending)
+            
+    Raises:
+        ValueError: If team not found or month is invalid
+        KeyError: If team has no data for the specified month
+    """
+    pass
+```
+
+## Docstring Sections
+
+### Required Sections
+
+**Description**: Brief explanation of what the function does
+```python
+def calculate_similarity(team1: str, team2: str) -> float:
+    """
+    Calculate cosine similarity between two teams' practice profiles.
+    """
+    pass
+```
+
+**Args**: All parameters with type, name, and description
+```python
+def process_data(
+    team_name: str,
+    month: int,
+    normalize: bool = True
+) -> Dict[str, float]:
+    """
+    Process team data for given month.
+    
+    Args:
+        team_name (str): Name of the team to process
+        month (int): Month in yyyymmdd format
+        normalize (bool): Whether to normalize scores (default: True)
+    """
+    pass
+```
+
+**Returns**: Return type and description
+```python
+def get_recommendations(team: str, month: int) -> List[str]:
+    """
+    Get recommendations for a team.
+    
+    Returns:
+        List[str]: List of recommended practice names, sorted by score
+    """
+    pass
+```
+
+### Optional Sections (Include When Applicable)
+
+**Raises**: Exceptions that may be raised
+```python
+def load_data(file_path: str) -> pd.DataFrame:
+    """
+    Load data from Excel file.
+    
+    Args:
+        file_path (str): Path to Excel file
+        
+    Returns:
+        pd.DataFrame: Loaded data
+        
+    Raises:
+        FileNotFoundError: If file doesn't exist
+        ValueError: If file format is invalid
+    """
+    pass
+```
+
+**Algorithm**: For complex functions, explain the approach
+```python
+def recommend(team: str, month: int) -> List[Tuple[str, float]]:
+    """
+    Generate recommendations using hybrid approach.
+    
+    Algorithm:
+    1. Find K most similar teams using cosine similarity
+    2. Extract what similar teams improved next
+    3. Apply sequence learning patterns
+    4. Combine similarity and sequence scores
+    5. Rank and return top N recommendations
+    """
+    pass
+```
+
+**Note**: Important implementation details or warnings
+```python
+def learn_sequences(max_month: int) -> None:
+    """
+    Learn improvement sequences from historical data.
+    
+    Note:
+        Only uses data from months < max_month to prevent data leakage.
+        Sequences are cached after first computation.
+    """
+    pass
+```
+
+## Docstring Format Examples
+
+### Simple Function
+```python
+def get_team_count() -> int:
+    """Return total number of teams in the dataset."""
+    return len(self.teams)
+```
+
+### Function with Parameters
+```python
+def find_similar_teams(
+    target_team: str,
+    current_month: int,
+    k: int = 5
+) -> List[Tuple[str, float]]:
+    """
+    Find K most similar teams to target team.
+    
+    Args:
+        target_team (str): Team to find similar teams for
+        current_month (int): Current month for comparison
+        k (int): Number of similar teams to return (default: 5)
+        
+    Returns:
+        List[Tuple[str, float]]: List of (team_name, similarity_score) tuples
+    """
+    pass
+```
+
+### Class Method
+```python
+class RecommendationEngine:
+    """Generate practice recommendations."""
+    
+    def recommend(
+        self,
+        target_team: str,
+        current_month: int,
+        top_n: int = 2
+    ) -> List[Tuple[str, float, float]]:
+        """
+        Generate top N practice recommendations for a team.
+        
+        Args:
+            target_team (str): Team to recommend for
+            current_month (int): Current month (yyyymmdd format)
+            top_n (int): Number of recommendations (default: 2)
+            
+        Returns:
+            List[Tuple[str, float, float]]: List of (practice, score, level) tuples
+        """
+        pass
+```
+
+## Inline Comments
+
+### Guidelines
+- Use inline comments to explain **why**, not **what**
+- Comment complex logic, non-obvious decisions, or workarounds
+- Keep comments up-to-date with code changes
+- Don't state the obvious
+
+### Good Examples
+```python
+# Only use data from months <= current_month to prevent data leakage
+if month > current_month:
+    continue
+
+# Normalize scores from 0-3 scale to 0-1 range for consistent similarity calculation
+normalized_score = raw_score / 3.0
+
+# Use cosine similarity to measure team similarity regardless of vector magnitude
+similarity = cosine_similarity(team1_vector, team2_vector)[0][0]
+```
+
+### Bad Examples
+```python
+# Increment the counter
+counter += 1
+
+# Set the value
+value = 5
+
+# Loop through teams
+for team in teams:
+    process(team)
+```
+
+## Documentation Consistency
+
+When writing docstrings, match the style of existing code:
+- Check `src/ml/recommender.py` for ML component docstrings
+- Check `src/data/loader.py` for data processing docstrings
+- Check `src/api/service.py` for API service docstrings
+- Follow the same format and level of detail
+
+## Special Cases
+
+### Private Methods
+Private methods should have docstrings if they contain complex logic:
+
+```python
+def _calculate_similarity_score(
+    self,
+    team1_vector: np.ndarray,
+    team2_vector: np.ndarray
+) -> float:
+    """
+    Calculate cosine similarity between two team vectors.
+    
+    Args:
+        team1_vector: Practice profile vector for team 1
+        team2_vector: Practice profile vector for team 2
+        
+    Returns:
+        float: Similarity score between 0 and 1
+    """
+    pass
+```
+
+### Property Methods
+```python
+@property
+def team_count(self) -> int:
+    """Return total number of teams."""
+    return len(self.teams)
+```
