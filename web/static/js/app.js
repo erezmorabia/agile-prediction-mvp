@@ -8,6 +8,18 @@ let currentTeam = null;
 let currentMonth = null;
 
 /**
+ * Returns an inline tooltip icon span for use in HTML template literals.
+ * @param {string} text - Tooltip content (keep to 1–2 sentences).
+ * @param {boolean} [below=false] - Show tooltip below the icon (for top-of-page elements).
+ * @returns {string} HTML string.
+ */
+function tip(text, below = false) {
+    const cls = below ? 'tooltip-icon tooltip-below' : 'tooltip-icon';
+    const safe = text.replace(/"/g, '&quot;');
+    return `<span class="${cls}" data-tooltip="${safe}" role="img" aria-label="More information">ⓘ</span>`;
+}
+
+/**
  * Synchronous version of safeGetElement (for immediate use)
  * @param {string} id - Element ID
  * @returns {HTMLElement|null} - The element or null if not found
@@ -142,6 +154,10 @@ function initializeTabs() {
             }
         });
     });
+
+    // Seed initial load for the default active tab (Statistics)
+    loadedTabs.add('stats');
+    loadStatistics();
 }
 
 /**
@@ -617,10 +633,10 @@ function displayRecommendations(data) {
                     <h4>${rec.practice}</h4>
                     <div class="rec-details">
                         <div class="rec-detail">
-                            <strong>Recommendation Score:</strong> ${rec.score.toFixed(3)} <span class="score-range">(range: 0.0-1.0, higher = stronger)</span>
+                            <strong>Recommendation Score:</strong>${tip('A weighted composite: similar teams\' improvements (60%) + natural practice sequences (40%). Higher = more evidence from the dataset.')} ${rec.score.toFixed(3)} <span class="score-range">(range: 0.0-1.0, higher = stronger)</span>
                         </div>
                         <div class="rec-detail">
-                            <strong>Current Level:</strong> ${rec.level_display || `Level ${rec.level_num} (${rec.level_description})`}
+                            <strong>Current Level:</strong>${tip('Your team\'s maturity on this practice. 0 = not implemented, 1 = basic, 2 = intermediate, 3 = mature. Only practices below level 3 are recommended.')} ${rec.level_display || `Level ${rec.level_num} (${rec.level_description})`}
                         </div>
                         <div class="rec-detail">
                             <strong>Why:</strong> 
@@ -632,6 +648,7 @@ function displayRecommendations(data) {
                             }
                             ${rec.similar_teams && rec.similar_teams.length > 0 ? `
                                 <ul class="similar-teams-list" style="margin: 8px 0 0 20px; padding: 0;">
+                                    <li style="margin: 4px 0; list-style: none; font-size: 0.9em; color: #555;">Similar teams that improved this practice${tip('Cosine similarity of practice maturity profiles across all historical months. Higher % = more similar overall agile state.')}</li>
                                     ${rec.similar_teams.map(st => {
                                         const similarAt = st.similar_at_month || st.month;
                                         const similarAtText = similarAt !== st.month 
@@ -653,7 +670,7 @@ function displayRecommendations(data) {
                         </div>
                         ${data.validation ? `
                             <div class="rec-detail validation-status">
-                                <strong>Validation:</strong> ${rec.improved_in_months ? 
+                                <strong>Validation:</strong>${tip('Checked against actual data: did the team improve this practice in the 1–3 months after the prediction? \'Validated\' means the prediction came true.')} ${rec.improved_in_months ? 
                                     (rec.improved_in_months.length === 3 
                                         ? `${validatedText} in month ${formatMonth(rec.improved_in_months[0])}, ${formatMonth(rec.improved_in_months[1])}, AND ${formatMonth(rec.improved_in_months[2])}`
                                         : rec.improved_in_months.length === 2 
@@ -969,30 +986,30 @@ function displayBacktestResults(data) {
 
             <div class="metrics-grid">
                 <div class="metric">
-                    <div class="metric-label">Total Predictions</div>
+                    <div class="metric-label">Total Predictions${tip('Number of team/month test cases evaluated across all rolling windows where actual improvement data was available.')}</div>
                     <div class="metric-value">${data.total_predictions || 0}</div>
                     <div class="metric-description">team/month combinations</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-label">Correct Predictions</div>
+                    <div class="metric-label">Correct Predictions${tip('Test cases where at least one recommended practice was actually adopted by the team within the 1–3 months following the prediction.')}</div>
                     <div class="metric-value">${data.correct_predictions || 0}</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-label">Overall Accuracy</div>
+                    <div class="metric-label">Overall Accuracy${tip('Correct predictions ÷ Total predictions. This is the model\'s hit rate on held-out historical data.')}</div>
                     <div class="metric-value highlight">${modelAccuracy.toFixed(1)}%</div>
                     <div class="metric-description">average of all months</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-label">Random Baseline</div>
+                    <div class="metric-label">Random Baseline${tip('Expected accuracy if practices were chosen randomly: top_n ÷ total_practices. Provides the performance floor to beat.')}</div>
                     <div class="metric-value">${randomBaseline.toFixed(1)}%</div>
                     <div class="metric-description">probability of random success</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-label">Improvement Gap</div>
+                    <div class="metric-label">Improvement Gap${tip('Model accuracy minus the random baseline, in percentage points. Positive value proves the model adds value beyond chance.')}</div>
                     <div class="metric-value" style="color: ${gapColor};">${improvementGap > 0 ? '+' : ''}${improvementGap.toFixed(1)}%</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-label">Improvement Factor</div>
+                    <div class="metric-label">Improvement Factor${tip('Model accuracy ÷ random baseline. A 2× factor means the model is twice as likely as random to recommend what a team will actually adopt.')}</div>
                     <div class="metric-value highlight">${(data.improvement_factor || 0).toFixed(1)}x</div>
                 </div>
                 <div class="metric">
@@ -1752,7 +1769,7 @@ function displayStatistics(data) {
                     <strong>Total Months:</strong> ${data.num_months || 0}
                 </div>
                 <div class="stat-item">
-                    <strong>Total Observations:</strong> ${(data.total_observations || 0).toLocaleString()}
+                    <strong>Total Observations:</strong>${tip('Total team × practice × month data points in the dataset. Each observation is one maturity score for one team in one month.')} ${(data.total_observations || 0).toLocaleString()}
                 </div>
             </div>
 
@@ -1821,7 +1838,7 @@ function displayStatistics(data) {
 
             ${data.missing_values && data.missing_values.total_missing > 0 ? `
             <div class="stats-section missing-values-section">
-                <h4>Missing Values Analysis</h4>
+                <h4>Missing Values Analysis${tip('Missing values occur when a practice score wasn\'t recorded for a team in a given month. These are excluded from training rather than imputed.')}</h4>
                 <div class="missing-values-summary">
                     <p><strong>Total Missing Values:</strong> ${data.missing_values.total_missing.toLocaleString()}</p>
                 </div>
@@ -1955,10 +1972,10 @@ function displaySequences(data) {
             
             <div class="stats-grid" style="margin-bottom: 20px;">
                 <div class="stat-item">
-                    <strong>Total Transition Patterns:</strong> ${stats.num_transition_types || 0}
+                    <strong>Total Transition Patterns:</strong>${tip('Number of unique practice-A → practice-B pairs learned. Each pair is one distinct Markov transition rule.')} ${stats.num_transition_types || 0}
                 </div>
                 <div class="stat-item">
-                    <strong>Total Transitions Observed:</strong> ${stats.total_transitions || 0}
+                    <strong>Total Transitions Observed:</strong>${tip('Raw co-improvement event count summed across all teams and months. More observations = higher confidence in transition probabilities.')} ${stats.total_transitions || 0}
                 </div>
                 <div class="stat-item">
                     <strong>Practices That Improved:</strong> ${stats.practices_that_improved || 0}
@@ -2039,7 +2056,7 @@ function generateSequenceGroups(sortedPractices, grouped) {
                     <strong>${transition.to_practice}</strong>
                     <span class="sequence-meta">
                         <span class="sequence-count">${transition.count} times</span>
-                        <span class="sequence-prob-text">${(transition.probability * 100).toFixed(1)}%</span>
+                        <span class="sequence-prob-text">${(transition.probability * 100).toFixed(1)}%${tip('Bar color: green ≥ 60%, amber 30–59%, gray < 30%. Higher probability = more frequently observed co-improvement across all teams.')}</span>
                         <div class="probability-bar">
                             <div class="probability-fill ${probClass}" style="width: ${transition.probability * 100}%"></div>
                         </div>

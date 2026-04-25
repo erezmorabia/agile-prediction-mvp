@@ -3,67 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
-    <title>Agile Practice Prediction System</title>
+    <title>Agile Practice Recommendation Engine — MSc Thesis, OUI 2025</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <div class="container">
+    <div class="container instrument-panel">
         <header>
             <div class="header-content">
                 <img src="/static/ou-logo.png" alt="Open University of Israel" class="header-logo" onerror="this.src='/static/ou-logo.svg'; this.onerror=null;">
                 <div class="header-text">
-                    <h1>Agile Practice Prediction System</h1>
-                    <p class="subtitle">MSc Computer Science - Advanced Project Course | Open University of Israel</p>
-                    <p class="subtitle" style="font-size: 0.9em; opacity: 0.8;">
-                        ML-Driven Agile Transformation (Collaborative Filtering + Markov Chain Sequence Learning)
-                    </p>
-                    <p class="subtitle" style="font-size: 0.85em; opacity: 0.7; margin-top: 5px;">
-                        Student: Erez Morabia | Advisor: Shmuel Tyszberowicz | Year: 2025
+                    <div class="header-badge">MSc Research Instrument · Agile Intelligence Lab</div>
+                    <h1>Agile Practice Recommendation Engine</h1>
+                    <p class="subtitle">ML-Driven Agile Transformation — Collaborative Filtering + Markov Chain Sequence Learning</p>
+                    <p class="header-meta">
+                        <span>Erez Morabia</span>
+                        <span class="header-meta-sep">·</span>
+                        <span>Advisor: Shmuel Tyszberowicz</span>
+                        <span class="header-meta-sep">·</span>
+                        <span>Open University of Israel</span>
+                        <span class="header-meta-sep">·</span>
+                        <span>MSc Computer Science 2025</span>
                     </p>
                 </div>
             </div>
         </header>
 
         <nav class="tabs">
-            <button class="tab-btn active" data-tab="recommendations">Recommendations</button>
-            <button class="tab-btn" data-tab="backtest">Backtest Validation</button>
-            <button class="tab-btn" data-tab="stats">Statistics</button>
-            <button class="tab-btn" data-tab="sequences">Sequences</button>
+            <button class="tab-btn active" data-tab="stats">Statistics<span class="tooltip-icon tooltip-below" data-tooltip="Shows dataset-level facts: team count, practice count, observation totals, and any missing data in the training set." role="img" aria-label="More information">ⓘ</span></button>
+            <button class="tab-btn" data-tab="backtest">Backtest Validation<span class="tooltip-icon tooltip-below" data-tooltip="Runs a rolling-window test against historical data to measure how accurately the model predicts real past improvements." role="img" aria-label="More information">ⓘ</span></button>
+            <button class="tab-btn" data-tab="sequences">Sequences<span class="tooltip-icon tooltip-below" data-tooltip="Displays Markov-chain transition patterns — which practices teams typically improve together or in sequence across the dataset." role="img" aria-label="More information">ⓘ</span></button>
+            <button class="tab-btn tooltip-right" data-tab="recommendations">Recommendations<span class="tooltip-icon tooltip-below tooltip-right" data-tooltip="Predicts which agile practices your team should adopt next, based on similar teams and learned improvement sequences." role="img" aria-label="More information">ⓘ</span></button>
         </nav>
 
-        <!-- Recommendations Tab -->
-        <div id="recommendations-tab" class="tab-content active">
+        <!-- Statistics Tab -->
+        <div id="stats-tab" class="tab-content active">
             <div class="section">
-                <h2>Get Recommendations</h2>
-                
-                <div class="form-group">
-                    <label for="team-select">Select Team:</label>
-                    <select id="team-select">
-                        <option value="">Loading teams...</option>
-                    </select>
-                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">The number in parentheses shows how many months of historical data are available for each team. More months typically mean more reliable recommendations.</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="month-select">Select Month to Predict:</label>
-                    <select id="month-select" disabled>
-                        <option value="">Select a team first</option>
-                    </select>
-                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">Month to predict starts from month 3 (we need months 1-2 as history)</small>
-                </div>
-
-                <button id="get-recommendations-btn" class="btn btn-primary" disabled>Get Recommendations</button>
+                <h2>System Statistics</h2>
+                <p class="demo-step">Here's the data</p>
             </div>
 
-            <div id="recommendations-results" class="results hidden"></div>
+            <div id="stats-results" class="results hidden"></div>
         </div>
 
         <!-- Backtest Tab -->
         <div id="backtest-tab" class="tab-content">
             <div class="section">
                 <h2>Run Backtest Validation (Rolling Window)</h2>
+                <p class="demo-step">Here's the scientific proof (49% accuracy)</p>
                 <p>Validate recommendations against historical data using rolling window approach</p>
                 <div class="info-box" style="margin-bottom: 20px;">
                     <strong>Rolling Window Approach:</strong>
@@ -100,7 +91,7 @@
                 <!-- Configuration Panel -->
                 <div class="config-panel" style="margin-bottom: 20px; border: 1px solid var(--gray-300); padding: 20px; border-radius: 8px; background: var(--gray-50);">
                     <h3 style="margin-top: 0;">Fine-Tuning Configuration</h3>
-                    
+
                     <!-- Primary Parameters -->
                     <div class="config-section">
                         <h4 style="margin-top: 0; cursor: pointer;" onclick="toggleConfigSection('primary-config')">
@@ -180,7 +171,7 @@
                     <button id="upload-results-btn" class="btn btn-success">Upload Results</button>
                 </div>
                 <input type="file" id="upload-results-input" accept=".json" style="display: none;">
-                
+
                 <!-- Optimization Progress -->
                 <div id="optimization-progress" class="results hidden" style="margin-top: 20px;">
                     <div class="info-box">
@@ -196,7 +187,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Optimization Results -->
                 <div id="optimization-results" class="results hidden" style="margin-top: 20px;"></div>
             </div>
@@ -204,23 +195,43 @@
             <div id="backtest-results" class="results hidden"></div>
         </div>
 
-        <!-- Statistics Tab -->
-        <div id="stats-tab" class="tab-content">
-            <div class="section">
-                <h2>System Statistics</h2>
-            </div>
-
-            <div id="stats-results" class="results hidden"></div>
-        </div>
-
         <!-- Sequences Tab -->
         <div id="sequences-tab" class="tab-content">
             <div class="section">
                 <h2>Improvement Sequences</h2>
+                <p class="demo-step">Here's what was learned</p>
                 <p>View learned improvement patterns from all teams and practices</p>
             </div>
 
             <div id="sequences-results" class="results hidden"></div>
+        </div>
+
+        <!-- Recommendations Tab -->
+        <div id="recommendations-tab" class="tab-content">
+            <div class="section">
+                <h2>Get Recommendations</h2>
+                <p class="demo-step">Here's the live output</p>
+
+                <div class="form-group">
+                    <label for="team-select">Select Team:<span class="tooltip-icon" data-tooltip="Teams are identified by name. The number in parentheses is months of historical data available — more months generally means more reliable recommendations." role="img" aria-label="More information">ⓘ</span></label>
+                    <select id="team-select">
+                        <option value="">Loading teams...</option>
+                    </select>
+                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">The number in parentheses shows how many months of historical data are available for each team. More months typically mean more reliable recommendations.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="month-select">Select Month to Predict:<span class="tooltip-icon" data-tooltip="The month you want predictions for. Only data before this month is used — months 1–2 are consumed as minimum history, so predictions start from month 3." role="img" aria-label="More information">ⓘ</span></label>
+                    <select id="month-select" disabled>
+                        <option value="">Select a team first</option>
+                    </select>
+                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">Month to predict starts from month 3 (we need months 1-2 as history)</small>
+                </div>
+
+                <button id="get-recommendations-btn" class="btn btn-primary" disabled>Get Recommendations</button>
+            </div>
+
+            <div id="recommendations-results" class="results hidden"></div>
         </div>
 
         <div id="loading" class="loading hidden">
@@ -235,4 +246,3 @@
     <script src="/static/js/app.js"></script>
 </body>
 </html>
-
