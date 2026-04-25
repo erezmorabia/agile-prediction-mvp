@@ -804,7 +804,7 @@ function displayRecommendations(data) {
                     <div class="practice-level">
                         <h5>Level ${level.num} (${level.name}): ${practices.length} practices</h5>
                         <div class="maturity-bar-container" style="background: #e0e0e0; border-radius: 4px; height: 8px; margin: 10px 0;">
-                            <div class="maturity-bar-fill" style="background: linear-gradient(90deg, #667eea, #764ba2); width: ${levelPercentage}%; height: 100%; border-radius: 4px;"></div>
+                            <div class="maturity-bar-fill" style="background: linear-gradient(90deg, #f59e0b, #d97706); width: ${levelPercentage}%; height: 100%; border-radius: 4px;"></div>
                         </div>
                         <div class="practice-list">${practices.join(', ')}</div>
                     </div>
@@ -951,29 +951,29 @@ function displayBacktestResults(data) {
             <h3>Backtest Validation Results (Rolling Window)</h3>
             
             <!-- Model vs Random Comparison -->
-            <div class="accuracy-comparison" style="margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid #dee2e6;">
+            <div class="accuracy-comparison" style="margin: 30px 0; padding: 20px; background: #1e1d1a; border-radius: 8px; border: 1px solid #3a3835;">
                 <h4 style="margin-top: 0; text-align: center;">Model vs Random Baseline</h4>
                 <div style="display: flex; justify-content: space-around; align-items: center; margin: 20px 0;">
                     <div style="text-align: center;">
-                        <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Model Accuracy</div>
-                        <div style="font-size: 2.5em; font-weight: bold; color: #007bff;">${modelAccuracy.toFixed(1)}%</div>
+                        <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Model Accuracy</div>
+                        <div style="font-size: 2.5em; font-weight: bold; color: #f59e0b;">${modelAccuracy.toFixed(1)}%</div>
                     </div>
-                    <div style="font-size: 2em; color: #666;">vs</div>
+                    <div style="font-size: 2em; color: #6b6865;">vs</div>
                     <div style="text-align: center;">
-                        <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Random Baseline</div>
-                        <div style="font-size: 2.5em; font-weight: bold; color: #6c757d;">${randomBaseline.toFixed(1)}%</div>
+                        <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Random Baseline</div>
+                        <div style="font-size: 2.5em; font-weight: bold; color: #a8a5a3;">${randomBaseline.toFixed(1)}%</div>
                     </div>
                 </div>
-                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 2px solid #dee2e6;">
-                    <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Improvement Gap</div>
+                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #3a3835;">
+                    <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Improvement Gap</div>
                     <div style="font-size: 3em; font-weight: bold; color: ${gapColor};">${improvementGap > 0 ? '+' : ''}${improvementGap.toFixed(1)}%</div>
-                    <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                    <div style="font-size: 0.85em; color: #8a8785; margin-top: 5px;">
                         ${improvementGap > 0 ? 'Model beats random by ' + improvementGap.toFixed(1) + ' percentage points' : 'Model underperforms random by ' + Math.abs(improvementGap).toFixed(1) + ' percentage points'}
                     </div>
                 </div>
             </div>
-            
-            <div class="info-box" style="margin-top: 20px; background: #e8f4f8; border-left: 4px solid #667eea;">
+
+            <div class="info-box" style="margin-top: 20px;">
                 <strong>Academic Validation Methodology:</strong>
                 <ul>
                     <li><strong>Approach:</strong> Rolling window backtest (time-series cross-validation)</li>
@@ -1362,7 +1362,7 @@ function displayOptimizationResults(data) {
         : 'No similarity filter (consider all teams)';
     
     let configHtml = `
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0;">
+        <div style="background: #1e1d1a; padding: 20px; border-radius: 8px; margin: 15px 0; border: 1px solid #3a3835;">
             <h4 style="margin-top: 0;">Optimization Summary</h4>
             <div style="margin-bottom: 15px;">
                 <strong>Iterations:</strong> ${data.total_combinations_tested || 0} / ${data.total_combinations_available || 0} tested (${completionPct}%) - ${statusText}
@@ -1371,7 +1371,7 @@ function displayOptimizationResults(data) {
             <details style="margin-bottom: 15px;">
                 <summary style="cursor: pointer; font-weight: bold; margin-bottom: 10px;">Parameter Ranges Tested</summary>
                 <div style="margin: 10px 0; padding-left: 20px; font-size: 0.9em;">
-                    <p style="font-weight: bold; margin-top: 10px; color: #856404;">Fixed Parameters (Non-Impactful):</p>
+                    <p style="font-weight: bold; margin-top: 10px; color: #a8a5a3;">Fixed Parameters (Non-Impactful):</p>
                     <ul style="margin: 5px 0; padding-left: 20px;">
                         <li><strong>Similarity Weight:</strong> 0.6 (fixed) - Analysis showed 0.6-0.8 produce identical results</li>
                     </ul>
@@ -1383,7 +1383,7 @@ function displayOptimizationResults(data) {
                         <li><strong>Months to Check for Recent Improvements:</strong> [1, 2, 3] - How recent improvements must be to trigger sequence boosts</li>
                         <li><strong>Months to Look Ahead for Similar Teams:</strong> [1, 2, 3] - How far ahead to check for improvements</li>
                     </ul>
-                    <p style="margin-top: 10px; font-style: italic; color: #666;">Search space: 4 × 3 × 3 × 3 × 3 = 324 combinations (optimized from 540)</p>
+                    <p style="margin-top: 10px; font-style: italic; color: #8a8785;">Search space: 4 × 3 × 3 × 3 × 3 = 324 combinations (optimized from 540)</p>
                 </div>
             </details>
             
@@ -1407,23 +1407,23 @@ function displayOptimizationResults(data) {
             ${configHtml}
             
             <!-- Results Summary -->
-            <div class="accuracy-comparison" style="margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid #dee2e6;">
+            <div class="accuracy-comparison" style="margin: 30px 0; padding: 20px; background: #1e1d1a; border-radius: 8px; border: 1px solid #3a3835;">
                 <h4 style="margin-top: 0; text-align: center;">Optimal Configuration Results</h4>
                 <div style="display: flex; justify-content: space-around; align-items: center; margin: 20px 0;">
                     <div style="text-align: center;">
-                        <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Model Accuracy</div>
-                        <div style="font-size: 2.5em; font-weight: bold; color: #007bff;">${modelAccuracy.toFixed(1)}%</div>
+                        <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Model Accuracy</div>
+                        <div style="font-size: 2.5em; font-weight: bold; color: #f59e0b;">${modelAccuracy.toFixed(1)}%</div>
                     </div>
-                    <div style="font-size: 2em; color: #666;">vs</div>
+                    <div style="font-size: 2em; color: #6b6865;">vs</div>
                     <div style="text-align: center;">
-                        <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Random Baseline</div>
-                        <div style="font-size: 2.5em; font-weight: bold; color: #6c757d;">${randomBaseline.toFixed(1)}%</div>
+                        <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Random Baseline</div>
+                        <div style="font-size: 2.5em; font-weight: bold; color: #a8a5a3;">${randomBaseline.toFixed(1)}%</div>
                     </div>
                 </div>
-                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 2px solid #dee2e6;">
-                    <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Improvement Gap</div>
+                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #3a3835;">
+                    <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Improvement Gap</div>
                     <div style="font-size: 3em; font-weight: bold; color: ${gapColor};">${gapPercent > 0 ? '+' : ''}${gapPercent.toFixed(1)}%</div>
-                    <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                    <div style="font-size: 0.85em; color: #8a8785; margin-top: 5px;">
                         ${gapPercent > 0 ? 'Model beats random by ' + gapPercent.toFixed(1) + ' percentage points' : 'Model underperforms random by ' + Math.abs(gapPercent).toFixed(1) + ' percentage points'}
                     </div>
                 </div>
@@ -1809,20 +1809,20 @@ function displayStatistics(data) {
                             let remarksHtml = '';
                             if (remarks) {
                                 remarksHtml = `
-                                    <div style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-left: 3px solid #007bff; font-size: 0.9em;">
+                                    <div style="margin-top: 10px; padding: 8px; background: #1a1916; border-left: 3px solid #f59e0b; font-size: 0.9em;">
                                         <strong>Remarks:</strong> ${remarks.replace(/\n/g, '<br>')}
                                     </div>
                                 `;
                             }
                             
                             return `
-                                <details class="practice-item" style="margin: 10px 0; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px;">
+                                <details class="practice-item" style="margin: 10px 0; padding: 10px; border: 1px solid #3a3835; border-radius: 4px;">
                                     <summary class="practice-summary">
                                         ${practice}
-                                        <span style="color: #666; font-size: 0.85em; font-weight: normal;"> (click to expand/collapse)</span>
+                                        <span style="color: #6b6865; font-size: 0.85em; font-weight: normal;"> (click to expand/collapse)</span>
                                     </summary>
-                                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
-                                        <h5 style="margin-top: 0; color: #495057;">Level Definitions:</h5>
+                                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #3a3835;">
+                                        <h5 style="margin-top: 0; color: #e8e5e2;">Level Definitions:</h5>
                                         ${levelsHtml}
                                         ${remarksHtml}
                                     </div>
