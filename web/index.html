@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
-    <title>Agile Practice Recommendation Engine — MSc Thesis, OUI 2025</title>
+    <title>Agile Practice Recommendation Engine - MSc Thesis, OUI 2025</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container instrument-panel">
@@ -19,7 +20,7 @@
                 <div class="header-text">
                     <div class="header-badge">MSc Research Instrument · Agile Intelligence Lab</div>
                     <h1>Agile Practice Recommendation Engine</h1>
-                    <p class="subtitle">ML-Driven Agile Transformation — Collaborative Filtering + Markov Chain Sequence Learning</p>
+                    <p class="subtitle">ML-Driven Agile Transformation - Collaborative Filtering<span class="tooltip-icon" data-tooltip="Teams with similar agile practice profiles (cosine similarity) are identified. Their past improvements are used to predict what your team should work on next — the more similar a team, the more weight its history carries." role="img" aria-label="More information">ⓘ</span> + Markov Chain<span class="tooltip-icon" data-tooltip="The system learns transition patterns: when a team improves practice A, which practice B tends to follow next? These sequences are extracted from all 87 teams and used as a second recommendation signal." role="img" aria-label="More information">ⓘ</span> Sequence Learning</p>
                     <p class="header-meta">
                         <span>Erez Morabia</span>
                         <span class="header-meta-sep">·</span>
@@ -36,7 +37,7 @@
         <nav class="tabs">
             <button class="tab-btn active" data-tab="stats">Statistics<span class="tooltip-icon tooltip-below" data-tooltip="Shows dataset-level facts: team count, practice count, observation totals, and any missing data in the training set." role="img" aria-label="More information">ⓘ</span></button>
             <button class="tab-btn" data-tab="backtest">Backtest Validation<span class="tooltip-icon tooltip-below" data-tooltip="Runs a rolling-window test against historical data to measure how accurately the model predicts real past improvements." role="img" aria-label="More information">ⓘ</span></button>
-            <button class="tab-btn" data-tab="sequences">Sequences<span class="tooltip-icon tooltip-below" data-tooltip="Displays Markov-chain transition patterns — which practices teams typically improve together or in sequence across the dataset." role="img" aria-label="More information">ⓘ</span></button>
+            <button class="tab-btn" data-tab="sequences">Sequences<span class="tooltip-icon tooltip-below" data-tooltip="Displays Markov-chain transition patterns - which practices teams typically improve together or in sequence across the dataset." role="img" aria-label="More information">ⓘ</span></button>
             <button class="tab-btn tooltip-right" data-tab="recommendations">Recommendations<span class="tooltip-icon tooltip-below tooltip-right" data-tooltip="Predicts which agile practices your team should adopt next, based on similar teams and learned improvement sequences." role="img" aria-label="More information">ⓘ</span></button>
         </nav>
 
@@ -45,6 +46,9 @@
             <div class="section">
                 <h2>System Statistics</h2>
                 <p class="demo-step">Here's the data</p>
+                <button class="btn btn-ghost" onclick="openExampleModal()" style="margin-top: 10px;">
+                    &#128196; See Example Dataset
+                </button>
             </div>
 
             <div id="stats-results" class="results hidden"></div>
@@ -68,24 +72,13 @@
                         </li>
                         <li>Shows accuracy per month and overall average</li>
                         <li><strong>Note:</strong> Validation checks 3 months ahead to account for adoption timelines (This aligns with recommendation logic which looks up to 3 months ahead)</li>
+                        <li>Each prediction combines two algorithms: <strong>Collaborative Filtering</strong> (60% default) — what similar teams improved next — and <strong>Markov Chain</strong> (40% default) — learned practice transition patterns. The balance is configurable below.</li>
                     </ul>
                 </div>
 
-                <div class="info-box" style="background: var(--success-50); border-left: 4px solid var(--success-500); margin-bottom: 20px;">
-                    <strong>✅ Academic Rigor: No Data Leakage</strong>
-                    <p><strong>Strict Temporal Ordering Guaranteed:</strong></p>
-                    <ul>
-                        <li>The model NEVER uses future data to make past predictions</li>
-                        <li>For each prediction at month M:
-                            <ul>
-                                <li>Similar teams found from months &lt; M only</li>
-                                <li>Sequences learned from months &lt; M only</li>
-                                <li>No "peeking" at future improvements</li>
-                            </ul>
-                        </li>
-                        <li>Validated using rolling window backtest (time-series cross-validation)</li>
-                        <li>This ensures accuracy metrics (49%, 2.0x vs random) are trustworthy</li>
-                    </ul>
+                <div style="margin-bottom: 20px; font-size: 0.82em; color: #6b6865;">
+                    Strict temporal isolation enforced — predictions never use future data
+                    <span class="tooltip-icon" data-tooltip-html="For each prediction at month M:&lt;ul&gt;&lt;li&gt;Similar teams found from months &amp;lt; M only&lt;/li&gt;&lt;li&gt;Sequences learned from months &amp;lt; M only&lt;/li&gt;&lt;li&gt;No peeking at future improvements&lt;/li&gt;&lt;/ul&gt;Validated by rolling-window backtest (time-series cross-validation). Ensures reported accuracy (49%, 2.0× vs random) is trustworthy." role="img" aria-label="More information">ⓘ</span>
                 </div>
 
                 <!-- Configuration Panel -->
@@ -95,9 +88,9 @@
                     <!-- Primary Parameters -->
                     <div class="config-section">
                         <h4 style="margin-top: 0; cursor: pointer;" onclick="toggleConfigSection('primary-config')">
-                            <span id="primary-config-toggle">▼</span> Primary Parameters
+                            <span id="primary-config-toggle">▶</span> Primary Parameters
                         </h4>
-                        <div id="primary-config" class="config-content">
+                        <div id="primary-config" class="config-content" style="display: none;">
                             <div class="form-group">
                                 <label for="config-top-n">
                                     Number of Recommendations:
@@ -166,9 +159,9 @@
 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button id="run-backtest-btn" class="btn btn-primary">Run Backtest Validation with Configuration</button>
-                    <button id="find-optimal-btn" class="btn btn-secondary">Find Optimal Configuration</button>
-                    <button id="view-latest-results-btn" class="btn btn-info">View Latest Results</button>
-                    <button id="upload-results-btn" class="btn btn-success">Upload Results</button>
+                    <button id="find-optimal-btn" class="btn btn-primary">Find Optimal Configuration</button>
+                    <button id="view-latest-results-btn" class="btn btn-ghost">View Latest Results</button>
+                    <button id="upload-results-btn" class="btn btn-ghost">Upload Results</button>
                 </div>
                 <input type="file" id="upload-results-input" accept=".json" style="display: none;">
 
@@ -213,7 +206,7 @@
                 <p class="demo-step">Here's the live output</p>
 
                 <div class="form-group">
-                    <label for="team-select">Select Team:<span class="tooltip-icon" data-tooltip="Teams are identified by name. The number in parentheses is months of historical data available — more months generally means more reliable recommendations." role="img" aria-label="More information">ⓘ</span></label>
+                    <label for="team-select">Select Team:<span class="tooltip-icon" data-tooltip="Teams are identified by name. The number in parentheses is months of historical data available - more months generally means more reliable recommendations." role="img" aria-label="More information">ⓘ</span></label>
                     <select id="team-select">
                         <option value="">Loading teams...</option>
                     </select>
@@ -221,7 +214,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="month-select">Select Month to Predict:<span class="tooltip-icon" data-tooltip="The month you want predictions for. Only data before this month is used — months 1–2 are consumed as minimum history, so predictions start from month 3." role="img" aria-label="More information">ⓘ</span></label>
+                    <label for="month-select">Select Month to Predict:<span class="tooltip-icon" data-tooltip="The month you want predictions for. Only data before this month is used - months 1–2 are consumed as minimum history, so predictions start from month 3." role="img" aria-label="More information">ⓘ</span></label>
                     <select id="month-select" disabled>
                         <option value="">Select a team first</option>
                     </select>
@@ -240,6 +233,25 @@
         </div>
 
         <div id="error" class="error hidden"></div>
+    </div>
+
+    <!-- Example Data Modal -->
+    <div id="example-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeExampleModal()">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">Example Dataset</h3>
+                    <p class="modal-subtitle" id="modal-row-note"></p>
+                </div>
+                <button class="modal-close" onclick="closeExampleModal()" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <div class="modal-loading">
+                    <div class="spinner"></div>
+                    <p>Loading dataset&hellip;</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="/static/js/api.js"></script>

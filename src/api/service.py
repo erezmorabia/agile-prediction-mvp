@@ -47,6 +47,7 @@ class APIService:
             self.practice_definitions = {}
             self.practice_remarks = {}
         self.missing_values_details = None  # Will be set by web_main.py
+        self.data_file_path: str | None = None  # Will be set by web_main.py
 
     def get_all_teams(self) -> list[dict[str, Any]]:
         """

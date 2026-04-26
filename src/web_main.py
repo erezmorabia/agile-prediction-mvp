@@ -191,6 +191,7 @@ def main() -> int:
         service = APIService(recommender, processor)
         # Store filtered missing values details for API
         service.missing_values_details = filtered_missing_details
+        service.data_file_path = os.path.abspath(excel_file)
         app = create_app(service)
 
         print("\nSystem initialized successfully!")

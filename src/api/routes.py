@@ -4,9 +4,11 @@ FastAPI routes for the recommendation API.
 
 import asyncio
 import logging
+import os
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 
 logger = logging.getLogger(__name__)
 
@@ -238,6 +240,18 @@ def create_routes(service: APIService) -> APIRouter:
         except Exception as e:
             logger.error(f"[CANCELLATION] Error in cancel endpoint: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
+
+    @router.get("/api/example-data")
+    async def get_example_data():
+        """Serve the raw Excel dataset for in-browser preview."""
+        file_path = getattr(service, "data_file_path", None)
+        if not file_path or not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="Example data file not found")
+        return FileResponse(
+            file_path,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename="example_data.xlsx",
+        )
 
     @router.get("/api/optimize/latest")
     async def get_latest_optimization_results():

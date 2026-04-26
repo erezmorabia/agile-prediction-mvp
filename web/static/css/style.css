@@ -1,5 +1,5 @@
 /**
- * Dark Academic Research Lab — Agile Practice Recommendation Engine
+ * Dark Academic Research Lab - Agile Practice Recommendation Engine
  * Fonts: Playfair Display (headings) · Inter (body) · JetBrains Mono (numbers/code)
  */
 
@@ -7,44 +7,44 @@
    CSS CUSTOM PROPERTIES
    ============================================ */
 :root {
-    /* Primary — Amber / Gold */
+    /* Primary - Amber / Gold */
     --primary-50:  #1c1508;
     --primary-100: #2e2210;
     --primary-500: #f59e0b;
     --primary-600: #d97706;
     --primary-700: #b45309;
 
-    /* Secondary — Dark amber-brown (header gradient) */
+    /* Secondary - Dark amber-brown (header gradient) */
     --secondary-500: #1c1812;
     --secondary-600: #161310;
     --secondary-700: #0f0e0d;
 
-    /* Semantic — Success */
+    /* Semantic - Success */
     --success-50:  #0c170c;
     --success-500: #22c55e;
     --success-600: #16a34a;
     --success-700: #15803d;
 
-    /* Semantic — Warning */
+    /* Semantic - Warning */
     --warning-50:  #1a1408;
     --warning-500: #eab308;
     --warning-600: #ca8a04;
     --warning-700: #a16207;
 
-    /* Semantic — Error */
+    /* Semantic - Error */
     --error-50:  #1a0808;
     --error-400: #f87171;
     --error-500: #ef4444;
     --error-600: #dc2626;
     --error-700: #b91c1c;
 
-    /* Semantic — Info */
+    /* Semantic - Info */
     --info-50:  #0a1520;
     --info-500: #38bdf8;
     --info-600: #0ea5e9;
     --info-700: #0284c7;
 
-    /* Neutral — warm dark scale */
+    /* Neutral - warm dark scale */
     --gray-50:  #1a1916;
     --gray-100: #1e1d1a;
     --gray-200: #2a2825;
@@ -255,7 +255,7 @@ header h1 {
 }
 
 /* ============================================
-   HEADINGS — Playfair Display
+   HEADINGS - Playfair Display
    ============================================ */
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-serif);
@@ -421,6 +421,20 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
 }
 
+.btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--gray-300);
+    font-size: 0.875em;
+    padding: 9px 18px;
+}
+
+.btn-ghost:hover:not(:disabled) {
+    background: var(--bg-inset);
+    border-color: var(--gray-400);
+    color: var(--text-secondary);
+}
+
 .btn-error {
     background: var(--error-600);
     color: white;
@@ -461,6 +475,22 @@ h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-mono);
     font-size: 0.85em;
 }
+
+.verdict-line {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+    padding: 5px 12px;
+    border-radius: 4px;
+    margin-top: 10px;
+    border-left: 3px solid;
+    letter-spacing: 0.01em;
+}
+.verdict-hit   { background: rgba(34,197,94,0.08);  border-color: #22c55e; color: #86efac; }
+.verdict-partial{ background: rgba(245,158,11,0.08); border-color: #f59e0b; color: #fcd34d; }
+.verdict-miss  { background: rgba(239,68,68,0.08);  border-color: #ef4444; color: #fca5a5; }
+.verdict-nodata{ background: rgba(156,163,175,0.08);border-color: #6b7280; color: #9ca3af; }
 
 /* ============================================
    INFO BOXES
@@ -620,7 +650,7 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     transition: all 0.25s;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .metric::before {
@@ -638,6 +668,7 @@ h1, h2, h3, h4, h5, h6 {
 .metric:hover {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
     transform: translateY(-2px);
+    z-index: 1;
 }
 
 .metric:hover::before {
@@ -831,8 +862,8 @@ h1, h2, h3, h4, h5, h6 {
    MISSING VALUES
    ============================================ */
 .missing-values-section {
-    background: var(--error-50);
-    border-left: 4px solid var(--error-500);
+    background: var(--success-50);
+    border-left: 4px solid var(--success-500);
     padding: 20px;
     margin-top: 20px;
     border-radius: 4px;
@@ -846,16 +877,52 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-secondary);
 }
 
+.missing-outlier-note {
+    margin-top: 6px;
+    font-size: 0.88em;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 .missing-values-details {
     margin-top: 15px;
 }
 
 .missing-values-details h5 {
     font-family: var(--font-serif);
-    color: var(--error-400);
+    color: var(--success-500);
     margin-bottom: 10px;
     font-size: 1.1em;
     line-height: 1.3;
+}
+
+.missing-values-details summary {
+    font-family: var(--font-serif);
+    color: var(--success-500);
+    font-size: 1.1em;
+    line-height: 1.3;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+}
+
+.missing-values-details summary::before {
+    content: '▶';
+    font-size: 0.7em;
+    transition: transform 0.15s ease;
+    color: var(--success-500);
+}
+
+.missing-values-details[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.missing-values-details[open] summary {
+    margin-bottom: 10px;
 }
 
 .missing-practices-list,
@@ -870,13 +937,13 @@ h1, h2, h3, h4, h5, h6 {
     background: var(--bg-card);
     padding: 10px 15px;
     border-radius: 4px;
-    border: 1px solid var(--error-700);
+    border: 1px solid var(--success-700);
     font-size: 0.9em;
     color: var(--text-secondary);
 }
 
 .missing-item strong {
-    color: var(--error-400);
+    color: var(--success-500);
     margin-right: 8px;
 }
 
@@ -928,14 +995,17 @@ h1, h2, h3, h4, h5, h6 {
 /* ============================================
    RESULTS TABLE
    ============================================ */
+.table-outer {
+    overflow: hidden;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    margin-top: 15px;
+}
+
 .results-table {
     border-collapse: collapse;
     width: 100%;
-    margin-top: 15px;
     background: var(--bg-card);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    border-radius: 6px;
-    overflow: hidden;
 }
 
 .results-table thead {
@@ -1167,6 +1237,13 @@ h1, h2, h3, h4, h5, h6 {
 
 .sequence-group[open] .sequence-arrow {
     transform: rotate(90deg);
+}
+
+.sequence-index {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    color: var(--text-muted);
+    min-width: 2ch;
 }
 
 .sequence-summary-stats {
@@ -1451,7 +1528,7 @@ h1, h2, h3, h4, h5, h6 {
     background: var(--primary-500);
 }
 
-/* Tooltip bubble — appears ABOVE by default */
+/* Tooltip bubble - appears ABOVE by default */
 .tooltip-icon::after {
     content: attr(data-tooltip);
     position: absolute;
@@ -1468,6 +1545,8 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: normal;
     line-height: 1.4;
     white-space: normal;
+    text-transform: none;
+    letter-spacing: normal;
     width: 240px;
     z-index: 2000;
     pointer-events: none;
@@ -1497,6 +1576,32 @@ h1, h2, h3, h4, h5, h6 {
     opacity: 1;
 }
 
+/* JS-rendered HTML tooltip bubble (supports bullet points) */
+.tooltip-html-bubble {
+    position: fixed;
+    background: #0f0e0d;
+    border: 1px solid #3a3835;
+    color: #e8e5e2;
+    padding: 7px 10px;
+    border-radius: 5px;
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: normal;
+    line-height: 1.4;
+    width: 260px;
+    z-index: 2000;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    pointer-events: none;
+    text-align: left;
+}
+.tooltip-html-bubble ul {
+    margin: 4px 0 0;
+    padding-left: 16px;
+}
+.tooltip-html-bubble li {
+    margin-bottom: 3px;
+}
+
 /* Tooltip appears BELOW (for tab bar) */
 .tooltip-icon.tooltip-below::after {
     bottom: auto;
@@ -1510,7 +1615,7 @@ h1, h2, h3, h4, h5, h6 {
     border-bottom-color: #0f0e0d;
 }
 
-/* Right-anchored tooltip (last tab — avoids right-edge overflow) */
+/* Right-anchored tooltip (last tab - avoids right-edge overflow) */
 .tooltip-icon.tooltip-right::after {
     left: auto;
     right: 0;
@@ -1612,4 +1717,154 @@ h1, h2, h3, h4, h5, h6 {
         padding: 6px 10px;
         font-size: 0.82em;
     }
+}
+
+/* ============================================
+   EXAMPLE DATA MODAL
+   ============================================ */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.82);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-container {
+    background: var(--bg-container);
+    border: 1px solid var(--gray-300);
+    border-radius: 12px;
+    width: 95vw;
+    max-width: 1400px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+        0 25px 80px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(245, 158, 11, 0.1);
+}
+
+.modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--gray-300);
+    flex-shrink: 0;
+}
+
+.modal-title {
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary-500);
+    margin: 0;
+}
+
+.modal-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    margin-top: 5px;
+    font-family: var(--font-mono);
+}
+
+.modal-close {
+    background: none;
+    border: 1px solid var(--gray-400);
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 16px;
+    line-height: 1;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.modal-close:hover {
+    border-color: var(--primary-500);
+    color: var(--primary-500);
+}
+
+.modal-body {
+    overflow: auto;
+    flex: 1;
+}
+
+.modal-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.modal-error {
+    padding: 40px 24px;
+    color: var(--error-400);
+    text-align: center;
+}
+
+/* Excel preview table */
+.excel-table-wrap {
+    overflow: auto;
+    height: 100%;
+}
+
+.excel-table {
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    width: max-content;
+    min-width: 100%;
+}
+
+.excel-table thead tr th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--gray-200);
+    color: var(--primary-500);
+    font-weight: 600;
+    padding: 8px 12px;
+    border: 1px solid var(--gray-300);
+    white-space: nowrap;
+    text-align: left;
+}
+
+.excel-table td {
+    padding: 4px 12px;
+    border: 1px solid var(--gray-200);
+    color: var(--text-primary);
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.excel-table tbody tr:nth-child(even) td {
+    background: var(--gray-50);
+}
+
+.excel-table tbody tr:hover td {
+    background: var(--primary-50);
+}
+
+.excel-table td:first-child {
+    color: var(--text-secondary);
+    font-weight: 500;
 }

@@ -19,6 +19,56 @@ function tip(text, below = false) {
     return `<span class="${cls}" data-tooltip="${safe}" role="img" aria-label="More information">ⓘ</span>`;
 }
 
+// JS-driven HTML tooltip for elements with data-tooltip-html (supports bullet points etc.)
+(function () {
+    let bubble = null;
+    document.addEventListener('mouseover', e => {
+        const icon = e.target.closest('[data-tooltip-html]');
+        if (!icon || bubble) return;
+        bubble = document.createElement('div');
+        bubble.className = 'tooltip-html-bubble';
+        bubble.innerHTML = icon.dataset.tooltipHtml;
+        document.body.appendChild(bubble);
+        const r = icon.getBoundingClientRect();
+        const bw = bubble.offsetWidth;
+        const bh = bubble.offsetHeight;
+        let left = r.left + r.width / 2 - bw / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - bw - 8));
+        bubble.style.left = left + 'px';
+        bubble.style.top = (r.top - bh - 8) + 'px';
+    });
+    document.addEventListener('mouseout', e => {
+        const icon = e.target.closest('[data-tooltip-html]');
+        if (!icon || !bubble) return;
+        bubble.remove();
+        bubble = null;
+    });
+})();
+
+function showToast(title, body, type = 'error') {
+    const isError = type === 'error';
+    const colors = isError
+        ? { bg: '#1a0808', border: '#ef4444', title: '#ef4444', text: '#f87171', close: '#f87171' }
+        : { bg: '#1a1200', border: '#f59e0b', title: '#f59e0b', text: '#fbbf24', close: '#fbbf24' };
+
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 9999;
+        max-width: 360px; padding: 16px 20px;
+        background: ${colors.bg}; border: 1px solid ${colors.border};
+        border-radius: 8px; color: ${colors.text};
+        box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        font-family: Inter, sans-serif; font-size: 0.9rem; line-height: 1.5;
+    `;
+    toast.innerHTML = `
+        <button onclick="this.parentElement.remove()" style="position:absolute;top:10px;right:12px;background:none;border:none;color:${colors.close};font-size:1.1rem;cursor:pointer;line-height:1;" title="Close">&#x2715;</button>
+        <strong style="display:block;color:${colors.title};margin-bottom:6px;padding-right:20px;">${title}</strong>
+        <span>${body}</span>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 8000);
+}
+
 /**
  * Synchronous version of safeGetElement (for immediate use)
  * @param {string} id - Element ID
@@ -485,6 +535,37 @@ async function loadRecommendations(team, month) {
 }
 
 /**
+ * Build a single-line verdict badge summarising prediction accuracy.
+ */
+function buildVerdictLine(data) {
+    if (!data.validation) return '';
+    const v = data.validation;
+
+    if (v.accuracy !== null && v.accuracy !== undefined) {
+        const validatedRecs = data.recommendations.filter(r => r.validated);
+        const unvalidatedRecs = data.recommendations.filter(r => !r.validated);
+
+        if (v.validated_count === v.total_recommendations) {
+            const names = validatedRecs.map(r => r.practice).join(' and ');
+            return `<div class="verdict-line verdict-hit">✓ Prediction correct: ${v.validated_count}/${v.total_recommendations} — ${names} ${v.validated_count === 1 ? 'was' : 'were'} adopted</div>`;
+        } else if (v.validated_count > 0) {
+            const hitNames = validatedRecs.map(r => r.practice).join(' and ');
+            const missNames = unvalidatedRecs.map(r => r.practice).join(' and ');
+            return `<div class="verdict-line verdict-partial">~ Partial: ${v.validated_count}/${v.total_recommendations} — ${hitNames} matched; ${missNames} was not adopted</div>`;
+        } else {
+            const actualNames = (v.actual_improvements || []).map(i => i.practice).join(' and ');
+            return `<div class="verdict-line verdict-miss">✗ Missed: 0/${v.total_recommendations}${actualNames ? ` — team actually improved ${actualNames}` : ''}</div>`;
+        }
+    }
+
+    // No improvements occurred in the validation window
+    let monthsText = formatMonth(v.next_month);
+    if (v.month_after) monthsText += `, ${formatMonth(v.month_after)}`;
+    if (v.month_after_2) monthsText += `, ${formatMonth(v.month_after_2)}`;
+    return `<div class="verdict-line verdict-nodata">— No practice changes in validation window (${monthsText}); accuracy not computed</div>`;
+}
+
+/**
  * Display recommendations
  */
 function displayRecommendations(data) {
@@ -516,10 +597,13 @@ function displayRecommendations(data) {
         "User Stories": "User-focused development, clear requirements, better communication"
     };
 
+    const verdictLine = buildVerdictLine(data);
+
     let html = `
         <div class="recommendations-header">
             <h3>Top ${data.recommendations.length} Recommendations for ${data.team}</h3>
             <p class="month-info">Predicting for month: ${formatMonth(data.month)}</p>
+            ${verdictLine}
             <p class="debug-info" style="font-size: 0.85em; color: #666; margin-top: 5px;">
                 Requested: top_n=${data.recommendations.length} (optimized default: 2)
             </p>
@@ -537,9 +621,9 @@ function displayRecommendations(data) {
         }
         
         html += `
-            <div class="info-box" style="background: #fff3cd; border: 2px solid #ffc107; color: #856404; margin-bottom: 20px; padding: 15px;">
-                <strong>⚠️ Team Status:</strong> This team (${data.team}) did not improve any practices in the validation window (${validationMonthsText})
-                <p style="margin-top: 8px; margin-bottom: 0; font-size: 0.9em;">
+            <div style="background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.4); border-left: 3px solid #f59e0b; border-radius: 6px; color: #d4b896; margin-bottom: 20px; padding: 14px 16px;">
+                <strong style="color: #f59e0b;">⚠ Team Status:</strong> This team (${data.team}) did not improve any practices in the validation window (${validationMonthsText})
+                <p style="margin-top: 8px; margin-bottom: 0; font-size: 0.875em; opacity: 0.8;">
                     Note: This is informational, not a model failure. Teams don't always improve practices every month.
                 </p>
             </div>
@@ -903,20 +987,21 @@ function displayBacktestResults(data) {
         perMonthTable = `
             <div class="per-month-results" style="margin-top: 30px;">
                 <h4>Per-Month Results</h4>
-                <table class="results-table" style="width: 100%; margin-top: 15px;">
+                <div class="table-outer">
+                <table class="results-table" style="width: 100%;">
                     <thead>
                         <tr>
-                            <th>Month</th>
-                            <th>Training Months</th>
-                            <th>Predictions</th>
-                            <th>Correct</th>
-                            <th>Accuracy</th>
-                            <th>Teams Tested</th>
+                            <th>Month ${tip('The month being predicted. The model uses only data from prior months to make predictions for this month.')}</th>
+                            <th>Training Months ${tip('Historical months the model trained on before predicting this month. Grows with each row as more history becomes available.')}</th>
+                            <th>Predictions ${tip('Total practice recommendations generated across all tested teams for this month. Each team receives top-N recommendations.')}</th>
+                            <th>Correct ${tip('Recommendations that matched an actual practice improvement made by the team within the 3-month validation window following this month.')}</th>
+                            <th>Monthly Accuracy ${tip('Correct ÷ Predictions for this month only. The Overall Accuracy shown above is the simple average of this column — each month counted equally, regardless of how many teams it had.')}</th>
+                            <th>Teams Tested ${tip('Teams that had at least one improvement in the 3-month validation window. Teams with zero improvements are excluded - their absence is not a model failure.')}</th>
                         </tr>
                     </thead>
                     <tbody>
         `;
-        
+
         data.per_month_results.forEach(r => {
             const trainRange = (r.train_months && r.train_months.length > 0)
                 ? `${formatMonth(r.train_months[0])} to ${formatMonth(r.train_months[r.train_months.length - 1])}`
@@ -932,10 +1017,32 @@ function displayBacktestResults(data) {
                         </tr>
             `;
         });
-        
+
+        const totalPredictions = data.total_predictions || 0;
+        const totalCorrect = data.correct_predictions || 0;
+        const rawRatio = totalPredictions > 0 ? (totalCorrect / totalPredictions * 100).toFixed(1) : '—';
+        const overallAvg = ((data.overall_accuracy || 0) * 100).toFixed(1);
+        const totalTeamsTested = data.per_month_results.reduce((sum, r) => sum + (r.teams_tested || 0), 0);
+
+        perMonthTable += `
+                        <tr style="border-top: 2px solid var(--primary-500); background: rgba(245,158,11,0.06);">
+                            <td><strong>Total</strong></td>
+                            <td style="color: #8a8785; text-align: center;">—</td>
+                            <td><strong>${totalPredictions}</strong></td>
+                            <td><strong>${totalCorrect}</strong></td>
+                            <td>
+                                <strong style="color: var(--primary-500);">${overallAvg}%</strong>
+                                <span style="color: #8a8785; font-size: 0.78em; margin-left: 4px;">avg of above</span>
+                                <div style="font-size: 0.8em; color: #8a8785; margin-top: 2px;">${rawRatio}% if ${totalCorrect}÷${totalPredictions}</div>
+                            </td>
+                            <td><strong>${totalTeamsTested}</strong></td>
+                        </tr>
+        `;
+
         perMonthTable += `
                     </tbody>
                 </table>
+                </div>
             </div>
         `;
     }
@@ -964,24 +1071,27 @@ function displayBacktestResults(data) {
                         <div style="font-size: 2.5em; font-weight: bold; color: #a8a5a3;">${randomBaseline.toFixed(1)}%</div>
                     </div>
                 </div>
-                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #3a3835;">
-                    <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Improvement Gap</div>
-                    <div style="font-size: 3em; font-weight: bold; color: ${gapColor};">${improvementGap > 0 ? '+' : ''}${improvementGap.toFixed(1)}%</div>
-                    <div style="font-size: 0.85em; color: #8a8785; margin-top: 5px;">
-                        ${improvementGap > 0 ? 'Model beats random by ' + improvementGap.toFixed(1) + ' percentage points' : 'Model underperforms random by ' + Math.abs(improvementGap).toFixed(1) + ' percentage points'}
+                <div style="display: flex; justify-content: space-around; align-items: flex-start; margin-top: 20px; padding-top: 20px; border-top: 1px solid #3a3835; gap: 10px;">
+                    <div style="text-align: center; flex: 1;">
+                        <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Improvement Gap</div>
+                        <div style="font-size: 3em; font-weight: bold; color: ${gapColor};">${improvementGap > 0 ? '+' : ''}${improvementGap.toFixed(1)}%</div>
+                        <div style="font-size: 0.85em; color: #8a8785; margin-top: 5px;">
+                            ${improvementGap > 0 ? 'Model beats random by ' + improvementGap.toFixed(1) + ' percentage points' : 'Model underperforms random by ' + Math.abs(improvementGap).toFixed(1) + ' percentage points'}
+                        </div>
+                    </div>
+                    <div style="width: 1px; background: #3a3835; align-self: stretch;"></div>
+                    <div style="text-align: center; flex: 1;">
+                        <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Improvement Factor</div>
+                        <div style="font-size: 3em; font-weight: bold; color: ${gapColor};">${randomBaseline > 0 ? (modelAccuracy / randomBaseline).toFixed(2) : '—'}×</div>
+                        <div style="font-size: 0.85em; color: #8a8785; margin-top: 5px;">
+                            ${randomBaseline > 0 ? 'Model is ' + (modelAccuracy / randomBaseline).toFixed(2) + '× more accurate than random' : 'No random baseline available'}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="info-box" style="margin-top: 20px;">
-                <strong>Academic Validation Methodology:</strong>
-                <ul>
-                    <li><strong>Approach:</strong> Rolling window backtest (time-series cross-validation)</li>
-                    <li><strong>Data Split:</strong> Chronological (train on past months, test on future months)</li>
-                    <li><strong>No Data Leakage:</strong> Strict temporal ordering enforced</li>
-                    <li><strong>Baseline Comparison:</strong> Random prediction (statistical significance)</li>
-                    <li><strong>Dataset:</strong> 87 teams, 35 practices, 10 months (655 observations)</li>
-                </ul>
+            <div style="margin-top: 14px; font-size: 0.82em; color: #6b6865; text-align: center;">
+                Rolling-window cross-validation · 87 teams · 35 practices · 10 months · 655 observations · no future data used${tip('Validation approach: time-series rolling window — model trains on past months and predicts on future months it has never seen. Temporal ordering is strictly enforced so no future data leaks into training. Results are compared against a random-selection baseline to establish statistical significance.')}
             </div>
 
             <div class="metrics-grid">
@@ -995,9 +1105,10 @@ function displayBacktestResults(data) {
                     <div class="metric-value">${data.correct_predictions || 0}</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-label">Overall Accuracy${tip('Correct predictions ÷ Total predictions. This is the model\'s hit rate on held-out historical data.')}</div>
+                    <div class="metric-label">Overall Accuracy${tip('Macro average: accuracy is computed per month first (correct ÷ total for that month), then those rates are averaged equally across all months. Each month gets the same weight regardless of how many teams were tested — so a month with 2 teams counts the same as a month with 30 teams.')}</div>
                     <div class="metric-value highlight">${modelAccuracy.toFixed(1)}%</div>
-                    <div class="metric-description">average of all months</div>
+                    <div class="metric-description">macro avg · ${data.per_month_results ? data.per_month_results.length : 0} months</div>
+                    <div style="font-size:0.82em;color:#8a8785;margin-top:5px;">raw ratio: ${data.total_predictions > 0 ? ((data.correct_predictions / data.total_predictions) * 100).toFixed(1) + '%' : '—'} (${data.correct_predictions || 0} ÷ ${data.total_predictions || 0})${tip('Raw ratio = total correct ÷ total predictions across all months. Differs from the macro average above because months with more teams carry proportionally more weight — the macro average treats every month equally.')}</div>
                 </div>
                 <div class="metric">
                     <div class="metric-label">Random Baseline${tip('Expected accuracy if practices were chosen randomly: top_n ÷ total_practices. Provides the performance floor to beat.')}</div>
@@ -1017,7 +1128,7 @@ function displayBacktestResults(data) {
                     <div class="metric-value">${data.per_month_results ? data.per_month_results.length : 0}</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-label">Avg Improvements/Case</div>
+                    <div class="metric-label">Avg Improvements/Case ${tip('Average number of practices a team actually improved within the 3-month validation window. Higher values mean more signal for the model to predict against.')}</div>
                     <div class="metric-value">${(data.avg_improvements_per_case || 0).toFixed(1)}</div>
                 </div>
             </div>
@@ -1176,7 +1287,8 @@ function renderPaginatedConfigurationsTable(allResults) {
         const pageResults = allResults.slice(startIdx, endIdx);
         
         let tableHtml = `
-            <table class="results-table" style="width: 100%; margin-top: 15px;">
+            <div class="table-outer">
+            <table class="results-table" style="width: 100%;">
                 <thead>
                     <tr>
                         <th>Rank</th>
@@ -1215,6 +1327,7 @@ function renderPaginatedConfigurationsTable(allResults) {
         tableHtml += `
                 </tbody>
             </table>
+            </div>
         `;
         
         // Pagination controls
@@ -1316,28 +1429,26 @@ function displayOptimizationResults(data) {
                 return;
             } else {
                 // No results found before cancellation
-                resultsDiv.innerHTML = `
-                    ${statusMessage}
-                    <div class="error" style="padding: 20px; background: #fff; border: 2px solid #ffc107; border-radius: 8px; color: #856404;">
-                        <h3 style="color: #856404;">Warning: Optimization Cancelled</h3>
-                        <p style="color: #856404;">The optimization was cancelled before any valid configurations were found.</p>
-                        <p style="color: #856404;"><strong>Combinations tested:</strong> ${data.total_combinations_tested || 0} / ${data.total_combinations_available || data.total_combinations_tested || 0}</p>
-                        <p style="color: #856404;">Please try again or adjust parameters for a faster search.</p>
-                    </div>
-                `;
+                resultsDiv.innerHTML = statusMessage;
+                showToast(
+                    'Warning: Optimization Cancelled',
+                    `The optimization was cancelled before any valid configurations were found.<br>
+                     <strong>Combinations tested:</strong> ${data.total_combinations_tested || 0} / ${data.total_combinations_available || data.total_combinations_tested || 0}<br>
+                     Please try again or adjust parameters for a faster search.`,
+                    'warning'
+                );
                 return;
             }
         } else {
             // Not cancelled, just no valid configs found
-            resultsDiv.innerHTML = `
-                ${statusMessage}
-                <div class="error" style="padding: 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px;">
-                    <h3>Error: No Optimal Configuration Found</h3>
-                    <p>No configuration met the minimum accuracy threshold of 40%.</p>
-                    <p><strong>Total combinations tested:</strong> ${data.total_combinations_tested || 0} / ${data.total_combinations_available || data.total_combinations_tested || 0}</p>
-                    <p><strong>Valid combinations:</strong> ${data.valid_combinations || 0}</p>
-                </div>
-            `;
+            resultsDiv.innerHTML = statusMessage;
+            showToast(
+                'Error: No Optimal Configuration Found',
+                `No configuration met the minimum accuracy threshold of 40%.<br>
+                 <strong>Combinations tested:</strong> ${data.total_combinations_tested || 0} / ${data.total_combinations_available || data.total_combinations_tested || 0}<br>
+                 <strong>Valid combinations:</strong> ${data.valid_combinations || 0}`,
+                'error'
+            );
             return;
         }
     }
@@ -1836,46 +1947,65 @@ function displayStatistics(data) {
                 </div>
             </div>
 
-            ${data.missing_values && data.missing_values.total_missing > 0 ? `
+            ${data.missing_values && data.missing_values.total_missing > 0 ? (() => {
+                const mv = data.missing_values;
+                const totalCells = data.total_observations * data.num_practices;
+                const completeness = totalCells > 0 ? ((totalCells - mv.total_missing) / totalCells * 100).toFixed(1) : null;
+
+                const topPractice = mv.practices_with_missing && mv.practices_with_missing[0];
+                const topInfo = topPractice ? mv.by_practice[topPractice] : null;
+                const topShare = topInfo ? Math.round(topInfo.count / mv.total_missing * 100) : 0;
+                const otherPractices = mv.practices_with_missing ? mv.practices_with_missing.slice(1) : [];
+                const maxOtherPct = otherPractices.length > 0
+                    ? Math.max(...otherPractices.map(p => parseFloat(mv.by_practice[p].percentage))).toFixed(1)
+                    : null;
+
+                return `
             <div class="stats-section missing-values-section">
-                <h4>Missing Values Analysis${tip('Missing values occur when a practice score wasn\'t recorded for a team in a given month. These are excluded from training rather than imputed.')}</h4>
+                <h4>Data Completeness${tip('Missing values occur when a practice score wasn\'t recorded for a team in a given month. These are excluded from training rather than imputed.')}</h4>
                 <div class="missing-values-summary">
-                    <p><strong>Total Missing Values:</strong> ${data.missing_values.total_missing.toLocaleString()}</p>
+                    ${completeness !== null ? `<p><strong>Overall completeness:</strong> ${completeness}%</p>` : ''}
+                    ${topShare >= 80 && topPractice ? `<p class="missing-outlier-note">${topShare}% of missing values come from a single practice (<em>${topPractice}</em>)${maxOtherPct !== null ? `; all others ≤ ${maxOtherPct}%` : ''}.</p>` : ''}
                 </div>
 
-                ${data.missing_values.practices_with_missing && data.missing_values.practices_with_missing.length > 0 ? `
-                <div class="missing-values-details">
-                    <h5>Practices with Missing Values (${data.missing_values.practices_with_missing.length}):</h5>
+                ${mv.practices_with_missing && mv.practices_with_missing.length > 0 ? `
+                <details class="missing-values-details">
+                    <summary>Practices with Missing Values (${mv.practices_with_missing.length})</summary>
                     <div class="missing-practices-list">
-                        ${data.missing_values.practices_with_missing.slice(0, 10).map(practice => {
-                            const info = data.missing_values.by_practice[practice];
+                        ${mv.practices_with_missing.slice(0, 10).map(practice => {
+                            const info = mv.by_practice[practice];
+                            const monthsAffected = info.by_month ? Object.keys(info.by_month).length : null;
+                            const label = monthsAffected !== null
+                                ? `not recorded in ${monthsAffected} of ${data.num_months} months`
+                                : `${info.count} missing (${info.percentage}%)`;
                             return `<div class="missing-item">
-                                <strong>${practice}:</strong> ${info.count} missing (${info.percentage}%)
+                                <strong>${practice}:</strong> ${label}
                             </div>`;
                         }).join('')}
-                        ${data.missing_values.practices_with_missing.length > 10 ? 
-                            `<div class="missing-item">... and ${data.missing_values.practices_with_missing.length - 10} more</div>` : ''}
+                        ${mv.practices_with_missing.length > 10 ?
+                            `<div class="missing-item">... and ${mv.practices_with_missing.length - 10} more</div>` : ''}
                     </div>
-                </div>
+                </details>
                 ` : ''}
 
-                ${data.missing_values.months_with_missing && data.missing_values.months_with_missing.length > 0 ? `
-                <div class="missing-values-details">
-                    <h5>Months with Missing Values (${data.missing_values.months_with_missing.length}):</h5>
+                ${mv.months_with_missing && mv.months_with_missing.length > 0 ? `
+                <details class="missing-values-details">
+                    <summary>Months with Missing Values (${mv.months_with_missing.length})</summary>
                     <div class="missing-months-list">
-                        ${data.missing_values.months_with_missing.slice(0, 10).map(month => {
-                            const info = data.missing_values.by_month[month];
+                        ${mv.months_with_missing.slice(0, 10).map(month => {
+                            const info = mv.by_month[month];
                             return `<div class="missing-item">
                                 <strong>${formatMonth(month)}:</strong> ${info.count} missing (${info.percentage}%)
                             </div>`;
                         }).join('')}
-                        ${data.missing_values.months_with_missing.length > 10 ? 
-                            `<div class="missing-item">... and ${data.missing_values.months_with_missing.length - 10} more</div>` : ''}
+                        ${mv.months_with_missing.length > 10 ?
+                            `<div class="missing-item">... and ${mv.months_with_missing.length - 10} more</div>` : ''}
                     </div>
-                </div>
+                </details>
                 ` : ''}
             </div>
-            ` : ''}
+            `;
+            })() : ''}
         </div>
     `;
 
@@ -1986,9 +2116,9 @@ function displaySequences(data) {
             </div>
             
             <div class="info-box" style="margin-bottom: 20px;">
-                <strong>What This Means:</strong>
-                <p>The system analyzed <strong>ALL teams and ALL month-to-month transitions</strong> to learn which practices typically follow others when teams improve. Sequences are learned from transitions where multiple practices improved together from one month to the next (e.g., Month X → Month Y).</p>
-                <p>All transitions from all historical months are aggregated into one global pattern. <strong>Format:</strong> 'Practice A' → 'Practice B' (occurred X times, Y% probability)</p>
+                <strong>What these patterns mean</strong>
+                <p>Each row shows how often teams that improved Practice A also improved Practice B in the same month. Probability reflects how consistently this co-occurrence appears across all 87 teams.</p>
+                <p>These sequences contribute <strong>30% of the recommendation score</strong> — the rest comes from similar-team behavior.</p>
             </div>
             
             <div style="margin-bottom: 20px; display: flex; gap: 10px;">
@@ -1996,7 +2126,7 @@ function displaySequences(data) {
                 <button id="collapse-all-sequences" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">Collapse All</button>
             </div>
             
-            <h4 style="margin-top: 30px;">Improvement Sequences (sorted by frequency):</h4>
+            <h4 style="margin-top: 30px;">Improvement Sequences (sorted by frequency) — ${sortedPractices.length} practices:</h4>
             <div id="sequences-list">
     `;
     
@@ -2006,16 +2136,6 @@ function displaySequences(data) {
     html += `
             </div>
             
-            <div class="info-box" style="margin-top: 30px;">
-                <strong>Interpretation:</strong>
-                <ul style="margin: 10px 0; padding-left: 20px;">
-                    <li>These sequences are learned from <strong>ALL month-to-month transitions across ALL teams</strong></li>
-                    <li>When a team improves multiple practices from Month X to Month Y, transitions are created between those practices</li>
-                    <li>All transitions are aggregated into one global pattern shown here</li>
-                    <li>Higher probability = more common pattern across the organization</li>
-                    <li>The system uses these patterns to boost recommendations (30% weight)</li>
-                </ul>
-            </div>
         </div>
     `;
     
@@ -2030,15 +2150,16 @@ function displaySequences(data) {
  */
 function generateSequenceGroups(sortedPractices, grouped) {
     let html = '';
-    
-    for (const fromPractice of sortedPractices) {
+
+    sortedPractices.forEach((fromPractice, index) => {
         const transitions = grouped[fromPractice].sort((a, b) => b.count - a.count);
         const avgProb = transitions.reduce((sum, t) => sum + t.probability, 0) / transitions.length;
-        
+
         html += `
             <details class="sequence-group" data-practice="${fromPractice}">
                 <summary class="sequence-summary">
                     <span class="sequence-arrow">▶</span>
+                    <span class="sequence-index">${index + 1}.</span>
                     <span>When '<strong>${fromPractice}</strong>' improved:</span>
                     <span class="sequence-summary-stats">${transitions.length} transitions, avg ${(avgProb * 100).toFixed(1)}% probability</span>
                 </summary>
@@ -2069,8 +2190,8 @@ function generateSequenceGroups(sortedPractices, grouped) {
                 </ul>
             </details>
         `;
-    }
-    
+    });
+
     return html;
 }
 
@@ -2099,6 +2220,76 @@ function attachSequenceControls() {
         });
     }
 }
+
+// ============================================
+//   EXAMPLE DATA MODAL
+// ============================================
+
+function openExampleModal() {
+    const overlay = document.getElementById('example-modal');
+    const body = document.getElementById('modal-body');
+    const note = document.getElementById('modal-row-note');
+
+    body.innerHTML = '<div class="modal-loading"><div class="spinner"></div><p>Loading dataset…</p></div>';
+    note.textContent = '';
+    overlay.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    fetch('/api/example-data')
+        .then(r => {
+            if (!r.ok) throw new Error(`Server returned ${r.status}`);
+            return r.arrayBuffer();
+        })
+        .then(buf => {
+            const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+            const sheetName = wb.SheetNames[0];
+            const ws = wb.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+            if (!rows.length) {
+                body.innerHTML = '<div class="modal-error">No data found in file.</div>';
+                return;
+            }
+
+            const headers = rows[0];
+            const dataRows = rows.slice(1);
+            const MAX_ROWS = 100;
+            const display = dataRows.slice(0, MAX_ROWS);
+
+            note.textContent = `Sheet: ${sheetName}  ·  Showing ${display.length} of ${dataRows.length} rows  ·  ${headers.length} columns  ·  Read-only preview`;
+
+            const thead = headers.map(h => `<th>${escapeHtml(String(h ?? ''))}</th>`).join('');
+            const tbody = display.map(row => {
+                const cells = headers.map((_, i) => `<td>${escapeHtml(String(row[i] ?? ''))}</td>`).join('');
+                return `<tr>${cells}</tr>`;
+            }).join('');
+
+            body.innerHTML = `
+                <div class="excel-table-wrap">
+                    <table class="excel-table">
+                        <thead><tr>${thead}</tr></thead>
+                        <tbody>${tbody}</tbody>
+                    </table>
+                </div>`;
+        })
+        .catch(err => {
+            body.innerHTML = `<div class="modal-error">Failed to load dataset: ${escapeHtml(err.message)}</div>`;
+        });
+}
+
+function closeExampleModal() {
+    const overlay = document.getElementById('example-modal');
+    if (overlay) overlay.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeExampleModal();
+});
 
 /**
  * Show error message
