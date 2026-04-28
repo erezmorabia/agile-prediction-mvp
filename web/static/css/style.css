@@ -1868,3 +1868,176 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-secondary);
     font-weight: 500;
 }
+
+/* ============================================
+   HEADER ABOUT BUTTON
+   ============================================ */
+
+.header-about-btn {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    z-index: 2;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: var(--primary-400, #fbbf24);
+    font-family: var(--font-mono);
+    font-size: 0.72em;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.header-about-btn:hover {
+    background: rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.65);
+    color: var(--primary-500);
+}
+
+/* ============================================
+   DOCS MODAL — MARKDOWN RENDERING
+   ============================================ */
+
+.modal-container--wide {
+    max-width: 1100px;
+}
+
+.docs-modal-body {
+    padding: 28px 36px;
+}
+
+.docs-content {
+    color: var(--text-primary);
+    line-height: 1.75;
+    font-size: 0.95rem;
+}
+
+.docs-content h1 {
+    font-family: var(--font-serif);
+    font-size: 1.9rem;
+    font-weight: 900;
+    color: var(--primary-500);
+    margin: 0 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--gray-300);
+}
+
+.docs-content h2 {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 32px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.docs-content h3 {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-400, #fbbf24);
+    margin: 24px 0 8px;
+}
+
+.docs-content h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 18px 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.docs-content p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+}
+
+.docs-content strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.docs-content ul,
+.docs-content ol {
+    margin: 8px 0 14px 20px;
+    color: var(--text-secondary);
+}
+
+.docs-content li {
+    margin-bottom: 4px;
+}
+
+.docs-content code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--gray-100, #1a1916);
+    color: var(--primary-400, #fbbf24);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.docs-content pre {
+    background: var(--bg-inset, #161513);
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 12px 0 18px;
+}
+
+.docs-content pre code {
+    background: none;
+    color: var(--text-secondary);
+    padding: 0;
+    font-size: 0.82em;
+    line-height: 1.6;
+}
+
+.docs-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 18px;
+    font-size: 0.88em;
+}
+
+.docs-content th {
+    background: var(--gray-200, #1e1c1a);
+    color: var(--primary-500);
+    font-family: var(--font-mono);
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--gray-300);
+}
+
+.docs-content td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--gray-200, #1e1c1a);
+    color: var(--text-secondary);
+    vertical-align: top;
+}
+
+.docs-content tr:hover td {
+    background: var(--gray-100, #1a1916);
+}
+
+.docs-content hr {
+    border: none;
+    border-top: 1px solid var(--gray-300);
+    margin: 28px 0;
+}
+
+.docs-content blockquote {
+    border-left: 3px solid var(--primary-500);
+    margin: 12px 0;
+    padding: 6px 16px;
+    color: var(--text-tertiary);
+    font-style: italic;
+}

@@ -12,7 +12,7 @@ Frontend-only single-page application served as static files by FastAPI. Four ta
 
 **CSS architecture:** Complete dark color system in `:root` variables. `--primary-500: #f59e0b` (amber) drives active tab, spinner, buttons, rec-numbers. `--gray-*` scale is warm-dark (lightest = `#1a1916`). JS-hardcoded inline backgrounds (`#f8f9fa`, `#fff3cd`) produce deliberate light "spotlight" panels - intentional. `.maturity-bar-container` has `background: var(--bg-inset) !important` to override JS inline `#e0e0e0`.
 
-**Key CSS classes added (not in app.js):** `.header-badge`, `.header-meta`, `.header-meta-sep`, `.instrument-panel`, `.error-message`, `.debug-info`, `.per-month-results`, `.accuracy-comparison`, `.btn-ghost`, `.sequence-index`, `.modal-overlay`, `.modal-container`, `.modal-header`, `.modal-body`, `.excel-table`, `.excel-table-wrap`.
+**Key CSS classes added (not in app.js):** `.header-badge`, `.header-meta`, `.header-meta-sep`, `.instrument-panel`, `.error-message`, `.debug-info`, `.per-month-results`, `.accuracy-comparison`, `.btn-ghost`, `.sequence-index`, `.modal-overlay`, `.modal-container`, `.modal-header`, `.modal-body`, `.excel-table`, `.excel-table-wrap`, `.header-about-btn`, `.modal-container--wide`, `.docs-modal-body`, `.docs-content`.
 
 **Verdict line (Recommendations tab):** `.verdict-line` + modifier `.verdict-hit` (green), `.verdict-partial` (amber), `.verdict-miss` (red), `.verdict-nodata` (gray). Rendered by `buildVerdictLine(data)` in `app.js`, injected into `.recommendations-header` right below the month line. Shows prediction outcome in one sentence: correct count/total and which practices hit or missed.
 
@@ -28,6 +28,7 @@ Frontend-only single-page application served as static files by FastAPI. Four ta
 - **Data completeness section:** headline shows "Overall completeness: X%" (computed as `(total_observations * num_practices - total_missing) / (total_observations * num_practices)`). If one practice accounts for ≥80% of missing values an outlier note appears: "X% of missing values come from a single practice (Name); all others ≤ Y%". Practice list shows "not recorded in N of M months" (from `Object.keys(info.by_month).length` vs `data.num_months`) instead of raw counts.
 - **Sequences flow:** tab click triggers lazy fetch → `GET /api/sequences` → renders grouped transition list
 - **Example data modal flow:** "See Example Dataset" button (Statistics tab) → `openExampleModal()` → `GET /api/example-data` (FileResponse, serves raw Excel) → SheetJS parses ArrayBuffer → renders scrollable `.excel-table` in modal overlay. Max 100 rows displayed. `closeExampleModal()` triggered by ×, Escape, or clicking backdrop.
+- **About / docs modal flow:** "About" button (header, top-right, absolute positioned) → `openAboutModal()` → `GET /api/docs` (PlainTextResponse, serves `PROJECT_DOCUMENTATION.md`) → `marked.parse()` renders Markdown → injects into `.docs-content` div inside `.docs-modal-body`. Markdown rendered via `marked.js` CDN (v15). Cached after first load (`_aboutLoaded` flag). `closeAboutModal()` triggered by ×, Escape, or clicking backdrop. `.modal-container--wide` caps width at 860px.
 
 ## Domain Validation Rules and Business Logic
 

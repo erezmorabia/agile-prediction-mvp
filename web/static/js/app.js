@@ -2283,12 +2283,43 @@ function closeExampleModal() {
     document.body.style.overflow = '';
 }
 
+let _aboutLoaded = false;
+
+function openAboutModal() {
+    const overlay = document.getElementById('about-modal');
+    const body = document.getElementById('about-modal-body');
+    overlay.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    if (_aboutLoaded) return;
+
+    fetch('/api/docs')
+        .then(r => {
+            if (!r.ok) throw new Error(`Server returned ${r.status}`);
+            return r.text();
+        })
+        .then(md => {
+            _aboutLoaded = true;
+            const html = marked.parse(md);
+            body.innerHTML = `<div class="docs-content">${html}</div>`;
+        })
+        .catch(err => {
+            body.innerHTML = `<div class="modal-error">Failed to load documentation: ${escapeHtml(err.message)}</div>`;
+        });
+}
+
+function closeAboutModal() {
+    const overlay = document.getElementById('about-modal');
+    if (overlay) overlay.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
 function escapeHtml(str) {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeExampleModal();
+    if (e.key === 'Escape') { closeExampleModal(); closeAboutModal(); }
 });
 
 /**

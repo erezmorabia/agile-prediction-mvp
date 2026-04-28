@@ -192,6 +192,7 @@ def main() -> int:
         # Store filtered missing values details for API
         service.missing_values_details = filtered_missing_details
         service.data_file_path = os.path.abspath(excel_file)
+        service.docs_path = get_resource_path("PROJECT_DOCUMENTATION.md")
         app = create_app(service)
 
         print("\nSystem initialized successfully!")

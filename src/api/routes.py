@@ -8,7 +8,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 
 logger = logging.getLogger(__name__)
 
@@ -252,6 +252,15 @@ def create_routes(service: APIService) -> APIRouter:
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             filename="example_data.xlsx",
         )
+
+    @router.get("/api/docs")
+    async def get_documentation():
+        """Serve the project documentation markdown file."""
+        docs_path = getattr(service, "docs_path", None)
+        if not docs_path or not os.path.exists(docs_path):
+            raise HTTPException(status_code=404, detail="Documentation file not found")
+        with open(docs_path, "r", encoding="utf-8") as f:
+            return PlainTextResponse(f.read(), media_type="text/plain; charset=utf-8")
 
     @router.get("/api/optimize/latest")
     async def get_latest_optimization_results():
