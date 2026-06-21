@@ -1,20 +1,12 @@
 # Quick Start Guide
 
-**For Teachers/Evaluators - Get the system running in 3 steps!**
+**For Teachers/Evaluators - Get the system running in 2 steps!**
 
-## Quick Start (3 Steps)
+> **Prerequisites and full installation:** See [INSTALLATION.md](INSTALLATION.md). Already set up? Start here.
 
-### Step 1: Install Dependencies
+## Quick Start (2 Steps)
 
-Open a terminal/command prompt in the project directory and run:
-
-```bash
-pip install -r requirements.txt
-```
-
-**Note:** If you're using Python 3, use `pip3` instead of `pip` on some systems.
-
-### Step 2: Start the Web Interface
+### Step 1: Start the Web Interface
 
 **Option A: Using the provided script (Easiest)**
 
@@ -52,7 +44,7 @@ dist\AgilePredictionSystem.exe
 
 The executable will automatically start the server and open your browser. See the "Building Executables" section in README.md for more details.
 
-### Step 3: Open in Browser
+### Step 2: Open in Browser
 
 Once the server starts, you'll see:
 ```
