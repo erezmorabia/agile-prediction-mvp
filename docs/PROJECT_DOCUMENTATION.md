@@ -652,8 +652,8 @@ The system exposes a REST API using FastAPI:
 - `GET /api/sequences` - Get learned improvement sequences
 - `POST /api/optimize` - Find optimal configuration
 - `POST /api/optimize/cancel` - Cancel optimization
-- `GET /api/example-data` - Get example data for UI display
-- `GET /api/documentation` - Serve project documentation content
+- `GET /api/example-data` - Serve the raw Excel dataset file for in-browser preview
+- `GET /api/docs` - Serve project documentation content
 
 **Request/Response Format:**
 - JSON format for all requests and responses
@@ -677,7 +677,7 @@ The web interface is built with vanilla HTML/CSS/JavaScript using a Dark Academi
 - Configuration sliders for parameter tuning
 - Pagination for large result sets
 - File upload for optimization results
-- About/Documentation modal that renders project documentation in-browser
+- "About" modal that renders project documentation in-browser
 
 ---
 
@@ -733,7 +733,7 @@ The web interface is built with vanilla HTML/CSS/JavaScript using a Dark Academi
 
 ### 5.3 Code Organization
 
-The codebase consists of approximately 6,200 lines across 23 Python files, organized into modules:
+The codebase consists of approximately 5,600 lines across 23 Python files, organized into modules:
 
 **Module Structure:**
 ```
@@ -1420,12 +1420,12 @@ recommendations = sorted([(p, s) for p, s in normalized_scores.items()
 - **Error**: 404 if no optimization results found
 
 **10. GET /api/example-data**
-- **Description**: Get example team/practice data for UI display purposes
-- **Response**: Sample data to pre-populate the recommendations form
+- **Description**: Serve the raw Excel dataset file for in-browser preview (Statistics tab modal)
+- **Response**: Excel file download (`combined_dataset.xlsx`)
 
-**11. GET /api/documentation**
+**11. GET /api/docs**
 - **Description**: Serve project documentation content as markdown
-- **Response**: Raw markdown string rendered by the About/Documentation modal in the frontend
+- **Response**: Raw markdown string rendered by the About modal in the frontend
 
 **Error Handling:**
 - **400 Bad Request**: Invalid request parameters
@@ -1566,8 +1566,8 @@ See **docs/QUICK_START.md** for a 3-step quick start guide.
 - See validation summary if available
 
 **About/Documentation Modal:**
-- Click the "About / Docs" button in the header to open the documentation modal
-- Renders the full project documentation in-browser using the `/api/documentation` endpoint
+- Click the "About" button in the header to open the documentation modal
+- Renders the full project documentation in-browser using the `/api/docs` endpoint
 - Allows reading methodology, algorithm details, and user manual without leaving the app
 
 ### 10.5 Using the CLI Interface
