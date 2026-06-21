@@ -1,4 +1,4 @@
-.PHONY: help type-check lint format check-docs check-all fix install-dev clean test test-cov test-file
+.PHONY: help type-check lint format check-docs check-all fix install-dev clean test test-cov test-file test-ui
 
 # Default target
 help:
@@ -10,7 +10,8 @@ help:
 	@echo "  make check-docs     - Check docstring style with pydocstyle"
 	@echo "  make check-all      - Run all checks (type-check + lint + check-docs)"
 	@echo "  make fix            - Auto-fix issues where possible"
-	@echo "  make test           - Run test suite"
+	@echo "  make test           - Run unit/integration test suite"
+	@echo "  make test-ui        - Run Playwright UI tests (requires data file + server)"
 	@echo "  make test-cov       - Run tests with coverage report"
 	@echo "  make clean          - Remove Python cache files"
 
@@ -54,10 +55,15 @@ fix:
 	ruff format src/
 	@echo "Auto-fix complete"
 
-# Run tests
+# Run unit/integration tests (excludes UI tests)
 test:
 	@echo "Running test suite..."
-	python -m pytest tests/ -v
+	python -m pytest tests/ --ignore=tests/ui -v
+
+# Run Playwright UI tests against a live server with real data
+test-ui:
+	@echo "Running UI tests (Playwright)..."
+	python -m pytest tests/ui/ -v --tb=short
 
 # Run tests with coverage
 test-cov:
