@@ -184,8 +184,8 @@ class TestMetricsCalculator:
         
         diversity = MetricsCalculator.calculate_diversity(recommendations)
         
-        # Zero variance should give low diversity
-        assert diversity == 0.0
+        # Zero variance should give low diversity (allow floating-point noise)
+        assert abs(diversity) < 1e-9
     
     def test_calculate_diversity_zero_mean(self):
         """Test calculate_diversity with zero mean score."""

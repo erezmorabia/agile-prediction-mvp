@@ -290,7 +290,7 @@ class TestSimilarityEngineExtended:
         target_month = months[0]
         matrix = engine.build_similarity_matrix(target_month)
         
-        # All values should be between 0 and 1
-        assert np.all(matrix >= 0)
-        assert np.all(matrix <= 1)
+        # All values should be in [0, 1] range (allow tiny floating-point noise)
+        assert np.all(matrix >= -1e-9)
+        assert np.all(matrix <= 1.0 + 1e-9)
 

@@ -17,7 +17,8 @@ class TestAPIRoutes:
         """Create mock APIService."""
         service = Mock(spec=APIService)
         service.get_all_teams = Mock(return_value=[
-            {'name': 'Team1', 'num_months': 3, 'months': [202001, 202002, 202003]}
+            {'name': 'Team1', 'num_months': 3, 'months': [202001, 202002, 202003],
+             'first_month': 202001, 'last_month': 202003}
         ])
         service.get_teams_with_improvements = Mock(return_value=[])
         service.get_team_months = Mock(return_value=[202003])
@@ -28,11 +29,22 @@ class TestAPIRoutes:
         })
         service.run_backtest = Mock(return_value={
             'total_predictions': 100,
-            'overall_accuracy': 0.7
+            'correct_predictions': 70,
+            'overall_accuracy': 0.7,
+            'random_baseline': 0.1,
+            'improvement_gap': 0.6,
+            'improvement_factor': 7.0,
+            'per_month_results': [],
+            'teams_tested': 5,
+            'avg_improvements_per_case': 2.0,
         })
         service.get_system_stats = Mock(return_value={
             'num_teams': 10,
-            'num_practices': 30
+            'num_practices': 30,
+            'num_months': 5,
+            'total_observations': 100,
+            'months': [202001, 202002, 202003, 202004, 202005],
+            'practices': ['Practice1', 'Practice2'],
         })
         service.get_improvement_sequences = Mock(return_value={
             'sequences': [],
@@ -142,11 +154,11 @@ class TestAPIRoutes:
         assert response.status_code == 200
         data = response.json()
         assert 'status' in data
-        mock_service.optimizer_engine.cancel.assert_called_once()
+        mock_service.cancel_optimization.assert_called_once()
     
     def test_get_latest_optimization(self, client):
         """Test GET /api/optimize/latest endpoint."""
-        with patch('src.api.routes.OptimizationEngine') as mock_optimizer:
+        with patch('src.validation.optimizer.OptimizationEngine') as mock_optimizer:
             mock_optimizer.load_latest_results = Mock(return_value={'test': 'data'})
             response = client.get("/api/optimize/latest")
             assert response.status_code == 200

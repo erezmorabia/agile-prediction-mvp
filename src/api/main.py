@@ -31,7 +31,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         Returns:
             Response: HTTP response from the next handler
         """
-        logger.info(f"[HTTP] {request.method} {request.url.path}")
+        logger.debug(f"{request.method} {request.url.path}")
         response = await call_next(request)
         return response
 

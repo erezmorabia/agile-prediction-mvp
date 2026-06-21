@@ -532,9 +532,6 @@ class APIService:
         Returns:
             Dictionary with optimal configuration and results
         """
-        logger.info(
-            f"[CANCELLATION] Service.find_optimal_config called - Optimizer instance: {id(self.optimizer_engine)}"
-        )
         result = self.optimizer_engine.find_optimal_config(
             min_accuracy=min_accuracy,
             top_n_range=top_n_range,
@@ -550,9 +547,8 @@ class APIService:
 
     def cancel_optimization(self):
         """Cancel the current optimization."""
-        logger.info("[CANCELLATION] Service layer: Setting cancellation flag on optimizer engine")
         self.optimizer_engine.cancel()
-        logger.info("[CANCELLATION] Service layer: Cancellation flag set successfully")
+        logger.debug("Cancellation flag set on optimizer")
 
     def get_system_stats(self) -> dict[str, Any]:
         """

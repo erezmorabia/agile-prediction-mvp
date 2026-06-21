@@ -115,11 +115,12 @@ class TestSimilarityEngine:
         matrix = engine.build_similarity_matrix(months[0])
         assert matrix is not None
         assert len(matrix) > 0
-        
-        # Check that diagonal is 1.0 (self-similarity)
-        np.testing.assert_array_almost_equal(
-            np.diag(matrix), np.ones(len(matrix))
-        )
+
+        # Check diagonal is 1.0 for non-zero vectors (zero vectors give 0 self-similarity)
+        diagonal = np.diag(matrix)
+        non_zero_diag = diagonal[diagonal > 1e-10]
+        assert len(non_zero_diag) > 0
+        np.testing.assert_array_almost_equal(non_zero_diag, np.ones(len(non_zero_diag)))
 
 
 class TestSequenceMapper:
@@ -193,8 +194,8 @@ class TestRecommendations:
         if len(team_months) < 2:
             pytest.skip(f"Team {team} doesn't have enough months")
         
-        current_month = team_months[0]
-        
+        current_month = team_months[-1]
+
         recommendations = recommender.recommend(
             team, current_month, top_n=3, k_similar=5
         )

@@ -27,9 +27,6 @@ from .models import (
 )
 from .service import APIService
 
-router = APIRouter()
-
-
 def create_routes(service: APIService) -> APIRouter:
     """
     Create and configure FastAPI routes for the recommendation API.
@@ -64,6 +61,7 @@ def create_routes(service: APIService) -> APIRouter:
         validation. Error handling is done via HTTPException with appropriate
         status codes.
     """
+    router = APIRouter()
 
     @router.get("/api/teams", response_model=list[TeamInfo])
     async def get_teams():
@@ -157,10 +155,6 @@ def create_routes(service: APIService) -> APIRouter:
     @router.post("/api/optimize", response_model=OptimizationResponse)
     async def find_optimal_config(request: OptimizationRequest):
         """Find optimal configuration by testing parameter combinations."""
-        logger.info("[CANCELLATION] ===== OPTIMIZE ENDPOINT HIT =====")
-        logger.info(
-            f"[CANCELLATION] Service instance: {id(service)}, Optimizer instance: {id(service.optimizer_engine)}"
-        )
         try:
             # Run optimization in thread pool to avoid blocking the event loop
             # This allows the cancel endpoint to be processed concurrently
@@ -234,19 +228,12 @@ def create_routes(service: APIService) -> APIRouter:
     @router.post("/api/optimize/cancel")
     async def cancel_optimization():
         """Cancel the current optimization."""
-        logger.info("[CANCELLATION] ===== CANCEL ENDPOINT HIT =====")
         try:
-            logger.info("[CANCELLATION] Cancel endpoint called - requesting cancellation")
-            logger.info(
-                f"[CANCELLATION] Service instance: {id(service)}, Optimizer instance: {id(service.optimizer_engine)}"
-            )
-            logger.info(f"[CANCELLATION] Current _cancelled flag before cancel: {service.optimizer_engine._cancelled}")
             service.cancel_optimization()
-            logger.info(f"[CANCELLATION] Current _cancelled flag after cancel: {service.optimizer_engine._cancelled}")
-            logger.info("[CANCELLATION] Cancel endpoint completed - cancellation flag set")
+            logger.info("Optimization cancellation requested")
             return {"status": "cancelled", "message": "Optimization cancellation requested"}
         except Exception as e:
-            logger.error(f"[CANCELLATION] Error in cancel endpoint: {e}", exc_info=True)
+            logger.error(f"cancel_optimization: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.get("/api/example-data")

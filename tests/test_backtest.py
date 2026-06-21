@@ -234,7 +234,9 @@ class TestBacktestEngine:
             'random_baseline': 0.1,
             'improvement_factor': 7.0,
             'teams_tested': 10,
-            'per_month_results': []
+            'per_month_results': [],
+            'train_months': [202001, 202002],
+            'test_months': [202003],
         }
         
         summary = backtest.get_accuracy_summary(success_result)

@@ -50,10 +50,13 @@ class TestOptimizationEngine:
         combinations = list(optimizer.generate_parameter_combinations(
             top_n_range=[2, 3],
             similarity_weight_range=[0.6, 0.7],
-            k_similar_range=[5, 10]
+            k_similar_range=[5, 10],
+            similar_teams_lookahead_months_range=[3],
+            recent_improvements_months_range=[3],
+            min_similarity_threshold_range=[0.0],
         ))
-        
-        # Should generate 2 * 2 * 2 = 8 combinations
+
+        # Should generate 2 * 2 * 2 * 1 * 1 * 1 = 8 combinations
         assert len(combinations) == 8
         
         # Check that all combinations use provided ranges
@@ -271,31 +274,30 @@ class TestOptimizationEngine:
         mock_result = {
             'overall_accuracy': 0.75,
             'random_baseline': 0.1,
-            'improvement_gap': 0.65,
+            'improvement_gap': 0.20,  # Below early_stop_threshold (0.25) to prevent early stop
             'improvement_factor': 7.5,
             'total_predictions': 100,
             'correct_predictions': 75,
             'cancelled': False
         }
-        
+
         optimizer.backtest_engine.run_backtest = Mock(return_value=mock_result)
-        
-        # Cancel after first iteration
-        call_count = [0]
-        def check_cancelled():
-            call_count[0] += 1
-            if call_count[0] == 1:
-                optimizer.cancel()
-            return optimizer._cancelled
-        
+
+        def progress_callback(current, total, config):
+            optimizer.cancel()  # Cancel on first callback call
+
+        # Use 3 combinations so tested(2) < available(3) after cancellation at idx=1
         result = optimizer.find_optimal_config(
             min_accuracy=0.5,
-            top_n_range=[2, 3],
+            top_n_range=[2, 3, 4],
             similarity_weight_range=[0.6],
             k_similar_range=[5],
-            min_similarity_threshold_range=[0.0]
+            similar_teams_lookahead_months_range=[3],
+            recent_improvements_months_range=[3],
+            min_similarity_threshold_range=[0.0],
+            progress_callback=progress_callback,
         )
-        
+
         assert result['cancelled'] is True
         assert result['total_combinations_tested'] < result.get('total_combinations_available', 999)
     

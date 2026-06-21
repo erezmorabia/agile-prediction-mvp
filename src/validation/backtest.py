@@ -131,7 +131,8 @@ class BacktestEngine:
         improvements_per_case = []  # List of number of practices improved per case
 
         logger.debug(
-            f"[CANCELLATION] BacktestEngine: Starting backtest with {len(months)} months, cancellation_check={'provided' if cancellation_check else 'None'}"
+            "Starting backtest with %d months, cancellation_check=%s",
+            len(months), "provided" if cancellation_check else "None",
         )
 
         for test_month_idx in range(3, len(months)):  # Start from month 4 (index 3)
@@ -139,9 +140,7 @@ class BacktestEngine:
             if cancellation_check:
                 is_cancelled = cancellation_check()
                 if is_cancelled:
-                    logger.info(
-                        f"[CANCELLATION] BacktestEngine: Cancellation detected at month {test_month_idx + 1}/{len(months)} - returning partial results"
-                    )
+                    logger.debug("Cancellation detected at month %d/%d", test_month_idx + 1, len(months))
                     # Return partial results
                     return self._build_partial_results(
                         per_month_results,
@@ -160,9 +159,7 @@ class BacktestEngine:
 
             # Check for cancellation before potentially long-running sequence learning
             if cancellation_check and cancellation_check():
-                logger.info(
-                    f"[CANCELLATION] BacktestEngine: Cancellation detected before sequence learning for month {test_month_idx + 1}/{len(months)} - returning partial results"
-                )
+                logger.debug("Cancellation detected before sequence learning for month %d/%d", test_month_idx + 1, len(months))
                 return self._build_partial_results(
                     per_month_results, total_predictions, total_correct, improvements_per_case, all_teams_tested, top_n
                 )
@@ -184,8 +181,9 @@ class BacktestEngine:
                 if cancellation_check and team_count % 10 == 0:
                     is_cancelled = cancellation_check()
                     if is_cancelled:
-                        logger.info(
-                            f"[CANCELLATION] BacktestEngine: Cancellation detected at team {team_count}/{len(teams)} in month {test_month_idx + 1} - returning partial results"
+                        logger.debug(
+                            "Cancellation detected at team %d/%d in month %d",
+                            team_count, len(teams), test_month_idx + 1,
                         )
                         # Return partial results
                         return self._build_partial_results(
@@ -391,7 +389,8 @@ class BacktestEngine:
             - Results are valid but incomplete (represent subset of full backtest)
         """
         logger.info(
-            f"[CANCELLATION] BacktestEngine: Building partial results - {len(per_month_results)} months completed, {total_predictions} predictions, {total_correct} correct"
+            "Backtest cancelled — returning partial results (%d months completed, %d/%d correct)",
+            len(per_month_results), total_correct, total_predictions,
         )
         # Calculate overall accuracy from completed months only
         if per_month_results:

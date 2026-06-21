@@ -53,7 +53,7 @@ class DataValidator:
                 logger.warning("Validation: %s", issue)
             return False
 
-        logger.info("Data validation passed")
+        logger.info("All data quality checks passed")
         return True
 
     def _check_required_columns(self) -> None:
@@ -65,15 +65,17 @@ class DataValidator:
 
     def _check_data_types(self) -> None:
         """Check that data types are correct."""
-        if self.df["Team Name"].dtype != "object":
+        if "Team Name" in self.df.columns and self.df["Team Name"].dtype != "object":
             self.issues.append("Team Name should be string type")
 
-        if not pd.api.types.is_numeric_dtype(self.df["Month"]):
+        if "Month" in self.df.columns and not pd.api.types.is_numeric_dtype(self.df["Month"]):
             self.issues.append("Month should be numeric type")
 
     def _check_value_ranges(self) -> None:
         """Check that practice values are in valid range (0-3)."""
         for practice in self.practices:
+            if practice not in self.df.columns:
+                continue
             min_val = self.df[practice].min()
             max_val = self.df[practice].max()
 
@@ -149,6 +151,8 @@ class DataValidator:
 
     def _check_temporal_coverage(self) -> None:
         """Check that teams have multiple time periods."""
+        if "Team Name" not in self.df.columns:
+            return
         team_counts = self.df["Team Name"].value_counts()
         min_periods = team_counts.min()
 

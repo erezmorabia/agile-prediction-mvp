@@ -79,7 +79,7 @@ class DataLoader:
         self.teams = sorted(self.df["Team Name"].unique())
         self.months = sorted(self.df["Month"].unique())
 
-        logger.info("Loaded data: %d teams, %d practices, %d months — %d rows",
+        logger.info("Loaded %d teams, %d practices, %d months (%d rows)",
                     len(self.teams), len(self.practices), len(self.months), len(self.df))
 
         return self.df

@@ -51,7 +51,7 @@ _UVICORN_LOG_CONFIG = {
     "loggers": {
         "uvicorn": {"handlers": ["default"], "level": "INFO", "propagate": False},
         "uvicorn.error": {"handlers": ["default"], "level": "INFO", "propagate": False},
-        "uvicorn.access": {"handlers": ["access"], "level": "INFO", "propagate": False},
+        "uvicorn.access": {"handlers": ["access"], "level": "WARNING", "propagate": False},
     },
 }
 
@@ -146,16 +146,16 @@ def main() -> int:
                 if not os.path.exists(excel_file):
                     excel_file = "data/raw/20250204_Cleaned_Dataset.xlsx"
                     if not os.path.exists(excel_file):
-                        logger.error("Usage: python src/web_main.py <path_to_excel_file>")
-                        logger.error("File not found: %s", excel_file)
+                        logger.error("Data file not found. Checked default locations: data/raw/combined_dataset.xlsx")
+                        logger.error("Run with: python src/web_main.py <path_to_excel_file>")
                         return 1
 
     if not os.path.exists(excel_file):
-        logger.error("File not found: %s", excel_file)
+        logger.error("Data file not found: %s", excel_file)
         return 1
 
     logger.info("Starting Agile Practice Prediction System")
-    logger.info("Loading: %s", excel_file)
+    logger.info("Dataset: %s", excel_file)
 
     # Import components
     import time
@@ -169,24 +169,24 @@ def main() -> int:
 
     try:
         # Step 1: Load data
-        logger.info("[1/5] Loading data...")
+        logger.info("[1/5] Reading dataset...")
         loader = DataLoader(excel_file)
         df = loader.load()
         practices = loader.practices
 
         # Step 2: Validate data
-        logger.info("[2/5] Validating data...")
+        logger.info("[2/5] Checking data quality...")
         validator = DataValidator(df, practices)
         validator.validate()
 
         # Step 3: Filter out practices with >90% missing values
-        logger.info("[3/5] Filtering practices...")
+        logger.info("[3/5] Removing low-coverage practices...")
         filtered_practices, excluded_practices = validator.filter_high_missing_practices(practices, threshold=90.0)
         if excluded_practices:
-            logger.info("Excluded %d practices with >90%% missing values, using %d",
+            logger.info("Dropped %d practices (>90%% missing data) — keeping %d",
                         len(excluded_practices), len(filtered_practices))
         else:
-            logger.info("All %d practices have sufficient data", len(filtered_practices))
+            logger.info("All %d practices have sufficient coverage", len(filtered_practices))
 
         # Update practices list to use filtered version
         practices = filtered_practices
@@ -195,13 +195,13 @@ def main() -> int:
         filtered_missing_details = validator.get_missing_values_details_for_practices(practices)
 
         # Step 4: Process data
-        logger.info("[4/5] Processing data...")
+        logger.info("[4/5] Building team histories...")
         processor = DataProcessor(df, practices)
         processor.process()
-        logger.info("Processed %d team histories", len(processor.team_histories))
+        logger.info("Normalized scores for %d teams", len(processor.team_histories))
 
         # Step 5: Build ML models
-        logger.info("[5/5] Building ML models...")
+        logger.info("[5/5] Training recommendation models...")
 
         # Similarity engine (will be built on demand)
         similarity_engine = SimilarityEngine(processor)
@@ -209,7 +209,7 @@ def main() -> int:
         # Sequence mapper
         sequence_mapper = SequenceMapper(processor, practices)
         sequence_mapper.learn_sequences()
-        logger.info("Learned %d transition patterns", len(sequence_mapper.transition_matrix))
+        logger.info("Learned %d practice improvement patterns", len(sequence_mapper.transition_matrix))
 
         # Recommendation engine
         recommender = RecommendationEngine(similarity_engine, sequence_mapper, practices)
@@ -222,7 +222,7 @@ def main() -> int:
         service.docs_path = get_resource_path("docs/PROJECT_DOCUMENTATION.md")
         app = create_app(service)
 
-        logger.info("System ready → http://localhost:8000")
+        logger.info("Ready — open http://localhost:8000 in your browser")
 
         # Start server with increased timeout settings for long-running requests
         # Use threading to allow browser opening after server starts
@@ -252,10 +252,10 @@ def main() -> int:
         )
 
     except KeyboardInterrupt:
-        logger.info("Server stopped by user")
+        logger.info("Shutting down. Goodbye!")
         return 0
     except Exception as e:
-        logger.error("Startup failed: %s", str(e))
+        logger.error("Failed to start: %s", str(e))
         import traceback
         traceback.print_exc()
         return 1

@@ -19,11 +19,11 @@ from src.ml import SimilarityEngine, SequenceMapper, RecommendationEngine
 def sample_dataframe():
     """Create sample DataFrame for testing."""
     data = {
-        'Team Name': ['Team1', 'Team1', 'Team2', 'Team2', 'Team3', 'Team3'],
-        'Month': [202001, 202002, 202001, 202002, 202001, 202002],
-        'Practice1': [1, 2, 1, 2, 0, 1],
-        'Practice2': [0, 1, 0, 1, 1, 2],
-        'Practice3': [2, 3, 1, 2, 2, 2]
+        'Team Name': ['Team1', 'Team1', 'Team1', 'Team2', 'Team2', 'Team2', 'Team3', 'Team3', 'Team3'],
+        'Month': [202001, 202002, 202003, 202001, 202002, 202003, 202001, 202002, 202003],
+        'Practice1': [1, 2, 2, 1, 2, 2, 0, 1, 1],
+        'Practice2': [0, 1, 2, 0, 1, 1, 1, 2, 2],
+        'Practice3': [2, 3, 3, 1, 2, 3, 2, 2, 3]
     }
     return pd.DataFrame(data)
 

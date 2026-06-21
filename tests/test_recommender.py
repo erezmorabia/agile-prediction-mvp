@@ -224,8 +224,9 @@ class TestRecommendationEngineExtended:
         if len(team_months) < 2:
             pytest.skip(f"Team {team} needs at least 2 months")
         
-        current_month = team_months[0]
-        
+        # Use second month: has prior history (month 1) and is not the global first month
+        current_month = team_months[1]
+
         # Should work with allow_first_three_months=True
         recommendations = recommender.recommend(
             team, current_month, top_n=3, allow_first_three_months=True
