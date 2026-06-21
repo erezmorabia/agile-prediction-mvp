@@ -644,6 +644,7 @@ The system exposes a REST API using FastAPI:
 
 **Endpoints:**
 - `GET /api/teams` - Get all teams with metadata
+- `GET /api/teams/with-improvements` - Get teams/months where improvements occurred
 - `GET /api/teams/{team_name}/months` - Get available months for a team
 - `POST /api/recommendations` - Get recommendations for a team
 - `POST /api/backtest` - Run backtest validation
@@ -651,6 +652,8 @@ The system exposes a REST API using FastAPI:
 - `GET /api/sequences` - Get learned improvement sequences
 - `POST /api/optimize` - Find optimal configuration
 - `POST /api/optimize/cancel` - Cancel optimization
+- `GET /api/example-data` - Get example data for UI display
+- `GET /api/documentation` - Serve project documentation content
 
 **Request/Response Format:**
 - JSON format for all requests and responses
@@ -659,20 +662,22 @@ The system exposes a REST API using FastAPI:
 
 ### 4.5 Frontend Architecture
 
-The web interface is built with vanilla HTML/CSS/JavaScript:
+The web interface is built with vanilla HTML/CSS/JavaScript using a Dark Academic Research Lab visual theme:
 
 **Structure:**
 - Single-page application with tabbed interface
-- Four main tabs: Recommendations, Backtest Validation, Statistics, Sequences
+- Four main tabs (in order): Statistics, Backtest Validation, Sequences, Recommendations
+- Statistics is the default active tab on load
 - Dynamic content loading via JavaScript fetch API
 - Real-time updates without page refresh
 
 **Key Features:**
 - Team and month selection dropdowns
-- Interactive result displays
+- Interactive result displays with inline tooltip explanations on each tab
 - Configuration sliders for parameter tuning
 - Pagination for large result sets
 - File upload for optimization results
+- About/Documentation modal that renders project documentation in-browser
 
 ---
 
@@ -728,7 +733,7 @@ The web interface is built with vanilla HTML/CSS/JavaScript:
 
 ### 5.3 Code Organization
 
-The codebase consists of approximately 4,857 lines across 23 Python files, organized into modules:
+The codebase consists of approximately 6,200 lines across 23 Python files, organized into modules:
 
 **Module Structure:**
 ```
@@ -1332,7 +1337,11 @@ recommendations = sorted([(p, s) for p, s in normalized_scores.items()
 ]
 ```
 
-**2. GET /api/teams/{team_name}/months**
+**2. GET /api/teams/with-improvements**
+- **Description**: Get all teams and months where at least one practice improved
+- **Response**: List of team-month pairs with improvement data
+
+**3. GET /api/teams/{team_name}/months**
 - **Description**: Get available months for a team
 - **Parameters**: `team_name` (path parameter)
 - **Response**: Object with team name and months list
@@ -1409,6 +1418,14 @@ recommendations = sorted([(p, s) for p, s in normalized_scores.items()
 - **Description**: Get the latest optimization results from saved file
 - **Response**: Latest optimization results (same format as POST /api/optimize response)
 - **Error**: 404 if no optimization results found
+
+**10. GET /api/example-data**
+- **Description**: Get example team/practice data for UI display purposes
+- **Response**: Sample data to pre-populate the recommendations form
+
+**11. GET /api/documentation**
+- **Description**: Serve project documentation content as markdown
+- **Response**: Raw markdown string rendered by the About/Documentation modal in the frontend
 
 **Error Handling:**
 - **400 Bad Request**: Invalid request parameters
@@ -1503,7 +1520,7 @@ The Agile Practice Prediction System is a web-based application that recommends 
 
 ### 10.2 Installation Guide
 
-See **INSTALLATION.md** for detailed installation instructions.
+See **docs/INSTALLATION.md** for detailed installation instructions.
 
 **Quick Installation:**
 1. Install Python 3.8+
@@ -1513,7 +1530,7 @@ See **INSTALLATION.md** for detailed installation instructions.
 
 ### 10.3 Getting Started
 
-See **QUICK_START.md** for a 3-step quick start guide.
+See **docs/QUICK_START.md** for a 3-step quick start guide.
 
 **Quick Start:**
 1. Install dependencies
@@ -1522,14 +1539,12 @@ See **QUICK_START.md** for a 3-step quick start guide.
 
 ### 10.4 Using the Web Interface
 
-**Main Tabs:**
+**Main Tabs (in order from left):**
 
-**1. Recommendations Tab:**
-- Select a team from the dropdown
-- Select a month to predict
-- Click "Get Recommendations"
-- View top recommended practices with scores and explanations
-- See validation summary if available
+**1. Statistics Tab (default):**
+- View system statistics (teams, practices, months)
+- See practice definitions and maturity level descriptions
+- Explore practice improvement frequencies
 
 **2. Backtest Validation Tab:**
 - Configure parameters using sliders
@@ -1538,15 +1553,22 @@ See **QUICK_START.md** for a 3-step quick start guide.
 - Click "Find Optimal Configuration" to test parameter combinations
 - Upload previously saved optimization results
 
-**3. Statistics Tab:**
-- View system statistics (teams, practices, months)
-- See practice definitions and maturity level descriptions
-- Explore practice improvement frequencies
-
-**4. Sequences Tab:**
+**3. Sequences Tab:**
 - View learned improvement sequences
 - See transition probabilities between practices
 - Expand sequences to see detailed transitions
+
+**4. Recommendations Tab:**
+- Select a team from the dropdown
+- Select a month to predict
+- Click "Get Recommendations"
+- View top recommended practices with scores and explanations
+- See validation summary if available
+
+**About/Documentation Modal:**
+- Click the "About / Docs" button in the header to open the documentation modal
+- Renders the full project documentation in-browser using the `/api/documentation` endpoint
+- Allows reading methodology, algorithm details, and user manual without leaving the app
 
 ### 10.5 Using the CLI Interface
 
@@ -1672,11 +1694,12 @@ agile-prediction-mvp/
 │       └── combined_dataset.xlsx  # Input data file
 ├── tests/
 │   └── test_suite.py           # Unit tests
+├── docs/
+│   ├── PROJECT_DOCUMENTATION.md # This file
+│   ├── INSTALLATION.md          # Installation guide
+│   └── QUICK_START.md           # Quick start guide
 ├── requirements.txt             # Python dependencies
-├── README.md                    # Project overview
-├── INSTALLATION.md              # Installation guide
-├── QUICK_START.md               # Quick start guide
-└── PROJECT_DOCUMENTATION.md     # This file
+└── README.md                    # Project overview
 ```
 
 ### 11.2 Module Descriptions
@@ -1910,9 +1933,9 @@ pandoc PROJECT_DOCUMENTATION.md -o PROJECT_DOCUMENTATION.docx
 - Practice definitions: `data/raw/practice_level_definitions.xlsx`
 
 **Documentation:**
-- This file: `PROJECT_DOCUMENTATION.md`
-- Quick start: `QUICK_START.md`
-- Installation: `INSTALLATION.md`
+- This file: `docs/PROJECT_DOCUMENTATION.md`
+- Quick start: `docs/QUICK_START.md`
+- Installation: `docs/INSTALLATION.md`
 - Overview: `README.md`
 
 **Configuration:**

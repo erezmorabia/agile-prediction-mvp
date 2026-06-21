@@ -8,11 +8,11 @@ A machine learning system that recommends agile practices for teams based on org
 
 ## For Teachers/Evaluators
 
-**Quick Start:** See **[QUICK_START.md](QUICK_START.md)** for a 3-step guide to get the system running.
+**Quick Start:** See **[QUICK_START.md](docs/QUICK_START.md)** for a 3-step guide to get the system running.
 
-**Installation:** See **[INSTALLATION.md](INSTALLATION.md)** for detailed setup instructions.
+**Installation:** See **[INSTALLATION.md](docs/INSTALLATION.md)** for detailed setup instructions.
 
-**Complete Documentation:** See **[PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md)** for comprehensive project documentation including academic report, technical documentation, user manual, and code documentation.
+**Complete Documentation:** See **[PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md)** for comprehensive project documentation including academic report, technical documentation, user manual, and code documentation.
 
 ### Quick Commands:
 ```bash
