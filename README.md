@@ -240,7 +240,7 @@ results = backtest.run_backtest()
 
 **Why this matters:**
 - Proves the system actually works
-- 68% accuracy vs 3% random = **23.8x better**
+- 49% accuracy vs ~25% random = **2.0x better**
 - Gives confidence to use recommendations
 
 ---
@@ -686,7 +686,7 @@ Code quality checks run automatically on push/PR via GitHub Actions (`.github/wo
 ### 4. Recommendation Engine
 - Combines similarity and sequence patterns
 - For each team at each month:
-  1. Find 5 most similar teams
+  1. Find K=19 most similar teams
   2. See what they improved in next period
   3. Weight by similarity score
   4. Add sequence boost
@@ -738,7 +738,7 @@ score(practice) = collaborative_filtering_score + sequence_boost
 
 ### **Project Timeline**
 
-- **Duration**: Built in 1 session with Claude Code
+- **Duration**: Developed iteratively alongside AI code assistants (Claude Code and Cursor)
 - **Code Size**: ~5,663 lines of production-quality source code (~9,300 total with tests)
 - **Development Approach**: Agile MVP methodology (build fast, validate early)
 

@@ -110,7 +110,17 @@ class DataProcessor:
         return list(self.team_histories.keys())
 
     def get_all_months(self) -> list:
-        """Get list of all months."""
+        """Get sorted list of all months present across all teams.
+
+        Collects month keys from every team's history and returns them in
+        chronological order (yyyymmdd strings sort correctly lexicographically).
+
+        Returns:
+            list: Sorted list of month strings in yyyymmdd format.
+
+        Raises:
+            ValueError: If process() has not been called yet.
+        """
         all_months = set()
         for team_months in self.team_histories.values():
             all_months.update(team_months.keys())
