@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Don't block the UI - set a default state
             const teamSelect = document.getElementById('team-select');
             if (teamSelect) {
-                teamSelect.innerHTML = '<option value="">Error loading teams - try unchecking filter or refreshing</option>';
+                teamSelect.innerHTML = '<option value="">Error loading teams — please refresh</option>';
                 teamSelect.disabled = false;
             }
             showError(`Failed to load teams: ${error.message}. You can still use other tabs.`);
@@ -977,7 +977,7 @@ function displayBacktestResults(data) {
     // Validate required fields
     if (!data.total_predictions && data.total_predictions !== 0) {
         console.error('Missing total_predictions in backtest validation results');
-        showError('Invalid backtest validation results: missing required fields');
+        showError('Could not display backtest results. Please try again.');
         return;
     }
 
@@ -1238,7 +1238,7 @@ async function findOptimalConfig() {
         resultsDiv.classList.remove('hidden');
         
         // Display results (will handle cancelled/partial results in displayOptimizationResults)
-        displayOptimizationResults(data);
+        displayOptimizationResults(data, ranges.min_accuracy);
     } catch (error) {
         console.error('Error finding optimal config:', error);
         
@@ -1379,7 +1379,7 @@ function renderPaginatedConfigurationsTable(allResults) {
 /**
  * Display optimization results
  */
-function displayOptimizationResults(data) {
+function displayOptimizationResults(data, minAccuracy = 0.40) {
     const resultsDiv = document.getElementById('optimization-results');
     resultsDiv.classList.remove('hidden');
     
@@ -1444,7 +1444,7 @@ function displayOptimizationResults(data) {
             resultsDiv.innerHTML = statusMessage;
             showToast(
                 'Error: No Optimal Configuration Found',
-                `No configuration met the minimum accuracy threshold of 40%.<br>
+                `No configuration met the minimum accuracy threshold of ${Math.round((minAccuracy || 0.40) * 100)}%.<br>
                  <strong>Combinations tested:</strong> ${data.total_combinations_tested || 0} / ${data.total_combinations_available || data.total_combinations_tested || 0}<br>
                  <strong>Valid combinations:</strong> ${data.valid_combinations || 0}`,
                 'error'
@@ -1784,18 +1784,18 @@ async function loadStatistics() {
         
         // Validate response structure
         if (!data || typeof data !== 'object') {
-            throw new Error('Invalid response from statistics API: response is not an object');
+            throw new Error('Could not load statistics. Please refresh the page.');
         }
-        
+
         // Check for required fields
         if (typeof data.num_teams !== 'number') {
             console.error('Missing num_teams in response:', data);
-            throw new Error('Invalid response: missing num_teams field');
+            throw new Error('Could not load statistics. Please refresh the page.');
         }
-        
+
         if (typeof data.num_practices !== 'number') {
             console.error('Missing num_practices in response:', data);
-            throw new Error('Invalid response: missing num_practices field');
+            throw new Error('Could not load statistics. Please refresh the page.');
         }
         
         // Ensure arrays exist
@@ -1846,14 +1846,11 @@ function displayStatistics(data) {
     // Validate required fields
     if (typeof data.num_teams !== 'number' || typeof data.num_practices !== 'number') {
         console.error('Missing required fields in statistics data:', data);
-        showError('Invalid statistics data: missing required fields');
+        showError('Could not load statistics. Please refresh the page.');
         resultsDiv.innerHTML = `
             <div class="error" style="padding: 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px;">
-                <h3>Error: Invalid Statistics Data</h3>
-                <p>Missing required fields: num_teams or num_practices</p>
-                <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
-                    Received data: ${JSON.stringify(data, null, 2)}
-                </p>
+                <h3>Could not load statistics</h3>
+                <p>Please refresh the page to try again.</p>
             </div>
         `;
         return;
@@ -2079,7 +2076,7 @@ function displaySequences(data) {
     // Validate required fields
     if (!data.stats && !data.grouped_sequences) {
         console.error('Missing required fields in sequences data');
-        showError('Invalid sequences data: missing required fields');
+        showError('Could not load sequences. Please refresh the page.');
         return;
     }
     

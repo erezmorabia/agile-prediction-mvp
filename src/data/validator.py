@@ -2,7 +2,11 @@
 DataValidator: Validate data quality and integrity.
 """
 
+import logging
+
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 class DataValidator:
@@ -45,12 +49,11 @@ class DataValidator:
         self._check_temporal_coverage()
 
         if self.issues:
-            print(f"Warning: Validation found {len(self.issues)} issues:")
             for issue in self.issues:
-                print(f"   - {issue}")
+                logger.warning("Validation: %s", issue)
             return False
 
-        print("Data validation passed")
+        logger.info("Data validation passed")
         return True
 
     def _check_required_columns(self) -> None:

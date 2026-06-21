@@ -59,8 +59,6 @@ class SequenceMapper:
             Learning improvement sequences...
             Learned 45 transition patterns
         """
-        print("Learning improvement sequences...")
-
         teams = self.processor.get_all_teams()
         months = self.processor.get_all_months()
 
@@ -94,7 +92,6 @@ class SequenceMapper:
                         self.transition_matrix[prev][curr] += 1
 
         self.learned = True
-        print(f"Learned {len(self.transition_matrix)} transition patterns")
 
     def learn_sequences_up_to_month(self, max_month: int) -> None:
         """

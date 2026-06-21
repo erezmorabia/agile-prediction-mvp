@@ -12,10 +12,48 @@ import logging
 import os
 import sys
 
-# Configure logging to show INFO level and above, with timestamps
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
+logger = logging.getLogger(__name__)
+
+_UVICORN_LOG_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "()": "uvicorn.logging.DefaultFormatter",
+            "fmt": "%(asctime)s [%(levelname)s] %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "use_colors": False,
+        },
+        "access": {
+            "()": "uvicorn.logging.AccessFormatter",
+            "fmt": '%(asctime)s [%(levelname)s] %(client_addr)s - "%(request_line)s" %(status_code)s',
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "use_colors": False,
+        },
+    },
+    "handlers": {
+        "default": {
+            "formatter": "default",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr",
+        },
+        "access": {
+            "formatter": "access",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+        },
+    },
+    "loggers": {
+        "uvicorn": {"handlers": ["default"], "level": "INFO", "propagate": False},
+        "uvicorn.error": {"handlers": ["default"], "level": "INFO", "propagate": False},
+        "uvicorn.access": {"handlers": ["access"], "level": "INFO", "propagate": False},
+    },
+}
 
 # Add project root to Python path to enable absolute imports
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -108,16 +146,16 @@ def main() -> int:
                 if not os.path.exists(excel_file):
                     excel_file = "data/raw/20250204_Cleaned_Dataset.xlsx"
                     if not os.path.exists(excel_file):
-                        print("Error: Usage: python src/web_main.py <path_to_excel_file>")
-                        print(f"   File not found: {excel_file}")
+                        logger.error("Usage: python src/web_main.py <path_to_excel_file>")
+                        logger.error("File not found: %s", excel_file)
                         return 1
 
     if not os.path.exists(excel_file):
-        print(f"Error: File not found: {excel_file}")
+        logger.error("File not found: %s", excel_file)
         return 1
 
-    print("Starting Agile Practice Prediction System (Web Interface)...")
-    print(f"   Loading: {excel_file}")
+    logger.info("Starting Agile Practice Prediction System")
+    logger.info("Loading: %s", excel_file)
 
     # Import components
     import time
@@ -131,36 +169,24 @@ def main() -> int:
 
     try:
         # Step 1: Load data
-        print("\n[1/5] Loading data...")
+        logger.info("[1/5] Loading data...")
         loader = DataLoader(excel_file)
         df = loader.load()
         practices = loader.practices
 
         # Step 2: Validate data
-        print("\n[2/5] Validating data...")
+        logger.info("[2/5] Validating data...")
         validator = DataValidator(df, practices)
-        validation_passed = validator.validate()
+        validator.validate()
 
-        # Get missing values details
-        missing_details = validator.get_missing_values_details()
-        if missing_details["total_missing"] > 0:
-            print(f"\nMissing Values: {missing_details['total_missing']} total")
-            print(f"   Practices with missing: {len(missing_details['practices_with_missing'])}")
-            print(f"   Months with missing: {len(missing_details['months_with_missing'])}")
-
-        if not validation_passed:
-            print("Warning: Continuing despite validation warnings...")
-
-        # Step 2.5: Filter out practices with >90% missing values
-        print("\n[2.5/5] Filtering practices with high missing values...")
+        # Step 3: Filter out practices with >90% missing values
+        logger.info("[3/5] Filtering practices...")
         filtered_practices, excluded_practices = validator.filter_high_missing_practices(practices, threshold=90.0)
         if excluded_practices:
-            print(f"   Warning: Excluding {len(excluded_practices)} practices with >90% missing values:")
-            for practice in excluded_practices:
-                print(f"      - {practice}")
-            print(f"   Using {len(filtered_practices)} practices for analysis")
+            logger.info("Excluded %d practices with >90%% missing values, using %d",
+                        len(excluded_practices), len(filtered_practices))
         else:
-            print(f"   All {len(filtered_practices)} practices have sufficient data")
+            logger.info("All %d practices have sufficient data", len(filtered_practices))
 
         # Update practices list to use filtered version
         practices = filtered_practices
@@ -168,13 +194,14 @@ def main() -> int:
         # Recalculate missing values details for filtered practices only
         filtered_missing_details = validator.get_missing_values_details_for_practices(practices)
 
-        # Step 3: Process data
-        print("\n[3/5] Processing data...")
+        # Step 4: Process data
+        logger.info("[4/5] Processing data...")
         processor = DataProcessor(df, practices)
         processor.process()
+        logger.info("Processed %d team histories", len(processor.team_histories))
 
-        # Step 4: Build ML models
-        print("\n[4/5] Building ML models...")
+        # Step 5: Build ML models
+        logger.info("[5/5] Building ML models...")
 
         # Similarity engine (will be built on demand)
         similarity_engine = SimilarityEngine(processor)
@@ -182,12 +209,12 @@ def main() -> int:
         # Sequence mapper
         sequence_mapper = SequenceMapper(processor, practices)
         sequence_mapper.learn_sequences()
+        logger.info("Learned %d transition patterns", len(sequence_mapper.transition_matrix))
 
         # Recommendation engine
         recommender = RecommendationEngine(similarity_engine, sequence_mapper, practices)
 
-        # Step 5: Create API service and app
-        print("\n[5/5] Initializing web interface...")
+        # Create API service and app
         service = APIService(recommender, processor)
         # Store filtered missing values details for API
         service.missing_values_details = filtered_missing_details
@@ -195,14 +222,7 @@ def main() -> int:
         service.docs_path = get_resource_path("docs/PROJECT_DOCUMENTATION.md")
         app = create_app(service)
 
-        print("\nSystem initialized successfully!")
-        print("\n" + "=" * 60)
-        print("Web Interface Ready")
-        print("=" * 60)
-        print("   Open your browser to: http://localhost:8000")
-        print("   API documentation: http://localhost:8000/docs")
-        print("   Press Ctrl+C to stop the server")
-        print("=" * 60 + "\n")
+        logger.info("System ready → http://localhost:8000")
 
         # Start server with increased timeout settings for long-running requests
         # Use threading to allow browser opening after server starts
@@ -226,18 +246,17 @@ def main() -> int:
             app,
             host="0.0.0.0",
             port=8000,
-            log_level="info",
-            timeout_keep_alive=300,  # 5 minutes keep-alive timeout
-            timeout_graceful_shutdown=30,  # 30 seconds graceful shutdown
+            log_config=_UVICORN_LOG_CONFIG,
+            timeout_keep_alive=300,
+            timeout_graceful_shutdown=30,
         )
 
     except KeyboardInterrupt:
-        print("\n\nServer stopped by user")
+        logger.info("Server stopped by user")
         return 0
     except Exception as e:
-        print(f"\nError: {str(e)}")
+        logger.error("Startup failed: %s", str(e))
         import traceback
-
         traceback.print_exc()
         return 1
 

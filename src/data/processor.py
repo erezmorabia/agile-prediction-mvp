@@ -61,7 +61,7 @@ class DataProcessor:
             >>> history[20200107]  # Practice vector for January 2020
             array([0.33, 0.67, 0.0, ...])
         """
-        print("Processing data...")
+
 
         # Fill NaN values with 0 (not implemented)
         for practice in self.practices:
@@ -83,7 +83,6 @@ class DataProcessor:
                 self.team_histories[team][month] = practices_vector
 
         self.processed = True
-        print(f"Processed {len(self.team_histories)} team histories")
 
     def get_team_history(self, team_name: str) -> dict:
         """

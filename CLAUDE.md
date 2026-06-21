@@ -29,8 +29,8 @@ Skill({ skill: "uc-01-get-recommendations" })
 ### Run the app
 ```bash
 python src/web_main.py data/raw/combined_dataset.xlsx  # web UI → localhost:8000
-./run_web.sh                                           # macOS/Linux shortcut
-run_web.bat                                            # Windows shortcut
+./start_mac_linux.sh                                           # macOS/Linux shortcut
+start_windows.bat                                            # Windows shortcut
 ```
 
 ### Test

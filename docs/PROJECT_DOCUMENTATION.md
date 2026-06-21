@@ -1940,7 +1940,7 @@ pandoc PROJECT_DOCUMENTATION.md -o PROJECT_DOCUMENTATION.docx
 
 **Configuration:**
 - Dependencies: `requirements.txt`
-- Startup scripts: `run_web.sh`, `run_web.bat`
+- Startup scripts: `start_mac_linux.sh`, `start_windows.bat`
 
 ---
 

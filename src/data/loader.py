@@ -2,9 +2,12 @@
 DataLoader: Load agile metrics from Excel files.
 """
 
+import logging
 import os
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 class DataLoader:
@@ -76,8 +79,8 @@ class DataLoader:
         self.teams = sorted(self.df["Team Name"].unique())
         self.months = sorted(self.df["Month"].unique())
 
-        print(f"Loaded data: {len(self.teams)} teams, {len(self.practices)} practices, {len(self.months)} months")
-        print(f"   Total rows: {len(self.df)}")
+        logger.info("Loaded data: %d teams, %d practices, %d months — %d rows",
+                    len(self.teams), len(self.practices), len(self.months), len(self.df))
 
         return self.df
 

@@ -71,7 +71,8 @@ def create_routes(service: APIService) -> APIRouter:
         try:
             return service.get_all_teams()
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"get_teams: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.get("/api/teams/with-improvements", response_model=list[ImprovementInfo])
     async def get_teams_with_improvements():
@@ -79,7 +80,8 @@ def create_routes(service: APIService) -> APIRouter:
         try:
             return service.get_teams_with_improvements()
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"get_teams_with_improvements: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.get("/api/teams/{team_name}/months")
     async def get_team_months(team_name: str):
@@ -92,7 +94,8 @@ def create_routes(service: APIService) -> APIRouter:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"get_team_months: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.post("/api/recommendations", response_model=RecommendationResponse)
     async def get_recommendations(request: RecommendationRequest):
@@ -109,7 +112,8 @@ def create_routes(service: APIService) -> APIRouter:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"get_recommendations: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.post("/api/backtest", response_model=BacktestResponse)
     async def run_backtest(request: BacktestRequest):
@@ -129,7 +133,8 @@ def create_routes(service: APIService) -> APIRouter:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"run_backtest: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.get("/api/stats", response_model=SystemStats)
     async def get_system_stats():
@@ -137,7 +142,8 @@ def create_routes(service: APIService) -> APIRouter:
         try:
             return service.get_system_stats()
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"get_system_stats: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.get("/api/sequences")
     async def get_improvement_sequences():
@@ -145,7 +151,8 @@ def create_routes(service: APIService) -> APIRouter:
         try:
             return service.get_improvement_sequences()
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"get_improvement_sequences: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.post("/api/optimize", response_model=OptimizationResponse)
     async def find_optimal_config(request: OptimizationRequest):
@@ -221,7 +228,8 @@ def create_routes(service: APIService) -> APIRouter:
             # Handle Ctrl-C gracefully
             raise HTTPException(status_code=499, detail="Optimization cancelled by user")
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"find_optimal_config: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.post("/api/optimize/cancel")
     async def cancel_optimization():
@@ -239,7 +247,7 @@ def create_routes(service: APIService) -> APIRouter:
             return {"status": "cancelled", "message": "Optimization cancellation requested"}
         except Exception as e:
             logger.error(f"[CANCELLATION] Error in cancel endpoint: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.get("/api/example-data")
     async def get_example_data():
@@ -276,6 +284,6 @@ def create_routes(service: APIService) -> APIRouter:
             raise
         except Exception as e:
             logger.error(f"Error loading latest optimization results: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     return router

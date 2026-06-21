@@ -11,7 +11,8 @@ class APIClient {
     async getTeams() {
         const response = await fetch(`${API_BASE}/api/teams`);
         if (!response.ok) {
-            throw new Error(`Failed to fetch teams: ${response.statusText}`);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || `Failed to fetch teams: ${response.statusText}`);
         }
         return await response.json();
     }
@@ -22,7 +23,8 @@ class APIClient {
     async getTeamsWithImprovements() {
         const response = await fetch(`${API_BASE}/api/teams/with-improvements`);
         if (!response.ok) {
-            throw new Error(`Failed to fetch teams with improvements: ${response.statusText}`);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || `Failed to fetch teams with improvements: ${response.statusText}`);
         }
         return await response.json();
     }
@@ -33,7 +35,8 @@ class APIClient {
     async getTeamMonths(teamName) {
         const response = await fetch(`${API_BASE}/api/teams/${encodeURIComponent(teamName)}/months`);
         if (!response.ok) {
-            throw new Error(`Failed to fetch months for team: ${response.statusText}`);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || `Failed to fetch months for team: ${response.statusText}`);
         }
         return await response.json();
     }
@@ -102,7 +105,8 @@ class APIClient {
     async getSystemStats() {
         const response = await fetch(`${API_BASE}/api/stats`);
         if (!response.ok) {
-            throw new Error(`Failed to fetch stats: ${response.statusText}`);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || `Failed to fetch stats: ${response.statusText}`);
         }
         return await response.json();
     }
@@ -113,7 +117,8 @@ class APIClient {
     async getImprovementSequences() {
         const response = await fetch(`${API_BASE}/api/sequences`);
         if (!response.ok) {
-            throw new Error(`Failed to fetch sequences: ${response.statusText}`);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || `Failed to fetch sequences: ${response.statusText}`);
         }
         return await response.json();
     }

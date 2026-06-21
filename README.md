@@ -8,26 +8,22 @@ A machine learning system that recommends agile practices for teams based on org
 
 ## For Teachers/Evaluators
 
-**Quick Start:** See **[QUICK_START.md](docs/QUICK_START.md)** for a 3-step guide to get the system running.
+**Requirement:** Python 3.8+ installed.
 
-**Installation:** See **[INSTALLATION.md](docs/INSTALLATION.md)** for detailed setup instructions.
-
-**Complete Documentation:** See **[PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md)** for comprehensive project documentation including academic report, technical documentation, user manual, and code documentation.
-
-### Quick Commands:
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Start web interface (easiest)
-./run_web.sh          # macOS/Linux
-run_web.bat           # Windows
-
-# Or manually:
-python src/web_main.py data/raw/combined_dataset.xlsx
-
-# Then open: http://localhost:8000
+git clone https://github.com/erezmorabia/agile-prediction-mvp.git
+cd agile-prediction-mvp
+./start_mac_linux.sh        # macOS/Linux
 ```
+
+```cmd
+start_windows.bat         # Windows
+```
+
+Dependencies install automatically. Browser opens to **http://localhost:8000**.
+
+See **[QUICK_START.md](docs/QUICK_START.md)** for a guided walkthrough of all four tabs.  
+See **[PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md)** for the full academic report and technical documentation.
 
 ### What to Expect:
 - **Web Interface:** Modern, interactive UI at http://localhost:8000
@@ -475,8 +471,8 @@ To distribute the application:
 
 All existing development workflows remain unchanged:
 - `python3 src/web_main.py data/raw/combined_dataset.xlsx` - Still works
-- `./run_web.sh` - Still works
-- `run_web.bat` - Still works
+- `./start_mac_linux.sh` - Still works
+- `start_windows.bat` - Still works
 - Running from IDE/editor - Still works
 
 The executable build is an additional option, not a replacement for development.

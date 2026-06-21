@@ -1,168 +1,51 @@
-# Quick Start Guide
+# Quick Start
 
-**For Teachers/Evaluators - Get the system running in 2 steps!**
+> **Requirement:** Python 3.8+ installed. That's it.
 
-> **Prerequisites and full installation:** See [INSTALLATION.md](INSTALLATION.md). Already set up? Start here.
+## Clone and run
 
-## Quick Start (2 Steps)
-
-### Step 1: Start the Web Interface
-
-**Option A: Using the provided script (Easiest)**
-
-**On macOS/Linux:**
+**macOS / Linux:**
 ```bash
-chmod +x run_web.sh
-./run_web.sh
+git clone https://github.com/erezmorabia/agile-prediction-mvp.git
+cd agile-prediction-mvp
+./start_mac_linux.sh
 ```
 
-**On Windows:**
+**Windows:**
 ```cmd
-run_web.bat
+git clone https://github.com/erezmorabia/agile-prediction-mvp.git
+cd agile-prediction-mvp
+start_windows.bat
 ```
 
-**Option B: Manual start**
-```bash
-python src/web_main.py data/raw/combined_dataset.xlsx
-```
+The script installs all dependencies automatically on first run, starts the server, and opens your browser to **http://localhost:8000**.
 
-**Option C: Standalone Executable (No Python installation required)**
+Press `CTRL+C` to stop.
 
-If you want to avoid installing Python and dependencies, you can build a standalone executable:
+---
 
-**On macOS:**
-```bash
-./build_executable.sh
-./dist/AgilePredictionSystem
-```
+## What to explore
 
-**On Windows:**
-```cmd
-build_executable.bat
-dist\AgilePredictionSystem.exe
-```
+| Tab | What it does |
+|-----|-------------|
+| **Recommendations** | Select a team + month → get top predicted practices with explanations |
+| **Backtest** | Validate accuracy on historical data (~49%, 2.0× better than random) |
+| **Statistics** | Dataset overview: 87 teams, 35 practices, 10 months |
+| **Sequences** | Learned Markov transition patterns between practices |
 
-The executable will automatically start the server and open your browser. See the "Building Executables" section in README.md for more details.
+**Suggested walkthrough:**
+1. **Statistics** — understand the dataset
+2. **Sequences** — see learned improvement patterns
+3. **Recommendations** — pick any team (e.g. "AADS") and any month, click "Get Recommendations"
+4. **Backtest** → click "Run Backtest Validation" to see live accuracy metrics (~1–2 min)
 
-### Step 2: Open in Browser
-
-Once the server starts, you'll see:
-```
-INFO:     Uvicorn running on http://127.0.0.1:8000
-```
-
-Open your web browser and navigate to:
-**http://localhost:8000**
-
-## What You Should See
-
-### Web Interface Features:
-
-1. **Recommendations Tab**
-   - Select a team from the dropdown
-   - Select a month to predict
-   - Click "Get Recommendations"
-   - See top 2 recommended practices with explanations
-
-2. **Backtest Validation Tab**
-   - Run validation on historical data
-   - See accuracy metrics and improvement factors
-   - Find optimal configuration parameters
-
-3. **Statistics Tab**
-   - View system statistics
-   - See practice definitions and maturity levels
-   - Explore improvement sequences
-
-4. **Sequences Tab**
-   - View learned improvement sequences
-   - See transition probabilities between practices
-
-## Alternative: Command Line Interface
-
-If you prefer command-line interaction:
-
-```bash
-python src/main.py data/raw/combined_dataset.xlsx
-```
-
-Follow the interactive menu to:
-- Get recommendations for a team
-- Run backtest validation
-- View statistics
-
-## Expected Output
-
-When the web server starts successfully, you should see:
-
-```
-Starting Agile Practice Prediction System (Web Interface)...
-   Loading: data/raw/combined_dataset.xlsx
-
-[1/5] Loading data...
-[2/5] Validating data...
-[3/5] Processing data...
-[4/5] Initializing ML components...
-[5/5] Starting web server...
-
-INFO:     Started server process
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-```
-
-## Stopping the Server
-
-Press `CTRL+C` in the terminal to stop the web server.
-
-## Testing the System
-
-### Quick Test:
-1. Go to the **Recommendations** tab
-2. Select any team (e.g., "AADS")
-3. Select a month (e.g., "2020-05-03")
-4. Click "Get Recommendations"
-5. You should see 2 recommended practices with scores and explanations
-
-### Validation Test:
-1. Go to the **Backtest Validation** tab
-2. Click "Run Backtest Validation"
-3. Wait for results (may take 1-2 minutes)
-4. You should see accuracy metrics and improvement factors
+---
 
 ## Troubleshooting
 
-**Server won't start?**
-- Check that port 8000 is not in use
-- Verify data file exists: `ls data/raw/combined_dataset.xlsx`
-- Make sure all dependencies are installed: `pip list`
-
-**Can't access http://localhost:8000?**
-- Make sure the server started successfully
-- Check firewall settings
-- Try http://127.0.0.1:8000 instead
-
-**Import errors?**
-- Activate virtual environment if using one
-- Reinstall dependencies: `pip install -r requirements.txt`
-
-## More Information
-
-- **Full Documentation:** See `README.md`
-- **Installation Details:** See `INSTALLATION.md`
-- **Project Structure:** See `README.md` section "Project Structure"
-
-## For Evaluation
-
-The system demonstrates:
-- **Machine Learning:** Collaborative filtering + sequence learning
-- **Web Development:** FastAPI backend + modern frontend
-- **Data Processing:** Excel data loading and validation
-- **Validation:** Backtest methodology with accuracy metrics
-- **Optimization:** Parameter tuning and search space optimization
-
-**Key Metrics to Review:**
-- Recommendation accuracy: ~68% (23x better than random baseline)
-- Improvement factor: ~1.9x
-- System handles 87 teams × 35 practices × 10 months of data
-
+| Problem | Fix |
+|---------|-----|
+| Port 8000 in use | Close other apps on that port |
+| Browser didn't open automatically | Navigate manually to http://localhost:8000 |
+| `pip` errors during install | Run `pip install -r requirements.txt` manually, then re-run the script |
+| Data file not found | Ensure `data/raw/combined_dataset.xlsx` exists in the project folder |
