@@ -90,6 +90,8 @@ For detailed domain information, see `/domain-data`, `/domain-ml`, `/domain-vali
 | POST | `/api/optimize` | Run parameter grid search |
 | POST | `/api/optimize/cancel` | Cancel in-progress optimization |
 | GET | `/api/optimize/latest` | Latest saved optimization results |
+| GET | `/api/example-data` | Serve raw Excel dataset file (Statistics tab modal) |
+| GET | `/api/docs` | Serve PROJECT_DOCUMENTATION.md as plain text (About modal) |
 
 ## Startup Sequence
 

@@ -6,7 +6,7 @@ description: FastAPI app factory, route handlers, APIService orchestration, Pyda
 # Domain: API
 
 ## Summary
-`APIService` wraps all ML and validation components for HTTP consumption. `create_routes()` registers 10 endpoints on a shared `APIRouter`; `create_app()` mounts static files and wires routes. Optimization runs in a `ThreadPoolExecutor` so the event loop stays free for cancel requests.
+`APIService` wraps all ML and validation components for HTTP consumption. `create_routes()` registers 12 endpoints on a shared `APIRouter`; `create_app()` mounts static files and wires routes. Optimization runs in a `ThreadPoolExecutor` so the event loop stays free for cancel requests.
 
 ## Data Flows
 
@@ -20,13 +20,15 @@ description: FastAPI app factory, route handlers, APIService orchestration, Pyda
 
 - All endpoints under `/api/` prefix; static files at `/static/`; SPA shell at `/`
 - Optimization endpoint uses `asyncio.get_event_loop().run_in_executor()` — do not convert to `await asyncio.to_thread()` without testing cancel concurrency
+- `GET /api/example-data` — serves `data/raw/combined_dataset.xlsx` as a `FileResponse` (used by the Statistics tab "See Example Dataset" modal)
+- `GET /api/docs` — serves `docs/PROJECT_DOCUMENTATION.md` as a `PlainTextResponse` (used by the "About" modal in the header)
 
 ## Backend Functions
 
 | Class / Method | File | Called from | Key params / returns |
 |---|---|---|---|
 | `create_app()` | `src/api/main.py` | `web_main.py` | `service: APIService` → `FastAPI` app instance |
-| `create_routes()` | `src/api/routes.py:31` | `create_app()` | `service: APIService` → `APIRouter` with all 10 routes registered |
+| `create_routes()` | `src/api/routes.py:31` | `create_app()` | `service: APIService` → `APIRouter` with all 12 routes registered |
 | `APIService.get_all_teams()` | `src/api/service.py:51` | `GET /api/teams` | → `list[dict]` sorted by num_months desc |
 | `APIService.get_teams_with_improvements()` | `src/api/service.py:80` | `GET /api/teams/with-improvements` | → `list[dict]` (team, month, improvements) |
 | `APIService.get_team_months()` | `src/api/service.py:133` | `GET /api/teams/{team_name}/months` | `team_name` → `list[int]` (month 3+ only) or `None` |
