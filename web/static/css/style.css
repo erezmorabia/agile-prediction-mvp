@@ -146,7 +146,7 @@ header::before {
     width: auto;
     max-width: 200px;
     object-fit: contain;
-    filter: brightness(0.85) sepia(0.15);
+    filter: invert(1) brightness(0.85) opacity(0.75);
 }
 
 .header-text {
