@@ -470,6 +470,9 @@ class APIService:
                         "predictions": int(r["predictions"]),
                         "correct": int(r["correct"]),
                         "accuracy": float(r["accuracy"]),
+                        "precision": float(r.get("precision", 0.0)),
+                        "recall": float(r.get("recall", 0.0)),
+                        "mrr": float(r.get("mrr", 0.0)),
                         "teams_tested": int(r["teams_tested"]),
                     }
                 )
@@ -502,6 +505,23 @@ class APIService:
             result["avg_improvements_per_case"] = float(result["avg_improvements_per_case"])
         else:
             result["avg_improvements_per_case"] = 0.0
+
+        # Rank-aware supplementary metrics (precision@N, recall@N, MRR) and their baselines
+        for field in (
+            "overall_precision",
+            "overall_recall",
+            "overall_mrr",
+            "random_precision",
+            "random_recall",
+            "random_mrr",
+            "precision_gap",
+            "recall_gap",
+            "mrr_gap",
+            "precision_improvement_factor",
+            "recall_improvement_factor",
+            "mrr_improvement_factor",
+        ):
+            result[field] = float(result.get(field, 0.0))
 
         return result
 

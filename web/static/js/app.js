@@ -970,6 +970,30 @@ async function runBacktest() {
 /**
  * Display backtest results
  */
+/**
+ * Renders one column of the "Supplementary Rank-Aware Metrics" panel: model value vs.
+ * random baseline vs. improvement factor, for a single metric (Precision@N, Recall@N, or MRR).
+ * @param {string} label - Metric name shown as the column heading.
+ * @param {number} modelValue - Model's overall value for this metric (0-1).
+ * @param {number} baselineValue - Matching random-baseline value for this metric (0-1).
+ * @param {number} factor - modelValue / baselineValue, as already computed by the API.
+ * @param {string} tipText - Tooltip explaining the metric.
+ * @returns {string} HTML string for one metric column.
+ */
+function renderRankMetricCard(label, modelValue, baselineValue, factor, tipText) {
+    const isMrr = label === 'MRR';
+    const formatValue = (v) => isMrr ? (v || 0).toFixed(2) : `${((v || 0) * 100).toFixed(1)}%`;
+    const color = (modelValue || 0) >= (baselineValue || 0) ? '#28a745' : '#dc3545';
+    return `
+        <div style="text-align: center; flex: 1; min-width: 140px;">
+            <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">${label} ${tip(tipText)}</div>
+            <div style="font-size: 1.8em; font-weight: bold; color: #f59e0b;">${formatValue(modelValue)}</div>
+            <div style="font-size: 0.8em; color: #8a8785; margin-top: 4px;">vs random ${formatValue(baselineValue)}</div>
+            <div style="font-size: 0.95em; font-weight: bold; color: ${color}; margin-top: 4px;">${(baselineValue || 0) > 0 ? (factor || 0).toFixed(2) + '×' : '—'}</div>
+        </div>
+    `;
+}
+
 function displayBacktestResults(data) {
     const resultsDiv = document.getElementById('backtest-results');
     resultsDiv.classList.remove('hidden');
@@ -996,6 +1020,9 @@ function displayBacktestResults(data) {
                             <th>Predictions ${tip('Total practice recommendations generated across all tested teams for this month. Each team receives top-N recommendations.')}</th>
                             <th>Correct ${tip('Recommendations that matched an actual practice improvement made by the team within the 3-month validation window following this month.')}</th>
                             <th>Monthly Accuracy ${tip('Correct ÷ Predictions for this month only. The Overall Accuracy shown above is the simple average of this column — each month counted equally, regardless of how many teams it had.')}</th>
+                            <th>Precision@N ${tip('Correct recommendations ÷ recommendations made (top_n). Unlike Monthly Accuracy, this is penalized when only some of the N recommendations were right. Higher = fewer wasted suggestions.')}</th>
+                            <th>Recall@N ${tip('Correct recommendations ÷ practices actually improved. Capped at top_n ÷ actual improvements, so a low value can reflect that cap rather than a weaker model. Higher = better coverage of what teams actually improved.')}</th>
+                            <th>MRR ${tip('Mean Reciprocal Rank: 1.0 if the first recommendation was correct, 0.5 if the second was the first hit, 0 if none were correct. Rewards ranking the right answer first. Higher = correct answer ranks closer to the top.')}</th>
                             <th>Teams Tested ${tip('Teams that had at least one improvement in the 3-month validation window. Teams with zero improvements are excluded - their absence is not a model failure.')}</th>
                         </tr>
                     </thead>
@@ -1013,6 +1040,9 @@ function displayBacktestResults(data) {
                             <td>${r.predictions || 0}</td>
                             <td>${r.correct || 0}</td>
                             <td><strong>${((r.accuracy || 0) * 100).toFixed(1)}%</strong></td>
+                            <td>${((r.precision || 0) * 100).toFixed(1)}%</td>
+                            <td>${((r.recall || 0) * 100).toFixed(1)}%</td>
+                            <td>${(r.mrr || 0).toFixed(2)}</td>
                             <td>${r.teams_tested || 0}</td>
                         </tr>
             `;
@@ -1022,6 +1052,9 @@ function displayBacktestResults(data) {
         const totalCorrect = data.correct_predictions || 0;
         const rawRatio = totalPredictions > 0 ? (totalCorrect / totalPredictions * 100).toFixed(1) : '—';
         const overallAvg = ((data.overall_accuracy || 0) * 100).toFixed(1);
+        const overallPrecisionAvg = ((data.overall_precision || 0) * 100).toFixed(1);
+        const overallRecallAvg = ((data.overall_recall || 0) * 100).toFixed(1);
+        const overallMrrAvg = (data.overall_mrr || 0).toFixed(2);
         const totalTeamsTested = data.per_month_results.reduce((sum, r) => sum + (r.teams_tested || 0), 0);
 
         perMonthTable += `
@@ -1035,6 +1068,9 @@ function displayBacktestResults(data) {
                                 <span style="color: #8a8785; font-size: 0.78em; margin-left: 4px;">avg of above</span>
                                 <div style="font-size: 0.8em; color: #8a8785; margin-top: 2px;">${rawRatio}% if ${totalCorrect}÷${totalPredictions}</div>
                             </td>
+                            <td><strong>${overallPrecisionAvg}%</strong></td>
+                            <td><strong>${overallRecallAvg}%</strong></td>
+                            <td><strong>${overallMrrAvg}</strong></td>
                             <td><strong>${totalTeamsTested}</strong></td>
                         </tr>
         `;
@@ -1087,6 +1123,38 @@ function displayBacktestResults(data) {
                             ${randomBaseline > 0 ? 'Model is ' + (modelAccuracy / randomBaseline).toFixed(2) + '× more accurate than random' : 'No random baseline available'}
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Supplementary rank-aware metrics: Overall Accuracy above is Hit Rate@N (binary
+                 hit/miss, ignores rank, full credit for 1-of-N). These three are stricter. -->
+            <div class="accuracy-comparison" style="margin: 20px 0; padding: 20px; background: #1e1d1a; border-radius: 8px; border: 1px solid #3a3835;">
+                <h4 style="margin-top: 0; text-align: center;">
+                    Supplementary Rank-Aware Metrics
+                    ${tip('Overall Accuracy above (Hit Rate@N) is a binary hit/miss per case that ignores recommendation order and gives full credit even if only 1 of N recommendations was correct. These three metrics are stricter: Precision@N penalizes wrong picks, Recall@N measures how much of a team\'s actual improvement activity was captured, and MRR rewards ranking the correct answer first.')}
+                </h4>
+                <div style="display: flex; justify-content: space-around; gap: 16px; flex-wrap: wrap; margin-top: 16px;">
+                    ${renderRankMetricCard(
+                        'Precision@N',
+                        data.overall_precision,
+                        data.random_precision,
+                        data.precision_improvement_factor,
+                        'Correct recommendations ÷ total recommendations made (top_n). Getting 1 of 2 right scores 0.5 here, vs. 1.0 in Overall Accuracy. Higher = fewer wasted suggestions: more of what we recommend actually gets improved.'
+                    )}
+                    ${renderRankMetricCard(
+                        'Recall@N',
+                        data.overall_recall,
+                        data.random_recall,
+                        data.recall_improvement_factor,
+                        'Correct recommendations ÷ practices actually improved. Capped at top_n ÷ actual improvements — a low value can reflect that cap, not necessarily a weaker model. Higher = better coverage: more of what the team really improved was on our list.'
+                    )}
+                    ${renderRankMetricCard(
+                        'MRR',
+                        data.overall_mrr,
+                        data.random_mrr,
+                        data.mrr_improvement_factor,
+                        'Mean Reciprocal Rank: 1.0 if the top recommendation was correct, 0.5 if the second was the first hit, 0 if none were. Sensitive to ranking order, unlike Overall Accuracy. Higher = the correct answer ranks closer to the top, not buried further down the list.'
+                    )}
                 </div>
             </div>
 

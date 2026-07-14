@@ -7,6 +7,8 @@ from collections.abc import Callable
 
 from scipy.special import comb
 
+from .metrics import MetricsCalculator
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,6 +25,39 @@ class BacktestEngine:
         """
         self.recommender = recommender_engine
         self.processor = processor
+
+    @staticmethod
+    def _expected_random_mrr(n: int, k: int, top_n: int) -> float:
+        """
+        Exact expected MRR for a random top-N pick out of n practices, k of which are correct.
+
+        Uses the negative hypergeometric rank distribution: the probability that the first
+        correct practice lands at rank r (drawing without replacement) is
+        P(R=r) = C(n-r, k-1) / C(n, k). Unlike precision/recall's random baselines, this is
+        not linear in k, so it must be computed per case (using that case's actual k) rather
+        than from an average k_avg.
+
+        Args:
+            n (int): Total number of practices.
+            k (int): Number of practices actually improved in this case.
+            top_n (int): Number of recommendations drawn.
+
+        Returns:
+            float: Expected MRR under uniform random selection (0-1).
+        """
+        if n <= 0 or k <= 0 or top_n <= 0:
+            return 0.0
+        try:
+            denom = comb(n, k, exact=True)
+            if denom == 0:
+                return 0.0
+            expected = 0.0
+            for r in range(1, min(top_n, n) + 1):
+                numer = comb(n - r, k - 1, exact=True)
+                expected += (numer / denom) / r
+            return expected
+        except (ValueError, ZeroDivisionError):
+            return 0.0
 
     def run_backtest(
         self, train_ratio: float = None, config: dict = None, cancellation_check: Callable[[], bool] | None = None
@@ -121,6 +156,8 @@ class BacktestEngine:
         recent_improvements_months = config.get("recent_improvements_months", 3)
         min_similarity_threshold = config.get("min_similarity_threshold", 0.75)
 
+        total_practices = len(self.recommender.practices)  # Total practices (30 after filtering)
+
         # Rolling window: start from month 4 (index 3, 0-based)
         per_month_results = []
         total_predictions = 0
@@ -129,6 +166,7 @@ class BacktestEngine:
 
         # Track improvements per case for random baseline calculation
         improvements_per_case = []  # List of number of practices improved per case
+        expected_mrr_per_case = []  # Exact per-case E[MRR] under random selection (for MRR baseline)
 
         logger.debug(
             "Starting backtest with %d months, cancellation_check=%s",
@@ -149,6 +187,7 @@ class BacktestEngine:
                         improvements_per_case,
                         all_teams_tested,
                         top_n,
+                        expected_mrr_per_case,
                     )
 
             test_month = months[test_month_idx]
@@ -161,7 +200,13 @@ class BacktestEngine:
             if cancellation_check and cancellation_check():
                 logger.debug("Cancellation detected before sequence learning for month %d/%d", test_month_idx + 1, len(months))
                 return self._build_partial_results(
-                    per_month_results, total_predictions, total_correct, improvements_per_case, all_teams_tested, top_n
+                    per_month_results,
+                    total_predictions,
+                    total_correct,
+                    improvements_per_case,
+                    all_teams_tested,
+                    top_n,
+                    expected_mrr_per_case,
                 )
 
             # Learn sequences up to test_month (using sliding window)
@@ -172,6 +217,9 @@ class BacktestEngine:
             # Run backtest for this month
             month_predictions = 0
             month_correct = 0
+            month_precision_sum = 0.0
+            month_recall_sum = 0.0
+            month_mrr_sum = 0.0
             teams_tested_this_month = set()
 
             team_count = 0  # Track team count for cancellation checks
@@ -193,6 +241,7 @@ class BacktestEngine:
                             improvements_per_case,
                             all_teams_tested,
                             top_n,
+                            expected_mrr_per_case,
                         )
                 try:
                     history = self.processor.get_team_history(team)
@@ -249,6 +298,9 @@ class BacktestEngine:
 
                     # Track number of improvements for random baseline calculation
                     improvements_per_case.append(len(actual_improved))
+                    expected_mrr_per_case.append(
+                        self._expected_random_mrr(total_practices, len(actual_improved), top_n)
+                    )
 
                     # What did we recommend?
                     # Note: allow_first_three_months=True because in backtest, we may use
@@ -276,6 +328,12 @@ class BacktestEngine:
                         if recommended & actual_improved:  # Intersection
                             month_correct += 1
                             total_correct += 1
+
+                        # Rank-aware supplementary metrics: precision@N, recall@N, MRR
+                        ordered_practices = [r[0] for r in recommendations]
+                        month_precision_sum += MetricsCalculator.calculate_hit_rate(ordered_practices, actual_improved)
+                        month_recall_sum += len(recommended & actual_improved) / len(actual_improved)
+                        month_mrr_sum += MetricsCalculator.calculate_mrr(ordered_practices, actual_improved)
                     except ValueError:
                         # Skip if month validation fails (e.g., month in first 3 months)
                         # This can happen if prev_month is in the first 3 months
@@ -286,8 +344,11 @@ class BacktestEngine:
                 except:
                     continue
 
-            # Calculate accuracy for this month
+            # Calculate accuracy and rank-aware metrics for this month
             month_accuracy = month_correct / month_predictions if month_predictions > 0 else 0
+            month_precision = month_precision_sum / month_predictions if month_predictions > 0 else 0
+            month_recall = month_recall_sum / month_predictions if month_predictions > 0 else 0
+            month_mrr = month_mrr_sum / month_predictions if month_predictions > 0 else 0
 
             per_month_results.append(
                 {
@@ -296,42 +357,75 @@ class BacktestEngine:
                     "predictions": month_predictions,
                     "correct": month_correct,
                     "accuracy": month_accuracy,
+                    "precision": month_precision,
+                    "recall": month_recall,
+                    "mrr": month_mrr,
                     "teams_tested": len(teams_tested_this_month),
                 }
             )
 
-        # Calculate overall accuracy (average of per-month accuracies)
+        # Calculate overall accuracy and rank-aware metrics (average of per-month values)
         if per_month_results:
             overall_accuracy = sum(r["accuracy"] for r in per_month_results) / len(per_month_results)
+            overall_precision = sum(r["precision"] for r in per_month_results) / len(per_month_results)
+            overall_recall = sum(r["recall"] for r in per_month_results) / len(per_month_results)
+            overall_mrr = sum(r["mrr"] for r in per_month_results) / len(per_month_results)
         else:
             overall_accuracy = 0
+            overall_precision = 0
+            overall_recall = 0
+            overall_mrr = 0
 
         # Calculate correct random baseline
         # P(at least one correct) = 1 - C(n-k_avg, top_n) / C(n, top_n)
         # Where n = total practices, k_avg = average improvements per case, top_n = recommendations
-        n = len(self.recommender.practices)  # Total practices (30 after filtering)
         random_baseline = 0.0
         improvement_gap = 0.0
+        random_precision = 0.0
+        random_recall = 0.0
+        random_mrr = 0.0
+        precision_gap = 0.0
+        recall_gap = 0.0
+        mrr_gap = 0.0
 
-        if improvements_per_case and n > 0:
+        if improvements_per_case and total_practices > 0:
             k_avg = sum(improvements_per_case) / len(improvements_per_case)
             # Calculate probability of getting at least one correct with random selection
-            if k_avg > 0 and top_n > 0 and n >= k_avg and n >= top_n:
+            if k_avg > 0 and top_n > 0 and total_practices >= k_avg and total_practices >= top_n:
                 # P(none correct) = C(n-k_avg, top_n) / C(n, top_n)
                 try:
-                    p_none = comb(n - k_avg, top_n, exact=True) / comb(n, top_n, exact=True)
+                    p_none = comb(total_practices - k_avg, top_n, exact=True) / comb(total_practices, top_n, exact=True)
                     random_baseline = 1.0 - p_none
                 except (ValueError, ZeroDivisionError):
                     # Fallback to simple approximation if combination calculation fails
-                    random_baseline = min(1.0, (k_avg / n) * top_n)
+                    random_baseline = min(1.0, (k_avg / total_practices) * top_n)
             else:
                 # Edge case: use simple approximation
-                random_baseline = min(1.0, (k_avg / n) * top_n) if n > 0 else 0.0
+                random_baseline = min(1.0, (k_avg / total_practices) * top_n) if total_practices > 0 else 0.0
 
             improvement_gap = overall_accuracy - random_baseline
 
+            # Precision@N (random) = k_avg / n; Recall@N (random) = top_n / n.
+            # Both are exact regardless of aggregation, since dividing hypergeometric expected
+            # hits by a constant (N or k) is linear.
+            random_precision = min(1.0, k_avg / total_practices)
+            random_recall = min(1.0, top_n / total_practices)
+
+            # MRR (random) is not linear in k, so it's the average of the exact per-case
+            # expectation (via the negative hypergeometric rank distribution), not derived
+            # from k_avg.
+            if expected_mrr_per_case:
+                random_mrr = sum(expected_mrr_per_case) / len(expected_mrr_per_case)
+
+            precision_gap = overall_precision - random_precision
+            recall_gap = overall_recall - random_recall
+            mrr_gap = overall_mrr - random_mrr
+
         # Calculate improvement factor (for backward compatibility)
         improvement_factor = overall_accuracy / random_baseline if random_baseline > 0 else 0
+        precision_improvement_factor = overall_precision / random_precision if random_precision > 0 else 0
+        recall_improvement_factor = overall_recall / random_recall if random_recall > 0 else 0
+        mrr_improvement_factor = overall_mrr / random_mrr if random_mrr > 0 else 0
 
         return {
             "status": "success",
@@ -342,6 +436,18 @@ class BacktestEngine:
             "random_baseline": random_baseline,
             "improvement_gap": improvement_gap,
             "improvement_factor": improvement_factor,
+            "overall_precision": overall_precision,
+            "overall_recall": overall_recall,
+            "overall_mrr": overall_mrr,
+            "random_precision": random_precision,
+            "random_recall": random_recall,
+            "random_mrr": random_mrr,
+            "precision_gap": precision_gap,
+            "recall_gap": recall_gap,
+            "mrr_gap": mrr_gap,
+            "precision_improvement_factor": precision_improvement_factor,
+            "recall_improvement_factor": recall_improvement_factor,
+            "mrr_improvement_factor": mrr_improvement_factor,
             "teams_tested": len(all_teams_tested),
             "avg_improvements_per_case": sum(improvements_per_case) / len(improvements_per_case)
             if improvements_per_case
@@ -357,6 +463,7 @@ class BacktestEngine:
         improvements_per_case: list,
         all_teams_tested: set,
         top_n: int,
+        expected_mrr_per_case: list | None = None,
     ) -> dict:
         """
         Build partial results dictionary when backtest is cancelled mid-execution.
@@ -375,6 +482,8 @@ class BacktestEngine:
             all_teams_tested (set): Set of team names that were tested before cancellation.
             top_n (int): Number of recommendations generated per prediction. Used for
                 random baseline probability calculation.
+            expected_mrr_per_case (list, optional): Per-case exact expected MRR under random
+                selection, tested so far. Used for the MRR random baseline.
 
         Returns:
             dict: Partial backtest results dictionary with same structure as run_backtest()
@@ -392,36 +501,62 @@ class BacktestEngine:
             "Backtest cancelled — returning partial results (%d months completed, %d/%d correct)",
             len(per_month_results), total_correct, total_predictions,
         )
-        # Calculate overall accuracy from completed months only
+        expected_mrr_per_case = expected_mrr_per_case or []
+
+        # Calculate overall accuracy and rank-aware metrics from completed months only
         if per_month_results:
             overall_accuracy = sum(r["accuracy"] for r in per_month_results) / len(per_month_results)
+            overall_precision = sum(r.get("precision", 0) for r in per_month_results) / len(per_month_results)
+            overall_recall = sum(r.get("recall", 0) for r in per_month_results) / len(per_month_results)
+            overall_mrr = sum(r.get("mrr", 0) for r in per_month_results) / len(per_month_results)
         else:
             overall_accuracy = 0
+            overall_precision = 0
+            overall_recall = 0
+            overall_mrr = 0
 
         # Calculate random baseline from partial data
-        n = len(self.recommender.practices)  # Total practices
+        total_practices = len(self.recommender.practices)  # Total practices
         random_baseline = 0.0
         improvement_gap = 0.0
+        random_precision = 0.0
+        random_recall = 0.0
+        random_mrr = 0.0
+        precision_gap = 0.0
+        recall_gap = 0.0
+        mrr_gap = 0.0
 
-        if improvements_per_case and n > 0:
+        if improvements_per_case and total_practices > 0:
             k_avg = sum(improvements_per_case) / len(improvements_per_case)
             # Calculate probability of getting at least one correct with random selection
-            if k_avg > 0 and top_n > 0 and n >= k_avg and n >= top_n:
+            if k_avg > 0 and top_n > 0 and total_practices >= k_avg and total_practices >= top_n:
                 # P(none correct) = C(n-k_avg, top_n) / C(n, top_n)
                 try:
-                    p_none = comb(n - k_avg, top_n, exact=True) / comb(n, top_n, exact=True)
+                    p_none = comb(total_practices - k_avg, top_n, exact=True) / comb(total_practices, top_n, exact=True)
                     random_baseline = 1.0 - p_none
                 except (ValueError, ZeroDivisionError):
                     # Fallback to simple approximation if combination calculation fails
-                    random_baseline = min(1.0, (k_avg / n) * top_n)
+                    random_baseline = min(1.0, (k_avg / total_practices) * top_n)
             else:
                 # Edge case: use simple approximation
-                random_baseline = min(1.0, (k_avg / n) * top_n) if n > 0 else 0.0
+                random_baseline = min(1.0, (k_avg / total_practices) * top_n) if total_practices > 0 else 0.0
 
             improvement_gap = overall_accuracy - random_baseline
 
+            random_precision = min(1.0, k_avg / total_practices)
+            random_recall = min(1.0, top_n / total_practices)
+            if expected_mrr_per_case:
+                random_mrr = sum(expected_mrr_per_case) / len(expected_mrr_per_case)
+
+            precision_gap = overall_precision - random_precision
+            recall_gap = overall_recall - random_recall
+            mrr_gap = overall_mrr - random_mrr
+
         # Calculate improvement factor
         improvement_factor = overall_accuracy / random_baseline if random_baseline > 0 else 0
+        precision_improvement_factor = overall_precision / random_precision if random_precision > 0 else 0
+        recall_improvement_factor = overall_recall / random_recall if random_recall > 0 else 0
+        mrr_improvement_factor = overall_mrr / random_mrr if random_mrr > 0 else 0
 
         return {
             "status": "success",
@@ -432,6 +567,18 @@ class BacktestEngine:
             "random_baseline": random_baseline,
             "improvement_gap": improvement_gap,
             "improvement_factor": improvement_factor,
+            "overall_precision": overall_precision,
+            "overall_recall": overall_recall,
+            "overall_mrr": overall_mrr,
+            "random_precision": random_precision,
+            "random_recall": random_recall,
+            "random_mrr": random_mrr,
+            "precision_gap": precision_gap,
+            "recall_gap": recall_gap,
+            "mrr_gap": mrr_gap,
+            "precision_improvement_factor": precision_improvement_factor,
+            "recall_improvement_factor": recall_improvement_factor,
+            "mrr_improvement_factor": mrr_improvement_factor,
             "teams_tested": len(all_teams_tested),
             "avg_improvements_per_case": sum(improvements_per_case) / len(improvements_per_case)
             if improvements_per_case

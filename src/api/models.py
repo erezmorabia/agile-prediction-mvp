@@ -48,6 +48,9 @@ class PerMonthResult(BaseModel):
     predictions: int
     correct: int
     accuracy: float
+    precision: float
+    recall: float
+    mrr: float
     teams_tested: int
 
 
@@ -144,6 +147,18 @@ class BacktestResponse(BaseModel):
     random_baseline: float
     improvement_gap: float
     improvement_factor: float
+    overall_precision: float
+    overall_recall: float
+    overall_mrr: float
+    random_precision: float
+    random_recall: float
+    random_mrr: float
+    precision_gap: float
+    recall_gap: float
+    mrr_gap: float
+    precision_improvement_factor: float
+    recall_improvement_factor: float
+    mrr_improvement_factor: float
     per_month_results: list[PerMonthResult]
     teams_tested: int
     avg_improvements_per_case: float
