@@ -386,6 +386,28 @@ The validation methodology follows the original proposal's approach:
 - **Improvement Factor**: Accuracy / Random Baseline
 - **Improvement Gap**: Accuracy - Random Baseline
 
+**Supplementary Rank-Aware Metrics:**
+
+The headline Accuracy above (also called Hit Rate@N) is a binary hit/miss per case: it ignores
+recommendation order and gives full credit even if only 1 of N recommendations was correct.
+Three stricter, rank-aware metrics are reported alongside it, each with its own matching random
+baseline:
+
+- **Precision@N**: Correct recommendations ÷ total recommendations made (top_n). Penalizes wrong
+  picks — getting 1 of 2 right scores 0.5 here, vs. 1.0 in Accuracy. Random baseline: k_avg / n.
+- **Recall@N**: Correct recommendations ÷ practices actually improved. Measures coverage of a
+  team's real improvement activity; capped at top_n ÷ actual improvements, so a low value can
+  reflect that cap rather than a weaker model. Random baseline: top_n / n.
+- **MRR (Mean Reciprocal Rank)**: 1.0 if the first recommendation was correct, 0.5 if the second
+  was the first hit, 0 if none were correct. Rewards ranking the right answer first. Random
+  baseline is computed per case via the exact negative-hypergeometric expectation (not linear in
+  k, so it can't be derived from k_avg like the other two).
+
+These are supplementary diagnostics computed by `BacktestEngine` (backed by
+`MetricsCalculator.calculate_hit_rate` and `calculate_mrr`) and shown in the Backtest tab; they do
+not change the headline 49% accuracy / 24.4% random baseline figures reported elsewhere in this
+document.
+
 ### 3.7 Worked Examples
 
 This section provides detailed examples showing how the recommendation system works with actual data, demonstrating both similarity-based and sequence-based recommendations.
@@ -809,6 +831,14 @@ This dataset aligns with the proposal's scale (70+ teams, 30+ practices) and rep
 - **Teams Tested**: Number of teams included in validation
 - **Total Predictions**: Number of recommendation cases evaluated
 - **Average Improvements per Case**: Average number of practices improved per team-month
+
+**Supplementary Rank-Aware Metrics:**
+- **Precision@N**: Correct recommendations ÷ recommendations made — penalizes wrong picks
+- **Recall@N**: Correct recommendations ÷ practices actually improved — measures coverage
+- **MRR**: Mean Reciprocal Rank — rewards ranking the correct recommendation first
+
+Each has its own matching random baseline, gap, and improvement factor, reported alongside the
+primary Accuracy metrics (see §3.6 for definitions and baseline formulas).
 
 ### 6.3 Backtest Results
 
@@ -1610,6 +1640,9 @@ Enter month (yyyymmdd): 200105
 - **Random Baseline**: Expected accuracy with random selection
 - **Improvement Factor**: How many times better than random
 - **Per-Month Results**: Accuracy broken down by month
+- **Supplementary Rank-Aware Metrics**: Precision@N, Recall@N, and MRR, each shown against its
+  own random baseline — stricter, order-sensitive alternatives to the headline Accuracy (see
+  §3.6 and §6.2)
 
 **Sequence Patterns:**
 - **From Practice → To Practice**: Shows which practices typically follow others
