@@ -2,7 +2,7 @@
 
 **Advanced Computer Science Project Documentation**
 
-**Student:** Araz Morabia  
+**Student:** Erez Morabia  
 **Advisor:** Professor Shmuel Tishbrovitz  
 **University:** Open University, Israel
 
