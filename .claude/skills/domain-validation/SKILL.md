@@ -83,13 +83,39 @@ give a different (wrong) answer than averaging the *outputs*.
 Each has a matching gap/factor field (e.g. `precision_gap`, `precision_improvement_factor`),
 mirroring `improvement_gap`/`improvement_factor` for HR@N.
 
+### Popularity baseline (supplementary, alongside random)
+
+A stronger sanity check than random chance: always recommend the top-N practices that improve
+most often organization-wide (ignoring the target team's own state entirely), learned from the
+same months < `prev_month` cutoff the real model just used for that case. Computed inline in the
+per-team loop right after the real recommendation's hit check, reusing
+`sequence_mapper.get_improvement_frequency()` (already populated as a side effect of the
+`recommend()` call that just ran — no extra learning pass needed):
+
+```
+popularity_recommended = top_n practices by improvement_freq, excluding this team's maxed-out practices
+popularity_accuracy = mean(per_month popularity hit-rate)   # same per-month-mean aggregation as HR@N
+popularity_gap = overall_accuracy - overall_popularity_baseline
+popularity_improvement_factor = overall_accuracy / overall_popularity_baseline
+```
+
+On the reference dataset this comes out to ~43.6% (vs. the model's ~50.3%, and random's ~24.4%)
+— most of the model's edge over random is attributable to organization-wide popularity alone;
+the smaller remaining margin (~1.15x) over the popularity baseline is what's actually
+attributable to per-team personalization (collaborative filtering + sequences).
+
+**Determinism note:** `RecommendationEngine.recommend()`'s final ranking is tie-broken
+deterministically by practice name (see `/domain-ml`) — without that fix, tied scores at the
+top-N cutoff resolved via Python's hash-seed-dependent set iteration order, making backtest
+accuracy non-reproducible across process runs.
+
 ## Backend Functions
 
 | Class / Method | File | Called from | Key params / returns |
 |---|---|---|---|
-| `BacktestEngine.run_backtest()` | `src/validation/backtest.py:62` | `APIService.run_backtest()`, `OptimizationEngine` | `config: dict, cancellation_check: Callable` → results dict with `overall_accuracy`, `random_baseline`, `overall_precision`/`overall_recall`/`overall_mrr` (+ matching random baselines), `per_month_results`, `cancelled` |
+| `BacktestEngine.run_backtest()` | `src/validation/backtest.py:62` | `APIService.run_backtest()`, `OptimizationEngine` | `config: dict, cancellation_check: Callable` → results dict with `overall_accuracy`, `random_baseline`, `overall_popularity_baseline` (+ `popularity_gap`/`popularity_improvement_factor`), `overall_precision`/`overall_recall`/`overall_mrr` (+ matching random baselines), `per_month_results`, `cancelled` |
 | `BacktestEngine._expected_random_mrr()` | `src/validation/backtest.py:30` | `run_backtest()` (per case) | staticmethod; `n, k, top_n` → exact expected MRR under random selection, via negative hypergeometric rank distribution |
-| `BacktestEngine._build_partial_results()` | `src/validation/backtest.py:458` | `run_backtest()` on cancellation | internal; builds same structure as full results with `cancelled: True` |
+| `BacktestEngine._build_partial_results()` | `src/validation/backtest.py:496` | `run_backtest()` on cancellation | internal; builds same structure as full results with `cancelled: True` |
 | `OptimizationEngine.find_optimal_config()` | `src/validation/optimizer.py` | `APIService.find_optimal_config()` | param range lists, `min_accuracy`, `fixed_params` → results dict with `optimal_config`, `all_results`, `cancelled` |
 | `OptimizationEngine.generate_parameter_combinations()` | `src/validation/optimizer.py:31` | `find_optimal_config()` | range lists → generator of config dicts |
 | `OptimizationEngine.cancel()` | `src/validation/optimizer.py` | `APIService.cancel_optimization()` | sets `self._cancelled = True` |

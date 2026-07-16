@@ -1020,6 +1020,7 @@ function displayBacktestResults(data) {
                             <th>Predictions ${tip('Total practice recommendations generated across all tested teams for this month. Each team receives top-N recommendations.')}</th>
                             <th>Correct ${tip('Recommendations that matched an actual practice improvement made by the team within the 3-month validation window following this month.')}</th>
                             <th>Monthly Accuracy ${tip('Correct ÷ Predictions for this month only. The Overall Accuracy shown above is the simple average of this column — each month counted equally, regardless of how many teams it had.')}</th>
+                            <th>Popularity Baseline ${tip('Accuracy of a naive heuristic that always recommends the top-N globally most-improved practices (learned from the same past months as the model), ignoring the target team\'s own state. A stronger sanity check than random selection.')}</th>
                             <th>Precision@N ${tip('Correct recommendations ÷ recommendations made (top_n). Unlike Monthly Accuracy, this is penalized when only some of the N recommendations were right. Higher = fewer wasted suggestions.')}</th>
                             <th>Recall@N ${tip('Correct recommendations ÷ practices actually improved. Capped at top_n ÷ actual improvements, so a low value can reflect that cap rather than a weaker model. Higher = better coverage of what teams actually improved.')}</th>
                             <th>MRR ${tip('Mean Reciprocal Rank: 1.0 if the first recommendation was correct, 0.5 if the second was the first hit, 0 if none were correct. Rewards ranking the right answer first. Higher = correct answer ranks closer to the top.')}</th>
@@ -1040,6 +1041,7 @@ function displayBacktestResults(data) {
                             <td>${r.predictions || 0}</td>
                             <td>${r.correct || 0}</td>
                             <td><strong>${((r.accuracy || 0) * 100).toFixed(1)}%</strong></td>
+                            <td>${((r.popularity_accuracy || 0) * 100).toFixed(1)}%</td>
                             <td>${((r.precision || 0) * 100).toFixed(1)}%</td>
                             <td>${((r.recall || 0) * 100).toFixed(1)}%</td>
                             <td>${(r.mrr || 0).toFixed(2)}</td>
@@ -1052,6 +1054,7 @@ function displayBacktestResults(data) {
         const totalCorrect = data.correct_predictions || 0;
         const rawRatio = totalPredictions > 0 ? (totalCorrect / totalPredictions * 100).toFixed(1) : '—';
         const overallAvg = ((data.overall_accuracy || 0) * 100).toFixed(1);
+        const overallPopularityAvg = ((data.overall_popularity_baseline || 0) * 100).toFixed(1);
         const overallPrecisionAvg = ((data.overall_precision || 0) * 100).toFixed(1);
         const overallRecallAvg = ((data.overall_recall || 0) * 100).toFixed(1);
         const overallMrrAvg = (data.overall_mrr || 0).toFixed(2);
@@ -1068,6 +1071,7 @@ function displayBacktestResults(data) {
                                 <span style="color: #8a8785; font-size: 0.78em; margin-left: 4px;">avg of above</span>
                                 <div style="font-size: 0.8em; color: #8a8785; margin-top: 2px;">${rawRatio}% if ${totalCorrect}÷${totalPredictions}</div>
                             </td>
+                            <td><strong>${overallPopularityAvg}%</strong></td>
                             <td><strong>${overallPrecisionAvg}%</strong></td>
                             <td><strong>${overallRecallAvg}%</strong></td>
                             <td><strong>${overallMrrAvg}</strong></td>
@@ -1088,6 +1092,10 @@ function displayBacktestResults(data) {
     const randomBaseline = (data.random_baseline || 0) * 100;
     const improvementGap = modelAccuracy - randomBaseline;
     const gapColor = improvementGap > 0 ? '#28a745' : '#dc3545';
+
+    const popularityBaseline = (data.overall_popularity_baseline || 0) * 100;
+    const popularityGap = modelAccuracy - popularityBaseline;
+    const popularityGapColor = popularityGap > 0 ? '#28a745' : '#dc3545';
     
     const html = `
         <div class="backtest-results">
@@ -1121,6 +1129,43 @@ function displayBacktestResults(data) {
                         <div style="font-size: 3em; font-weight: bold; color: ${gapColor};">${randomBaseline > 0 ? (modelAccuracy / randomBaseline).toFixed(2) : '—'}×</div>
                         <div style="font-size: 0.85em; color: #8a8785; margin-top: 5px;">
                             ${randomBaseline > 0 ? 'Model is ' + (modelAccuracy / randomBaseline).toFixed(2) + '× more accurate than random' : 'No random baseline available'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model vs Popularity Baseline: a naive heuristic that always recommends whatever
+                 improves most often organization-wide, ignoring the target team's own state. -->
+            <div class="accuracy-comparison" style="margin: 20px 0; padding: 20px; background: #1e1d1a; border-radius: 8px; border: 1px solid #3a3835;">
+                <h4 style="margin-top: 0; text-align: center;">
+                    Model vs Popularity Baseline
+                    ${tip('A stronger sanity check than random selection: this baseline always recommends the top-N practices that improve most often across the whole organization, ignoring the target team\'s own state and history entirely (learned only from months before the prediction, same as the model). Shows how much value the model\'s personalization specifically adds on top of "know the organization\'s general trends."')}
+                </h4>
+                <div style="display: flex; justify-content: space-around; align-items: center; margin: 20px 0;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Model Accuracy</div>
+                        <div style="font-size: 2.5em; font-weight: bold; color: #f59e0b;">${modelAccuracy.toFixed(1)}%</div>
+                    </div>
+                    <div style="font-size: 2em; color: #6b6865;">vs</div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Popularity Baseline</div>
+                        <div style="font-size: 2.5em; font-weight: bold; color: #a8a5a3;">${popularityBaseline.toFixed(1)}%</div>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-around; align-items: flex-start; margin-top: 20px; padding-top: 20px; border-top: 1px solid #3a3835; gap: 10px;">
+                    <div style="text-align: center; flex: 1;">
+                        <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Improvement Gap</div>
+                        <div style="font-size: 3em; font-weight: bold; color: ${popularityGapColor};">${popularityGap > 0 ? '+' : ''}${popularityGap.toFixed(1)}%</div>
+                        <div style="font-size: 0.85em; color: #8a8785; margin-top: 5px;">
+                            ${popularityGap > 0 ? 'Model beats popularity baseline by ' + popularityGap.toFixed(1) + ' percentage points' : 'Model underperforms popularity baseline by ' + Math.abs(popularityGap).toFixed(1) + ' percentage points'}
+                        </div>
+                    </div>
+                    <div style="width: 1px; background: #3a3835; align-self: stretch;"></div>
+                    <div style="text-align: center; flex: 1;">
+                        <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Improvement Factor</div>
+                        <div style="font-size: 3em; font-weight: bold; color: ${popularityGapColor};">${popularityBaseline > 0 ? (modelAccuracy / popularityBaseline).toFixed(2) : '—'}×</div>
+                        <div style="font-size: 0.85em; color: #8a8785; margin-top: 5px;">
+                            ${popularityBaseline > 0 ? 'Model is ' + (modelAccuracy / popularityBaseline).toFixed(2) + '× more accurate than the popularity baseline' : 'No popularity baseline available'}
                         </div>
                     </div>
                 </div>

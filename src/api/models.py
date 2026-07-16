@@ -51,6 +51,7 @@ class PerMonthResult(BaseModel):
     precision: float
     recall: float
     mrr: float
+    popularity_accuracy: float
     teams_tested: int
 
 
@@ -147,6 +148,9 @@ class BacktestResponse(BaseModel):
     random_baseline: float
     improvement_gap: float
     improvement_factor: float
+    overall_popularity_baseline: float
+    popularity_gap: float
+    popularity_improvement_factor: float
     overall_precision: float
     overall_recall: float
     overall_mrr: float

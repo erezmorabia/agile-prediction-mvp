@@ -233,8 +233,11 @@ class RecommendationEngine:
                         recently_improved_practices.add(practice_name)
 
         # Apply sequence patterns for all recently improved practices
+        # Iterate in canonical practice order (not set iteration order, which is hash-seed
+        # dependent) so downstream dict insertion order - and any tie-break relying on it - is
+        # deterministic across runs
         sequence_scores = defaultdict(float)  # Track sequence-based scores separately
-        for recently_improved in recently_improved_practices:
+        for recently_improved in [p for p in self.practices if p in recently_improved_practices]:
             # Get typical next practices (from sequences learned up to current_month)
             try:
                 for next_practice, transition_prob in self.sequence_mapper.get_typical_next_practices(
@@ -260,7 +263,9 @@ class RecommendationEngine:
         normalized_sequence = {p: (s / max_sequence if max_sequence > 0 else 0.0) for p, s in sequence_scores.items()}
 
         # Combine with weights
-        all_practices = set(normalized_similarity.keys()) | set(normalized_sequence.keys())
+        # Iterate in canonical practice order (not a set - set iteration order is hash-seed
+        # dependent, which would make tie-broken rankings below non-reproducible across runs)
+        all_practices = [p for p in self.practices if p in normalized_similarity or p in normalized_sequence]
         for practice in all_practices:
             sim_score = normalized_similarity.get(practice, 0.0)
             seq_score = normalized_sequence.get(practice, 0.0)
@@ -285,8 +290,9 @@ class RecommendationEngine:
 
             recommendations.append((practice, normalized_score, current_level))
 
-        # Sort by score (descending)
-        recommendations.sort(key=lambda x: x[1], reverse=True)
+        # Sort by score (descending), tie-broken deterministically by practice name so ranking
+        # is reproducible regardless of PYTHONHASHSEED or dict iteration order upstream
+        recommendations.sort(key=lambda x: (-x[1], x[0]))
 
         return recommendations[:top_n]
 

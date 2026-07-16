@@ -120,6 +120,12 @@ class BacktestEngine:
                 - random_baseline (float): Probability of correct prediction by random selection
                 - improvement_gap (float): overall_accuracy - random_baseline
                 - improvement_factor (float): overall_accuracy / random_baseline
+                - overall_popularity_baseline (float): Accuracy of a naive heuristic that always
+                    recommends the top-N globally most-improved practices (learned from the same
+                    months < prev_month the real model uses), excluding practices the team has
+                    already maxed out
+                - popularity_gap (float): overall_accuracy - overall_popularity_baseline
+                - popularity_improvement_factor (float): overall_accuracy / overall_popularity_baseline
                 - teams_tested (int): Number of unique teams tested
                 - avg_improvements_per_case (float): Average number of practices improved per case
                 - cancelled (bool): True if backtest was cancelled mid-execution
@@ -217,6 +223,7 @@ class BacktestEngine:
             # Run backtest for this month
             month_predictions = 0
             month_correct = 0
+            month_popularity_correct = 0
             month_precision_sum = 0.0
             month_recall_sum = 0.0
             month_mrr_sum = 0.0
@@ -329,6 +336,20 @@ class BacktestEngine:
                             month_correct += 1
                             total_correct += 1
 
+                        # Popularity baseline: always recommend the top-N globally most-improved
+                        # practices (learned only from months < prev_month, same cutoff the real
+                        # model just used above), excluding practices this team has already maxed
+                        # out. This is a stronger sanity check than random selection - a naive
+                        # heuristic a reviewer would expect the model to beat.
+                        improvement_freq = self.recommender.sequence_mapper.get_improvement_frequency()
+                        maxed_out = {
+                            self.recommender.practices[j] for j, level in enumerate(prev_vector) if level >= 1.0
+                        }
+                        popularity_ranked = sorted(improvement_freq, key=improvement_freq.get, reverse=True)
+                        popularity_recommended = [p for p in popularity_ranked if p not in maxed_out][:top_n]
+                        if set(popularity_recommended) & actual_improved:
+                            month_popularity_correct += 1
+
                         # Rank-aware supplementary metrics: precision@N, recall@N, MRR
                         ordered_practices = [r[0] for r in recommendations]
                         month_precision_sum += MetricsCalculator.calculate_hit_rate(ordered_practices, actual_improved)
@@ -346,6 +367,7 @@ class BacktestEngine:
 
             # Calculate accuracy and rank-aware metrics for this month
             month_accuracy = month_correct / month_predictions if month_predictions > 0 else 0
+            month_popularity_accuracy = month_popularity_correct / month_predictions if month_predictions > 0 else 0
             month_precision = month_precision_sum / month_predictions if month_predictions > 0 else 0
             month_recall = month_recall_sum / month_predictions if month_predictions > 0 else 0
             month_mrr = month_mrr_sum / month_predictions if month_predictions > 0 else 0
@@ -357,6 +379,7 @@ class BacktestEngine:
                     "predictions": month_predictions,
                     "correct": month_correct,
                     "accuracy": month_accuracy,
+                    "popularity_accuracy": month_popularity_accuracy,
                     "precision": month_precision,
                     "recall": month_recall,
                     "mrr": month_mrr,
@@ -367,11 +390,15 @@ class BacktestEngine:
         # Calculate overall accuracy and rank-aware metrics (average of per-month values)
         if per_month_results:
             overall_accuracy = sum(r["accuracy"] for r in per_month_results) / len(per_month_results)
+            overall_popularity_baseline = sum(r["popularity_accuracy"] for r in per_month_results) / len(
+                per_month_results
+            )
             overall_precision = sum(r["precision"] for r in per_month_results) / len(per_month_results)
             overall_recall = sum(r["recall"] for r in per_month_results) / len(per_month_results)
             overall_mrr = sum(r["mrr"] for r in per_month_results) / len(per_month_results)
         else:
             overall_accuracy = 0
+            overall_popularity_baseline = 0
             overall_precision = 0
             overall_recall = 0
             overall_mrr = 0
@@ -427,6 +454,14 @@ class BacktestEngine:
         recall_improvement_factor = overall_recall / random_recall if random_recall > 0 else 0
         mrr_improvement_factor = overall_mrr / random_mrr if random_mrr > 0 else 0
 
+        # Popularity baseline comparison: how much the model beats a naive heuristic
+        # ("always recommend whatever improves most often organization-wide"), not just
+        # random chance
+        popularity_gap = overall_accuracy - overall_popularity_baseline
+        popularity_improvement_factor = (
+            overall_accuracy / overall_popularity_baseline if overall_popularity_baseline > 0 else 0
+        )
+
         return {
             "status": "success",
             "per_month_results": per_month_results,
@@ -436,6 +471,9 @@ class BacktestEngine:
             "random_baseline": random_baseline,
             "improvement_gap": improvement_gap,
             "improvement_factor": improvement_factor,
+            "overall_popularity_baseline": overall_popularity_baseline,
+            "popularity_gap": popularity_gap,
+            "popularity_improvement_factor": popularity_improvement_factor,
             "overall_precision": overall_precision,
             "overall_recall": overall_recall,
             "overall_mrr": overall_mrr,
@@ -506,11 +544,15 @@ class BacktestEngine:
         # Calculate overall accuracy and rank-aware metrics from completed months only
         if per_month_results:
             overall_accuracy = sum(r["accuracy"] for r in per_month_results) / len(per_month_results)
+            overall_popularity_baseline = sum(r.get("popularity_accuracy", 0) for r in per_month_results) / len(
+                per_month_results
+            )
             overall_precision = sum(r.get("precision", 0) for r in per_month_results) / len(per_month_results)
             overall_recall = sum(r.get("recall", 0) for r in per_month_results) / len(per_month_results)
             overall_mrr = sum(r.get("mrr", 0) for r in per_month_results) / len(per_month_results)
         else:
             overall_accuracy = 0
+            overall_popularity_baseline = 0
             overall_precision = 0
             overall_recall = 0
             overall_mrr = 0
@@ -558,6 +600,11 @@ class BacktestEngine:
         recall_improvement_factor = overall_recall / random_recall if random_recall > 0 else 0
         mrr_improvement_factor = overall_mrr / random_mrr if random_mrr > 0 else 0
 
+        popularity_gap = overall_accuracy - overall_popularity_baseline
+        popularity_improvement_factor = (
+            overall_accuracy / overall_popularity_baseline if overall_popularity_baseline > 0 else 0
+        )
+
         return {
             "status": "success",
             "per_month_results": per_month_results,
@@ -567,6 +614,9 @@ class BacktestEngine:
             "random_baseline": random_baseline,
             "improvement_gap": improvement_gap,
             "improvement_factor": improvement_factor,
+            "overall_popularity_baseline": overall_popularity_baseline,
+            "popularity_gap": popularity_gap,
+            "popularity_improvement_factor": popularity_improvement_factor,
             "overall_precision": overall_precision,
             "overall_recall": overall_recall,
             "overall_mrr": overall_mrr,

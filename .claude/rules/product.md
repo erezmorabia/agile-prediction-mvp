@@ -2,7 +2,7 @@
 
 ## Domain Story
 
-The system analyzes improvement histories from 87 engineering teams tracked across 10 months. For any team at any given month, it asks: *"Which teams were in a similar position, what did they improve next, and what practice transitions typically follow?"* It combines both signals into ranked recommendations. Achieved 49% accuracy — 2.0× better than random selection — eliminating manual analysis and scaling to 70+ teams simultaneously.
+The system analyzes improvement histories from 87 engineering teams tracked across 10 months. For any team at any given month, it asks: *"Which teams were in a similar position, what did they improve next, and what practice transitions typically follow?"* It combines both signals into ranked recommendations. Achieved 50.3% accuracy — 2.06× better than random selection — eliminating manual analysis and scaling to 70+ teams simultaneously.
 
 ## Core Domain Concepts
 

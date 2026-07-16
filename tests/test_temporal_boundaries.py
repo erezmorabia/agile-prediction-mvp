@@ -11,6 +11,8 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+from collections import Counter, defaultdict
+
 import pytest
 import pandas as pd
 import numpy as np
@@ -58,6 +60,38 @@ class TestTemporalBoundaries:
         recommender = RecommendationEngine(similarity_engine, sequence_mapper, practices)
         return recommender
 
+    @staticmethod
+    def _reconstruct_first_order_transitions(processor, practices, max_month):
+        """
+        Independently reconstruct the expected first-order Markov transition matrix
+        using only months < max_month, mirroring SequenceMapper's construction:
+        chain each improvement-bearing step (skipping steps with zero improvements) to
+        the next one, full cross-product, no edges within a step.
+
+        Written independently of SequenceMapper so the test doesn't just re-exercise
+        the same code path it's meant to check.
+        """
+        expected = defaultdict(Counter)
+
+        for team in processor.get_all_teams():
+            history = processor.get_team_history(team)
+            team_months = sorted([m for m in history.keys() if m < max_month])
+
+            improved_sets = []
+            for i in range(len(team_months) - 1):
+                curr_vector = history[team_months[i]]
+                next_vector = history[team_months[i + 1]]
+                improved = [practices[j] for j in range(len(practices)) if next_vector[j] > curr_vector[j]]
+                if improved:
+                    improved_sets.append(improved)
+
+            for prev_set, next_set in zip(improved_sets, improved_sets[1:]):
+                for prev_practice in prev_set:
+                    for next_practice in next_set:
+                        expected[prev_practice][next_practice] += 1
+
+        return {k: dict(v) for k, v in expected.items()}
+
     def test_sequences_only_learn_from_past_months(self, temporal_processor):
         """
         CRITICAL: Verify sequence learning only uses months < max_month.
@@ -72,42 +106,25 @@ class TestTemporalBoundaries:
         # Learn sequences up to 202004
         max_month = 202004
         sequence_mapper.learn_sequences_up_to_month(max_month)
-        transitions = sequence_mapper.transition_matrix
+        actual = {k: dict(v) for k, v in sequence_mapper.transition_matrix.items()}
 
-        # Verify: Transitions should ONLY reflect improvements from months 202001, 202002, 202003
-        # In our test data:
-        # - Month 202002->202003: TeamA improves Practice1, TeamB none, TeamC improves Practice1
-        # - Month 202003->202004: TeamA none, TeamB improves Practice1+2, TeamC none
+        # The transition matrix built from months < max_month must exactly match an
+        # independent reconstruction restricted to the same months - anything else
+        # means either leakage from month >= max_month or a construction mismatch.
+        expected = self._reconstruct_first_order_transitions(temporal_processor, practices, max_month)
+        assert actual == expected, (
+            f"Transitions don't match a months-<{max_month}-only reconstruction "
+            f"(possible data leakage). Expected {expected}, got {actual}"
+        )
 
-        # Since we're learning up to 202004, we should see transitions from 202001->202002 and 202002->202003 ONLY
-        # We should NOT see transitions from 202003->202004 (that would be data leakage)
-
-        # Check that transition counts are limited to past months only
-        all_teams = temporal_processor.get_all_teams()
-        all_months = sorted(temporal_processor.get_all_months())
-
-        # Count actual transitions by checking manually from months < max_month
-        expected_transition_count = 0
-        for team in all_teams:
-            history = temporal_processor.get_team_history(team)
-            team_months = sorted([m for m in history.keys() if m < max_month])
-
-            for i in range(len(team_months) - 1):
-                curr_month = team_months[i]
-                next_month = team_months[i + 1]
-
-                curr_vector = history[curr_month]
-                next_vector = history[next_month]
-
-                # Check if any practices improved
-                improved = [j for j in range(len(practices)) if next_vector[j] > curr_vector[j]]
-                if len(improved) >= 2:  # Need at least 2 improvements for transitions
-                    expected_transition_count += (len(improved) - 1)
-
-        # Total transitions should match expected (no future data included)
-        actual_transition_count = sum(len(v) for v in transitions.values())
-        assert actual_transition_count <= expected_transition_count, \
-            f"Transitions include future data! Expected <= {expected_transition_count}, got {actual_transition_count}"
+        # Sanity check that the boundary actually matters for this fixture: including
+        # month 202004 (TeamB improves Practice1+2 in the 202003->202004 step) must change
+        # the matrix, otherwise this test isn't exercising the boundary at all.
+        expected_with_leak = self._reconstruct_first_order_transitions(temporal_processor, practices, 202005)
+        assert expected_with_leak != expected, (
+            "Including month 202004 didn't change the expected transitions - "
+            "this fixture no longer exercises the temporal boundary."
+        )
 
     def test_similarity_only_uses_past_months(self, temporal_processor, temporal_recommender):
         """

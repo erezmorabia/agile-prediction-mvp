@@ -23,8 +23,15 @@ User navigates to the Backtest tab and clicks "Run Backtest Validation".
 5. Results appear showing:
    - Overall accuracy % and random baseline %
    - Improvement factor (e.g., "2.0× better than random")
+   - Model vs. popularity baseline comparison — a naive heuristic that always recommends the
+     top-N globally most-improved practices, ignoring the target team's own state (a stronger
+     sanity check than random selection; typically shows a smaller improvement factor than vs.
+     random, since it isolates the value the model's personalization adds on top of
+     organization-wide trends)
+   - Supplementary rank-aware metrics (Precision@N, Recall@N, MRR) vs. their own random baselines
    - Total predictions and correct predictions
-   - Per-month breakdown table (month, predictions, correct, accuracy)
+   - Per-month breakdown table (month, predictions, correct, accuracy, popularity baseline,
+     precision@N, recall@N, MRR, teams tested)
 6. User can compare accuracy across months to detect stability
 
 ## Alternative / Error Flows

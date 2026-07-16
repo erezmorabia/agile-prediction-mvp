@@ -10,7 +10,7 @@
 
 ## Abstract
 
-This project addresses the critical challenge of large-scale agile transformation in organizations by developing a machine learning system that recommends the next agile practices for teams based on organizational history. The system uses collaborative filtering combined with Markov chain sequence learning to analyze patterns from 87 teams, 35 practices, and 10 months of historical data. Validation through backtesting demonstrates 49% prediction accuracy, representing a 2.0x improvement over random baseline (24.4%). The system is production-ready and can be deployed for real-world testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways.
+This project addresses the critical challenge of large-scale agile transformation in organizations by developing a machine learning system that recommends the next agile practices for teams based on organizational history. The system uses collaborative filtering combined with Markov chain sequence learning to analyze patterns from 87 teams, 35 practices, and 10 months of historical data. Validation through backtesting demonstrates 50.3% prediction accuracy, representing a 2.06x improvement over random baseline (24.4%). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
 
 ---
 
@@ -18,14 +18,7 @@ This project addresses the critical challenge of large-scale agile transformatio
 
 ### The Challenge
 
-Large organizations implementing agile transformation face a critical decision-making challenge: determining which agile practices each team should focus on next to maximize success probability. This problem is compounded by several factors:
-
-- **Scale**: Organizations typically have 70+ teams, each at different maturity levels, with 30+ different agile practices to choose from
-- **Complexity**: Each organization's agile adoption process is unique due to differences in product characteristics, technology, organizational culture, and team sizes
-- **Manual Analysis Impractical**: The volume of data (e.g., 70 teams × 30 practices × 4 maturity levels × multiple months/years) makes manual analysis impossible
-- **No Authoritative Source**: There is no single written source detailing the correct sequence of steps for successful agile adoption
-
-At organizations like Avaya (the target organization for this project), approximately 30 agile practices are tracked across 70 teams distributed across 10 time zones, with data collected and updated monthly. With only ~4 agile coaches managing this at the organization level, analyzing all successful adoption pathways manually is impossible due to the vast amount of data and its frequent changes.
+Large organizations implementing agile transformation face a critical decision-making challenge: determining which agile practices each team should focus on next to maximize success probability. Manual analysis doesn't scale to the number of teams, practices, and maturity combinations involved, and there is no single authoritative source detailing the correct sequence of adoption steps. See §1.1 for the full problem statement, including the scale of data involved at the target organization (Avaya).
 
 ### The Approach
 
@@ -60,26 +53,26 @@ This project developed a machine learning system that addresses this challenge t
 The system demonstrates strong performance and practical value:
 
 **Prediction Accuracy:**
-- **49% accuracy** in predicting which practices teams will improve
-- **2.0x improvement** over random baseline (24.4%)
-- **24.6 percentage point improvement gap** demonstrates significant value
+- **50.3% accuracy** in predicting which practices teams will improve
+- **2.06x improvement** over random baseline (24.4%)
+- **25.9 percentage point improvement gap** demonstrates significant value
 - **142 validation cases** across multiple teams and months
 
 **System Capabilities:**
 - Handles large-scale data efficiently (87 teams × 35 practices × 10 months)
-- Production-ready web interface for easy use by non-technical users
+- Working web interface for easy use by non-technical users (see §7.3 for what's still needed for full production deployment)
 - Real-time recommendations based on current organizational data
 - Parameter optimization framework for continuous improvement
 
 **Practical Readiness:**
-- System is ready for real-world deployment and testing
+- System is ready for pilot deployment and testing with selected teams (not yet a hardened production deployment — see §7.3)
 - Excel data format matches organizational data collection methods
 - Comprehensive validation framework evaluates implementation results
 - Can serve all 70+ teams simultaneously (vs. 1-2 teams manually)
 
 **Business Impact:**
 - Provides data-driven recommendations instead of intuition-based decisions
-- Eliminates 4-8 hours/month of manual analysis per team
+- Estimated to eliminate 4-8 hours/month of manual analysis per team (practitioner estimate, not a measured result — see §7.4)
 - Standardizes approach across all teams for consistency
 - Enables faster transformation by focusing teams on practices with highest success probability
 
@@ -164,21 +157,12 @@ Agile adoption in large organizations has become increasingly common, with resea
 
 - **No Standard Path**: Agile implementations vary from organization to organization due to differences in product characteristics, technology, organizational culture, team sizes, and other factors
 - **Long Duration**: Each organization's agile adoption process is unique and typically takes years to complete
-- **Resource Constraints**: Limited agile coaches (e.g., 4 coaches managing 70 teams at Avaya) cannot manually analyze all pathways
-- **Data Volume**: Managing ~30 practices × 4 maturity levels × ~70 teams across multiple months/years involves massive data that changes frequently
+- **No Authoritative Source**: There are dozens of recommended practices, but the order of implementation and intensity of rollout varies from organization to organization, with no single written source detailing the correct sequence
+- **Resource Constraints**: A small number of agile coaches cannot manually analyze all pathways across a large organization's full team and practice volume, at the frequency (monthly) the data changes
 
-### 2.2 Why Manual Analysis is Impractical
+(See §1.1 for the specific data volume and scale figures at the target organization, Avaya, that make manual analysis impractical.) Software capable of managing this volume of organizational data and predicting the next required adoption steps has significant business value to the organization.
 
-The challenge lies in the fact that there is no single authoritative written source detailing the correct sequence of steps for successful agile adoption. Instead, there are dozens of recommended practices, but the order of implementation and intensity of rollout varies from organization to organization. Manual analysis of adoption pathways is impractical due to:
-
-- **Volume**: At Avaya, managing ~30 practices × 4 maturity levels × ~70 teams across multiple months/years
-- **Frequency**: Data is updated monthly, requiring constant re-analysis
-- **Complexity**: Each team has unique context and readiness levels
-- **Scale**: Only ~4 agile coaches manage this at the organization level
-
-Software capable of managing this enormous volume of organizational data (big data) and predicting the next required adoption steps has supreme business importance to the organization.
-
-### 2.3 Similarity-Based Recommendation
+### 2.2 Similarity-Based Recommendation
 
 Similarity-based recommendation systems use collaborative filtering techniques to predict preferences by identifying similar users or items. The underlying assumption is that users who agreed in the past tend to agree again in the future. This approach is particularly effective when dealing with large user-item matrices where explicit preferences are known.
 
@@ -224,7 +208,7 @@ Once similarity is computed, neighborhood-based collaborative filtering:
 
 This approach forms the theoretical foundation for similarity-based recommendation systems used in various domains, from e-commerce to content recommendation.
 
-### 2.4 Sequence Learning and Markov Chains
+### 2.3 Sequence Learning and Markov Chains
 
 Markov chains are stochastic models that describe a sequence of possible events where the probability of each event depends only on the state attained in the previous event. In this project, Markov chains are used to learn which practices typically follow others in improvement sequences.
 
@@ -233,7 +217,7 @@ Markov chains are stochastic models that describe a sequence of possible events 
 - **State Space**: Set of all possible practices
 - **Memoryless Property**: The next practice improvement depends only on the current practice, not the entire history
 
-### 2.5 Hybrid Recommendation Approaches
+### 2.4 Hybrid Recommendation Approaches
 
 Hybrid recommendation systems combine multiple recommendation techniques to improve accuracy and coverage. This project combines collaborative filtering (similarity-based) with sequence learning (content-based) to create a hybrid system that leverages both peer team patterns and organizational improvement sequences.
 
@@ -314,9 +298,19 @@ Where:
 The sequence learning algorithm learns transition patterns from historical data:
 
 **Step 1: Learn Transition Matrix**
-- For each team, examine consecutive months
-- Identify which practices improved in each transition
-- Build transition matrix: P(B | A improved) = count(A→B) / count(A improved)
+- For each team, walk its months chronologically and identify "improvement-bearing" steps —
+  consecutive months where at least one practice improved — skipping over months where nothing
+  improved
+- Chain each improvement-bearing step to the *next* one: every practice improved in step *i*
+  gets a transition edge to every practice improved in step *i+1* (a full cross-product between
+  the two sets)
+- **Same-month ties**: when multiple practices improve within a single step, no edge is created
+  between them — simultaneous improvements carry no ordering information, so asserting a
+  direction between them would be arbitrary (this was a known limitation of an earlier version,
+  which ordered same-step improvements by their column position in the source spreadsheet)
+- Build transition matrix: P(B | A improved) = count(A→B) / count(A improved), where count(A→B)
+  is the number of times a practice in some team's improvement-bearing step contained A and the
+  team's *next* improvement-bearing step contained B
 
 **Step 2: Time-Limited Learning**
 - Only learn from months < current_month (prevent data leakage)
@@ -358,7 +352,10 @@ Default: similarity_weight = 0.6 (60% similarity, 40% sequence)
 
 **Step 4: Filter and Rank**
 - Filter out practices already at maximum maturity (current_level >= 1.0)
-- Sort by normalized score (descending)
+- Sort by normalized score (descending), with ties broken deterministically by practice name
+  (rather than by dict/set iteration order, which in Python depends on the process's hash seed
+  and is not reproducible run-to-run) — this ensures the same inputs always produce the same
+  ranked recommendations
 - Return top N recommendations (default: 2)
 
 ### 3.6 Validation Methodology (Backtesting)
@@ -380,6 +377,20 @@ The validation methodology follows the original proposal's approach:
 - Calculate probability of getting at least one correct with random selection
 - Formula: P(at least one correct) = 1 - C(n-k_avg, top_n) / C(n, top_n)
 - Where n = total practices, k_avg = average improvements per case, top_n = recommendations
+
+**Popularity Baseline (supplementary):**
+- A random baseline alone invites the reasonable question of whether the model beats *any*
+  systematic heuristic, not just chance. As a stronger comparison, a "popularity baseline" always
+  recommends the top-N practices that improve most often across the whole organization —
+  learned from the same months < test_month the real model uses, so it's exposed to no more data
+  — excluding practices the target team has already maxed out
+- This is a naive, personalization-free heuristic: it ignores the target team's specific state
+  and recent history entirely, always returning the same organization-wide "popular" practices
+  (subject only to the per-team maxed-out filter)
+- Formula: accuracy = correct_predictions_popularity / total_predictions, computed per month
+  (same per-month-averaging convention as the primary Accuracy metric) and compared against the
+  model's actual accuracy via the same gap/improvement-factor framing used for the random
+  baseline
 
 **Improvement Metrics:**
 - **Accuracy**: Percentage of predictions that matched actual improvements
@@ -405,8 +416,44 @@ baseline:
 
 These are supplementary diagnostics computed by `BacktestEngine` (backed by
 `MetricsCalculator.calculate_hit_rate` and `calculate_mrr`) and shown in the Backtest tab; they do
-not change the headline 49% accuracy / 24.4% random baseline figures reported elsewhere in this
+not change the headline 50.3% accuracy / 24.4% random baseline figures reported elsewhere in this
 document.
+
+**Why Hit Rate@N Remains the Headline Metric**
+
+It would be reasonable to assume a stricter, rank-aware metric was left out of the headline
+because it looked worse. The opposite is true. On the same backtest run, Precision@N, Recall@N,
+and MRR each beat their own random baseline by a *larger* factor than Hit Rate@N does:
+
+| Metric | Improvement Factor vs. Random |
+|---|---|
+| Hit Rate@N (headline) | 2.06x |
+| Precision@N | 2.31x |
+| Recall@N | 2.93x |
+| MRR | 2.21x |
+
+So Hit Rate@N is not the flattering choice among the four — if anything it is the most
+conservative. It is reported as the headline for a domain-specific reason, not a statistical one:
+it matches the unit of value that actually matters in agile transformation work.
+
+The constraint on agile adoption is rarely correctness — teams are rarely short on plausible
+next steps. It is momentum: whether a team acts at all, and keeps acting, cycle over cycle. A
+recommendation list is not a forced-choice exam that must be graded in full; it is a menu a team
+uses to pick *one* concrete next step. If a team adopts the one practice on the list that was
+genuinely a good next move, that hit is enough to validate the recommendation and sustain
+engagement into the next cycle — regardless of whether the other N-1 items were also correct.
+Conversely, a list that scores well on Precision@N (say, 2 of 3 items are technically correct)
+but whose *adopted* item happens to be the wrong one delivers no operational value: nothing
+changed for the team that cycle. Hit Rate@N is chosen because it operationalizes exactly this —
+at least one correct, actionable step a team can commit to — which is the mechanism by which the
+system sustains adoption momentum, not because it is easiest to report favorably.
+
+Precision@N, Recall@N, and MRR remain valuable and are reported alongside it because they answer
+different questions a reviewer will legitimately ask: how much of the list is wasted effort
+(Precision@N), how much of a team's real improvement activity the system captures (Recall@N),
+and whether the system tends to rank the correct answer first (MRR). Those measure list quality.
+Hit Rate@N measures the operational trigger — whether the recommendation, as consumed by a team
+picking one thing to try, was worth acting on.
 
 ### 3.7 Worked Examples
 
@@ -843,20 +890,59 @@ primary Accuracy metrics (see §3.6 for definitions and baseline formulas).
 ### 6.3 Backtest Results
 
 **Overall Performance:**
-- **Accuracy**: 49.0%
+- **Accuracy (Hit Rate@N)**: 50.3%
 - **Random Baseline**: 24.4%
-- **Improvement Factor**: 2.0x better than random
-- **Improvement Gap**: 24.6 percentage points
+- **Improvement Factor**: 2.06x better than random
+- **Improvement Gap**: 25.9 percentage points
 
 **Validation Details:**
 - **Total Predictions**: 142 cases
-- **Correct Predictions**: 64 cases
-- **Teams Tested**: Multiple teams across validation months
+- **Correct Predictions**: 66 cases
+- **Teams Tested**: 43 teams across validation months
 - **Validation Window**: 3 months (immediate + 2 months ahead)
 - **Training Period**: Rolling window (all months before test month)
 
 **Per-Month Results:**
 Results vary by month, with accuracy typically ranging from 40-55%, consistently outperforming the random baseline by approximately 2x.
+
+**Supplementary Rank-Aware Metrics (same run):**
+
+| Metric | Value | Random Baseline | Improvement Factor |
+|---|---|---|---|
+| Precision@N | 29.6% | 12.8% | 2.31x |
+| Recall@N | 19.5% | 6.7% | 2.93x |
+| MRR | 0.40 | 0.18 | 2.21x |
+
+Each stricter, rank-aware metric shows an improvement factor over its own random baseline that
+*meets or exceeds* Hit Rate@N's 2.06x — see §3.6 for why Hit Rate@N is still reported as the
+headline metric despite this.
+
+**Popularity Baseline Comparison (same run):**
+
+Random selection is not the only baseline worth comparing against — a reasonable question is
+whether the model beats an even simpler heuristic that already knows *something* about
+organizational patterns, rather than nothing at all. The popularity baseline (§3.6) always
+recommends whichever practices improve most often organization-wide, ignoring the target team's
+specific state entirely:
+
+| | Accuracy (Hit Rate@N) |
+|---|---|
+| Model | 50.3% |
+| Popularity Baseline | 43.6% |
+| Random Baseline | 24.4% |
+
+- **Model vs. Popularity Baseline**: +6.7 percentage points, 1.15x
+- **Model vs. Random Baseline**: +25.9 percentage points, 2.06x
+
+This is an important, honest caveat: most of the model's advantage over random selection is
+attributable to practices simply improving at very different rates organization-wide — a signal
+even a naive, non-personalized heuristic captures. The model's specific value-add — from
+personalizing to each team's own state via collaborative filtering and sequence learning — is
+the smaller remaining margin over the popularity baseline (1.15x, 6.7 percentage points), not the
+larger margin over random (2.06x). Both comparisons are reported because they answer different
+questions: random baseline establishes the problem isn't trivial to solve by chance; popularity
+baseline establishes how much value the model's personalization specifically adds on top of a
+"know the organization's general trends" heuristic.
 
 ### 6.4 Validation Methodology Results
 
@@ -887,8 +973,8 @@ The system includes parameter optimization capabilities:
 - Can test hundreds of combinations (typically 540+)
 
 **Results:**
-- Optimal configuration achieves ~49% accuracy
-- Improvement factor of ~2.0x over random baseline
+- Optimal configuration achieves ~50.3% accuracy
+- Improvement factor of ~2.06x over random baseline
 - Random baseline: ~24.4% (calculated based on average improvements per case)
 - Parameters can be tuned for specific organizational contexts
 - Latest optimization tested 180 combinations, with 150 valid combinations
@@ -1019,10 +1105,10 @@ The implemented system successfully addresses all objectives stated in the origi
 **3. Validation:**
 - Uses historical backtesting methodology as proposed
 - Compares predictions against actual improvements
-- Demonstrates 49% accuracy with 2.0x improvement over random baseline (24.4%)
+- Demonstrates 50.3% accuracy with 2.06x improvement over random baseline (24.4%)
 
 **4. Practical Deployment:**
-- System is production-ready
+- System is a functional prototype, ready for pilot testing with selected teams (see §7.3 for the gap to a hardened production deployment)
 - Web interface enables easy use by non-technical users
 - Ready for real-world testing with selected teams
 
@@ -1057,13 +1143,45 @@ The implemented system successfully addresses all objectives stated in the origi
 - Initial setup requires data collection and validation
 - May need parameter tuning for different organizational contexts
 
+**Production-Readiness Limitations:**
+
+A working web interface and REST API demonstrate the system end-to-end, but do not by
+themselves make a system production-ready. The following are not yet implemented and would be
+required before deployment beyond a pilot with a small number of trusted teams:
+
+- **No authentication/authorization**: the API and UI have no login, access control, or
+  per-team data isolation — anyone with network access can query any team's data
+- **No monitoring or alerting**: no logging/metrics infrastructure to detect failures,
+  performance regressions, or data quality issues in production
+- **No automated data-refresh pipeline**: the monthly Excel update is a manual step; there is
+  no ingestion pipeline, schema validation on upload, or scheduled retraining
+- **Single-process, single-user assumption**: no concurrency handling, rate limiting, or
+  multi-tenant isolation for simultaneous use by multiple analysts
+- **No deployment infrastructure**: no containerization, CI/CD pipeline, backup/recovery
+  strategy, or horizontal scaling story beyond a single local/server process
+
+This system is best characterized as a **functional prototype validated on real data and ready
+for pilot testing with a small number of teams under supervision**, not a production system in
+the infrastructure-hardening sense of the term.
+
 ### 7.4 Practical Implications for Large Organizations
 
 **Business Value:**
 - **Decision Support**: Provides data-driven recommendations instead of intuition
 - **Scalability**: Can serve 70+ teams simultaneously (vs. 1-2 teams manually)
 - **Consistency**: Standardized approach across all teams
-- **Efficiency**: Eliminates 4-8 hours/month of manual analysis per team
+- **Efficiency**: Estimated to eliminate 4-8 hours/month of manual analysis per team (see basis
+  below)
+
+**Basis for the 4-8 hours/month estimate:** This figure is a practitioner estimate, not a
+measurement from a controlled evaluation of this system. It is based on the author's 6 years of
+experience as an agile coach, corroborated by estimates from 4 fellow agile coaches, reflecting
+the typical time spent per team per month (a) selecting which agile practice to focus on next
+and (b) coaching on practices that ultimately turned out to be the wrong choice — i.e., adopted
+but with zero measurable adoption impact ("zero hit"). No time-motion study or before/after
+measurement with the actual system deployed has been conducted; this should be read as an
+informed estimate of the problem's scale from direct practitioner experience, not as an
+empirically validated result of this specific tool.
 
 **Organizational Impact:**
 - **Faster Transformation**: Teams focus on practices with highest success probability
@@ -1075,8 +1193,8 @@ The implemented system successfully addresses all objectives stated in the origi
 
 **Random Baseline:**
 - Random practice selection achieves ~24.4% accuracy (calculated based on average improvements per case and number of recommendations)
-- System achieves 49% accuracy, representing 2.0x improvement
-- Improvement gap of 24.6 percentage points demonstrates significant value
+- System achieves 50.3% accuracy, representing 2.06x improvement
+- Improvement gap of 25.9 percentage points demonstrates significant value
 
 **Manual Analysis Baseline:**
 - Manual analysis can serve 1-2 teams per coach per month
@@ -1115,10 +1233,10 @@ This project successfully implements a machine learning system for predicting la
 - Implemented collaborative filtering algorithm for finding similar teams
 - Implemented Markov chain sequence learning for identifying improvement patterns
 - Created hybrid recommendation system combining both approaches
-- Achieved 49% prediction accuracy, 2.0x better than random baseline (24.4%)
+- Achieved 50.3% prediction accuracy, 2.06x better than random baseline (24.4%)
 
 **Practical Achievements:**
-- Built production-ready web interface for easy use
+- Built a functional web interface, ready for pilot use (see §7.3 for the gap to production hardening)
 - Validated approach using historical backtesting methodology
 - Demonstrated scalability for large organizations (87 teams, 35 practices, 10 months)
 - Created comprehensive documentation for deployment and maintenance
@@ -1286,11 +1404,17 @@ similarity = cosine_similarity(target_vector, team_vector)[0][0]
 
 **Markov Chain Transition Matrix:**
 
-Construction:
-1. For each team, examine consecutive months
-2. Identify practices that improved: improved_practices = [p for p in practices if next_score[p] > current_score[p]]
-3. Build transitions: for i in range(len(improved_practices)-1): transition_matrix[improved_practices[i]][improved_practices[i+1]] += 1
-4. Normalize: probability = count / total_count
+See §3.4 for the full construction algorithm (first-order Markov chain over chronological
+"improvement-bearing" steps, with no edge asserted between same-step co-improvements). Direct
+code-level reference:
+```python
+# per team: chronological list of practice-sets, one per improvement-bearing step
+# (steps with zero improvements are skipped)
+for prev_set, next_set in zip(improved_sets, improved_sets[1:]):
+    for prev_practice in prev_set:
+        for next_practice in next_set:
+            transition_matrix[prev_practice][next_practice] += 1
+```
 
 Transition probability:
 ```
@@ -1299,33 +1423,12 @@ P(B | A improved) = count(A → B) / count(A improved)
 
 **Recommendation Scoring Formula:**
 
-Step 1: Normalize similarity scores
-```
-sim_norm[practice] = similarity_score[practice] / max(similarity_scores)
-```
-
-Step 2: Normalize sequence scores
-```
-seq_norm[practice] = sequence_score[practice] / max(sequence_scores)
-```
-
-Step 3: Combine with weights
-```
-final_score[practice] = (similarity_weight × sim_norm[practice]) + 
-                        ((1 - similarity_weight) × seq_norm[practice])
-```
-
-Step 4: Final normalization
-```
-max_score = max(final_scores.values())
-normalized_scores = {p: s / max_score for p, s in final_scores.items()}
-```
-
-Step 5: Filter and rank
-```
-recommendations = sorted([(p, s) for p, s in normalized_scores.items() 
-                          if current_level[p] < 1.0], 
-                         key=lambda x: x[1], reverse=True)[:top_n]
+See §3.5 for the full hybrid scoring algorithm (normalize similarity and sequence scores
+separately, combine with `similarity_weight`, normalize again, filter maxed-out practices, rank).
+The final filter-and-rank step, as implemented:
+```python
+recommendations.sort(key=lambda x: (-x[1], x[0]))  # deterministic tie-break by practice name
+recommendations = recommendations[:top_n]
 ```
 
 **Normalization Procedures:**
@@ -1844,29 +1947,9 @@ agile-prediction-mvp/
   - `_build_partial_results()`: Builds partial results if cancelled
 - **Dependencies**: RecommendationEngine, DataProcessor
 
-**Important Algorithms:**
-
-**Cosine Similarity Calculation** (`src/ml/similarity.py`):
-```python
-from sklearn.metrics.pairwise import cosine_similarity
-similarity = cosine_similarity(target_vector, team_vector)[0][0]
-```
-
-**Transition Matrix Construction** (`src/ml/sequences.py`):
-```python
-for team in teams:
-    for i in range(len(months) - 1):
-        improved = [p for p in practices if next_scores[p] > current_scores[p]]
-        for j in range(len(improved) - 1):
-            transition_matrix[improved[j]][improved[j+1]] += 1
-```
-
-**Hybrid Scoring** (`src/ml/recommender.py`):
-```python
-sim_norm = normalize(similarity_scores)
-seq_norm = normalize(sequence_scores)
-final_score = (similarity_weight * sim_norm) + ((1 - similarity_weight) * seq_norm)
-```
+**Important Algorithms:** see §9.2 (Algorithm Details) for direct code-level snippets of cosine
+similarity, transition matrix construction, and hybrid scoring, and §3.3-3.5 for the full
+algorithm design each implements.
 
 ### 11.4 Code Examples
 

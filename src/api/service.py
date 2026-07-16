@@ -473,6 +473,7 @@ class APIService:
                         "precision": float(r.get("precision", 0.0)),
                         "recall": float(r.get("recall", 0.0)),
                         "mrr": float(r.get("mrr", 0.0)),
+                        "popularity_accuracy": float(r.get("popularity_accuracy", 0.0)),
                         "teams_tested": int(r["teams_tested"]),
                     }
                 )
@@ -521,6 +522,10 @@ class APIService:
             "recall_improvement_factor",
             "mrr_improvement_factor",
         ):
+            result[field] = float(result.get(field, 0.0))
+
+        # Popularity baseline (always recommend the top-N globally most-improved practices)
+        for field in ("overall_popularity_baseline", "popularity_gap", "popularity_improvement_factor"):
             result[field] = float(result.get(field, 0.0))
 
         return result
