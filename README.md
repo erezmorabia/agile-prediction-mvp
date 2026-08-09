@@ -206,7 +206,7 @@ recommendations = recommender.recommend(team, current_month, top_n=2)  # Default
 For each practice:
   similarity_score = How many similar teams improved this?
   sequence_score = Does this fit the natural improvement sequence?
-  final_score = (similarity_score × 0.6) + (sequence_score × 0.4)
+  final_score = (similarity_score × 0.7) + (sequence_score × 0.3)
 
 Rank by final_score
 Filter out practices already at level 3 (mature)

@@ -136,3 +136,17 @@ whatever the sliders currently show at click time; the only link between the two
 manual "Apply This Configuration" button after a Find Optimal Config run, which copies the
 optimal values into these same sliders. Fixed the slider default and JS fallback to `0.7`;
 verified via Playwright that a fresh page load's "Run Backtest" now sends `similarity_weight: 0.7`.
+
+**Full sweep for remaining `0.6` references (2026-08-09):** grepped the entire repo for `0.6`
+after the above fixes and found two more stale, user-facing "the default is 0.6/0.4" claims that
+had been missed: the "How the recommendation works" explanation panel rendered in the live
+Recommendations tab (`web/static/js/app.js`, the `displayRecommendations()` formula/note text)
+and the formula walkthrough in `README.md`'s "How It Works" section. Both updated to `0.7`/`0.3`.
+Everything else matching `0.6` in the repo was checked and is unrelated or still correct as-is:
+`train_ratio=0.6` in `examples/demo.py` and `scripts/*.py` is a different, already-deprecated
+parameter (the rolling-window backtest ignores it entirely — see `run_backtest()`'s docstring);
+`similarity_weight_range: [0.6, 0.7, 0.8]` in `optimizer.py`/`cli.py`/`app.js` is the intentional
+grid still searched around the new default; values in `tests/test_optimizer.py` are arbitrary
+test fixtures for the grid-generation mechanism, not defaults; and `0.6`/`0.67` appearing as
+maturity-level or probability values elsewhere (e.g. `0.67` = Level 2 normalized) are unrelated
+numbers that happen to match.

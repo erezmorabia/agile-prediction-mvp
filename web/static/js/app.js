@@ -682,8 +682,8 @@ function displayRecommendations(data) {
                         <ul>
                             <li>Both components are <strong>normalized separately</strong> (each divided by its maximum value) before combining</li>
                             <li>Then they're combined with weighted average:
-                                <div class="formula">Final Score = (Normalized Similarity Score × 0.6) + (Normalized Sequence Score × 0.4)</div>
-                                <p style="font-size: 0.9em; color: #666; margin-top: 5px;">Note: The 0.6/0.4 split is the default (configurable via similarity_weight parameter)</p>
+                                <div class="formula">Final Score = (Normalized Similarity Score × 0.7) + (Normalized Sequence Score × 0.3)</div>
+                                <p style="font-size: 0.9em; color: #666; margin-top: 5px;">Note: The 0.7/0.3 split is the default (configurable via similarity_weight parameter)</p>
                             </li>
                             <li>Practices are then ranked by this combined score</li>
                             <li>The <strong>top 2 practices</strong> (default, configurable; that aren't already at max level) are recommended</li>
