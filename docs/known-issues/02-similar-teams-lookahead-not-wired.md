@@ -58,3 +58,23 @@ Since the default value of the parameter (`3`) matches the current hardcoded con
 - Someone can point at the fixed lines (`src/ml/recommender.py:176` in `recommend()`,
   `:411` in `get_recommendation_explanation()`) and explain, in one sentence, what was wrong and
   why the fix is correct.
+
+## Post-fix re-optimization (2026-08-09)
+
+Ran the real "Find Optimal Config" UI flow end-to-end (headless browser driving the actual
+`#find-optimal-btn` click, not a direct API call) against the fixed code — the full 648-combination
+grid from `docs/known-issues/01-similarity-weight-shadowing.md`, now searching
+`similar_teams_lookahead_months` for real for the first time. Result, saved to
+`results/optimization_20260809_144001.json`:
+
+- **Optimal config found**: `top_n=2, similarity_weight=0.7, k_similar=19,
+  similar_teams_lookahead_months=3, recent_improvements_months=3, min_similarity_threshold=0.75`
+  — identical to the current code defaults. `3` beat `1` and `2` on merit this time, not by
+  tie-break accident.
+- **Headline figures unchanged**: accuracy `50.29%` (50.3%), random baseline `24.43%` (24.4%),
+  improvement factor `2.058x` (2.06x) — matching the figures already on record in
+  `docs/PROJECT_DOCUMENTATION.md` and `.claude/rules/product.md` to three significant figures.
+  No default or doc changes required as a result of this fix.
+- This confirms the concern raised in Follow-on item #3 did not materialize: fixing the dead
+  lookahead parameter did not change the optimizer's answer, unlike Finding 1's fix (which moved
+  `similarity_weight`'s optimum from a meaningless `≥0.75` to a real `0.7`).
