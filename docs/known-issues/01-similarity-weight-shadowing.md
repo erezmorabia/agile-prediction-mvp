@@ -104,11 +104,23 @@ reported precision and were left as-is.
 parameter, hardcoded `max_months_ahead = 3` in the function body) — noted for a future fix,
 out of scope here.
 
-**Also discovered, not yet fixed:** `web/static/js/app.js`'s "Find Optimal Config" flow
-hardcodes `similarity_weight` to `0.6` as a `fixed_params` entry (excluded from the search grid
+**Also discovered and fixed (2026-08-09):** `web/static/js/app.js`'s "Find Optimal Config" flow
+hardcoded `similarity_weight` to `0.6` as a `fixed_params` entry (excluded from the search grid
 entirely) with UI copy explicitly labeling it "Fixed Parameters (Non-Impactful): Analysis showed
 0.6-0.8 produce identical results" — a direct downstream artifact of this same bug (that
 "analysis" was run against the buggy code, where it was true only because the parameter was
-inert). The live Optimization tab currently never searches `similarity_weight` at all. Flagged
-for the user; not fixed as part of this change since it alters UC-03's actual search behavior
-and UI copy, beyond this fix's original doc-update scope.
+inert).
+
+Fix: removed the `fixed_params` override and changed `similarity_weight_range` from `[0.6]` to
+`[0.6, 0.7, 0.8]` (same grid the backend's own default range uses). To avoid tripling the search
+space (324 → 972 combinations, an unreasonable ~65 min for a synchronous browser action),
+`min_similarity_threshold_range` was trimmed from 3 values to 2 (`[0, 0.5, 0.75]` →
+`[0.5, 0.75]`) — `0` was dropped because it never won in the backend's own default-grid run and
+tied exactly with `0.5` every time it was tested, so it carried no additional information. Net
+search space: 4 × 3 × 3 × 2 × 3 × 3 = 648 combinations (~43 min), still fully searching the
+parameter that was previously fixed. Updated the results-rendering copy to drop the "Fixed
+Parameters (Non-Impactful)" section and list Similarity Weight under "Optimized Ranges Tested"
+instead. Verified end-to-end with Playwright (confirmed the rendered "Parameter Ranges Tested"
+panel and search-space text) and via a direct `/api/optimize` call showing accuracy genuinely
+varies with `similarity_weight` (0.6 → 49.2%, 0.7 → 49.7%) when passed as a real range instead
+of `fixed_params`.

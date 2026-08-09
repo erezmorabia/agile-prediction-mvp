@@ -1318,30 +1318,33 @@ async function findOptimalConfig() {
         progressBar.style.width = '0%';
         
         // Optimized ranges based on impact analysis:
-        // Fixed (non-impactful): similarity_weight=0.6
-        // Testing: top_n, k_similar, min_similarity_threshold, recent_improvements_months, similar_teams_lookahead_months
+        // similarity_weight was previously fixed at 0.6 here on the assumption it was
+        // non-impactful — that assumption came from a since-fixed bug (see
+        // docs/known-issues/01-similarity-weight-shadowing.md) that made the parameter
+        // inert. It's now a real search dimension. To keep the grid a comparable size,
+        // min_similarity_threshold is trimmed from 3 values to 2 (0.0 dropped: the
+        // backend's own default-grid run always ranked it behind 0.5/0.75, never won).
+        // Testing: top_n, similarity_weight, k_similar, min_similarity_threshold, recent_improvements_months, similar_teams_lookahead_months
         const ranges = {
             min_accuracy: 0.40,
             top_n_range: [2, 3, 4, 5],
-            similarity_weight_range: [0.6],  // Single value since fixed (non-impactful parameter)
+            similarity_weight_range: [0.6, 0.7, 0.8],
             k_similar_range: [15, 19, 20],
-            min_similarity_threshold_range: [0, 0.5, 0.75],
+            min_similarity_threshold_range: [0.5, 0.75],
             recent_improvements_months_range: [1, 2, 3],
             similar_teams_lookahead_months_range: [1, 2, 3],
-            fixed_params: {
-                similarity_weight: 0.6,  // Fixed: non-impactful parameter (0.6-0.8 produce same results)
-            }
         };
-        
+
         // Calculate total combinations for progress tracking (optimized search space)
         const topNCount = 4; // [2, 3, 4, 5]
+        const similarityWeightCount = 3; // [0.6, 0.7, 0.8]
         const kSimilarCount = 3; // [15, 19, 20]
-        const minSimilarityCount = 3; // [0.0, 0.5, 0.75]
+        const minSimilarityCount = 2; // [0.5, 0.75]
         const recentMonthsCount = 3; // [1, 2, 3]
         const lookaheadMonthsCount = 3; // [1, 2, 3]
-        const totalCombinations = topNCount * kSimilarCount * minSimilarityCount * recentMonthsCount * lookaheadMonthsCount;
-        
-        progressText.textContent = `Testing ${totalCombinations} combinations (Optimized Search: fixed non-impactful params, testing time-based params)...`;
+        const totalCombinations = topNCount * similarityWeightCount * kSimilarCount * minSimilarityCount * recentMonthsCount * lookaheadMonthsCount;
+
+        progressText.textContent = `Testing ${totalCombinations} combinations (Optimized Search: testing similarity_weight and k_similar/min_similarity/time-based params)...`;
         
         // Run optimization - no timeout, rely on cancellation mechanism for stopping
         const data = await apiClient.findOptimalConfig(ranges);
@@ -1595,19 +1598,16 @@ function displayOptimizationResults(data, minAccuracy = 0.40) {
             <details style="margin-bottom: 15px;">
                 <summary style="cursor: pointer; font-weight: bold; margin-bottom: 10px;">Parameter Ranges Tested</summary>
                 <div style="margin: 10px 0; padding-left: 20px; font-size: 0.9em;">
-                    <p style="font-weight: bold; margin-top: 10px; color: #a8a5a3;">Fixed Parameters (Non-Impactful):</p>
-                    <ul style="margin: 5px 0; padding-left: 20px;">
-                        <li><strong>Similarity Weight:</strong> 0.6 (fixed) - Analysis showed 0.6-0.8 produce identical results</li>
-                    </ul>
-                    <p style="font-weight: bold; margin-top: 15px; color: #28a745;">Optimized Ranges Tested:</p>
+                    <p style="font-weight: bold; margin-top: 10px; color: #28a745;">Optimized Ranges Tested:</p>
                     <ul style="margin: 5px 0; padding-left: 20px;">
                         <li><strong>Number of Recommendations:</strong> [2, 3, 4, 5] - Number of recommendations to generate</li>
+                        <li><strong>Similarity Weight:</strong> [0.6, 0.7, 0.8] - Similarity vs. sequence blend (impactful parameter)</li>
                         <li><strong>Number of Similar Teams:</strong> [15, 19, 20] - Number of similar teams to consider (impactful parameter)</li>
-                        <li><strong>Minimum Similarity Threshold:</strong> [0.0, 0.5, 0.75] - Filter out low-similarity teams (impactful parameter)</li>
+                        <li><strong>Minimum Similarity Threshold:</strong> [0.5, 0.75] - Filter out low-similarity teams (impactful parameter)</li>
                         <li><strong>Months to Check for Recent Improvements:</strong> [1, 2, 3] - How recent improvements must be to trigger sequence boosts</li>
                         <li><strong>Months to Look Ahead for Similar Teams:</strong> [1, 2, 3] - How far ahead to check for improvements</li>
                     </ul>
-                    <p style="margin-top: 10px; font-style: italic; color: #8a8785;">Search space: 4 × 3 × 3 × 3 × 3 = 324 combinations (optimized from 540)</p>
+                    <p style="margin-top: 10px; font-style: italic; color: #8a8785;">Search space: 4 × 3 × 3 × 2 × 3 × 3 = 648 combinations</p>
                 </div>
             </details>
             
