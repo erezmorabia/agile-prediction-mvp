@@ -21,7 +21,7 @@ class BacktestConfig(BaseModel):
 
     top_n: int = Field(2, ge=1, le=10, description="Number of recommendations")
     k_similar: int = Field(19, ge=1, le=20, description="Number of similar teams to consider")
-    similarity_weight: float = Field(0.6, ge=0.0, le=1.0, description="Weight for similarity scores (0.0-1.0)")
+    similarity_weight: float = Field(0.7, ge=0.0, le=1.0, description="Weight for similarity scores (0.0-1.0)")
     similar_teams_lookahead_months: int = Field(
         3, ge=1, le=6, description="Months to look ahead for similar teams' improvements"
     )

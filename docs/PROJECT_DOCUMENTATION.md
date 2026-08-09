@@ -344,7 +344,7 @@ The hybrid scoring combines similarity and sequence signals:
 final_score = (similarity_weight × sim_norm) + ((1 - similarity_weight) × seq_norm)
 ```
 
-Default: similarity_weight = 0.6 (60% similarity, 40% sequence)
+Default: similarity_weight = 0.7 (70% similarity, 30% sequence)
 
 **Step 3: Final Normalization**
 - Normalize final combined scores: normalized_score = final_score / max(final_scores)
@@ -430,7 +430,7 @@ and MRR each beat their own random baseline by a *larger* factor than Hit Rate@N
 | Hit Rate@N (headline) | 2.06x |
 | Precision@N | 2.31x |
 | Recall@N | 2.93x |
-| MRR | 2.21x |
+| MRR | 2.23x |
 
 So Hit Rate@N is not the flattering choice among the four — if anything it is the most
 conservative. It is reported as the headline for a domain-specific reason, not a statistical one:
@@ -511,7 +511,7 @@ For each practice, sum weighted improvements from similar teams. Each improvemen
 - Team C (similarity: 0.89): 0.89 × 0.33 = 0.294
 - **Total similarity score: 0.598**
 
-*Note: The similarity scores (0.92, 0.89, 0.87) are cosine similarity values between teams, not to be confused with the similarity_weight parameter (0.6) used later for combining similarity and sequence scores.*
+*Note: The similarity scores (0.92, 0.89, 0.87) are cosine similarity values between teams, not to be confused with the similarity_weight parameter (0.7) used later for combining similarity and sequence scores.*
 
 **Step 5: Sequence Scores**
 Team AADS did not recently improve any practices (no sequence boost applies in this example).
@@ -521,18 +521,18 @@ Team AADS did not recently improve any practices (no sequence boost applies in t
   - Test Automation: 0.885 / 0.885 = 1.000
   - CI/CD: 0.598 / 0.885 = 0.676
 - Sequence scores: 0.000 (no recent improvements)
-- Combined scores (similarity_weight = 0.6):
-  - Test Automation: (1.000 × 0.6) + (0.000 × 0.4) = 0.600
-  - CI/CD: (0.676 × 0.6) + (0.000 × 0.4) = 0.406
+- Combined scores (similarity_weight = 0.7):
+  - Test Automation: (1.000 × 0.7) + (0.000 × 0.3) = 0.700
+  - CI/CD: (0.676 × 0.7) + (0.000 × 0.3) = 0.473
 - Final normalization (normalize combined scores):
-  - Test Automation: 0.600 / 0.600 = 1.000
-  - CI/CD: 0.406 / 0.600 = 0.677
+  - Test Automation: 0.700 / 0.700 = 1.000
+  - CI/CD: 0.473 / 0.700 = 0.676
 
 **Step 7: Filter and Rank**
 - Filter out practices at max level (DoD is already at Level 3, excluded)
 - Rank by final normalized score:
   1. **Test Automation**: 1.000
-  2. **CI/CD**: 0.677
+  2. **CI/CD**: 0.676
 
 **Recommendation:**
 - **Top Recommendation**: Test Automation (score: 1.000)
@@ -593,18 +593,18 @@ Similar teams didn't provide strong signals in this case:
 - Normalize sequence scores (max = 0.60):
   - Test Automation: 0.60 / 0.60 = 1.000
   - TDD: 0.35 / 0.60 = 0.583
-- Combined scores (similarity_weight = 0.6):
-  - Test Automation: (1.000 × 0.6) + (1.000 × 0.4) = 1.000
-  - TDD: (0.667 × 0.6) + (0.583 × 0.4) = 0.633
+- Combined scores (similarity_weight = 0.7):
+  - Test Automation: (1.000 × 0.7) + (1.000 × 0.3) = 1.000
+  - TDD: (0.667 × 0.7) + (0.583 × 0.3) = 0.642
 - Final normalization (normalize combined scores, max = 1.000):
   - Test Automation: 1.000 / 1.000 = 1.000
-  - TDD: 0.633 / 1.000 = 0.633
+  - TDD: 0.642 / 1.000 = 0.642
 
 **Step 8: Filter and Rank**
 - Filter out practices at max level
 - Rank by final normalized score:
   1. **Test Automation**: 1.000
-  2. **TDD**: 0.633
+  2. **TDD**: 0.642
 
 **Recommendation:**
 - **Top Recommendation**: Test Automation (score: 1.000)
@@ -911,7 +911,7 @@ Results vary by month, with accuracy typically ranging from 40-55%, consistently
 |---|---|---|---|
 | Precision@N | 29.6% | 12.8% | 2.31x |
 | Recall@N | 19.5% | 6.7% | 2.93x |
-| MRR | 0.40 | 0.18 | 2.21x |
+| MRR | 0.40 | 0.18 | 2.23x |
 
 Each stricter, rank-aware metric shows an improvement factor over its own random baseline that
 *meets or exceeds* Hit Rate@N's 2.06x — see §3.6 for why Hit Rate@N is still reported as the
@@ -961,10 +961,19 @@ The system includes parameter optimization capabilities:
 **Optimized Default Parameters:**
 - `top_n`: 2 (number of recommendations)
 - `k_similar`: 19 (number of similar teams to consider)
-- `similarity_weight`: 0.6 (60% similarity, 40% sequence)
+- `similarity_weight`: 0.7 (70% similarity, 30% sequence)
 - `similar_teams_lookahead_months`: 3 (months to look ahead for improvements)
 - `recent_improvements_months`: 3 (months to check back for recent improvements)
 - `min_similarity_threshold`: 0.75 (minimum similarity to consider)
+
+Note: `RecommendationEngine.recommend()`'s `similarity_weight` default was `0.6` until an
+earlier version of the function was found to have a variable-shadowing bug — the
+`similarity_weight` argument was silently overwritten inside the similarity-scoring loop before
+reaching the blend formula, so the parameter had no effect on scoring regardless of its value,
+and every value the optimizer tried produced the same result, making its choice of "optimal"
+arbitrary. With the bug fixed, a fresh grid search found `0.7` performs at least as well as
+`0.6` on every backtest month (strictly better in one of seven, tied in the rest) and on every
+supplementary metric, so the code default was updated to `0.7` to match.
 
 **Optimization Process:**
 - Tests combinations of parameters across defined ranges
@@ -977,7 +986,7 @@ The system includes parameter optimization capabilities:
 - Improvement factor of ~2.06x over random baseline
 - Random baseline: ~24.4% (calculated based on average improvements per case)
 - Parameters can be tuned for specific organizational contexts
-- Latest optimization tested 180 combinations, with 150 valid combinations
+- Latest optimization tested 180 combinations, with 169 valid combinations
 
 ### 6.6 Performance Analysis
 
@@ -1524,7 +1533,7 @@ recommendations = recommendations[:top_n]
   "config": {
     "top_n": 2,
     "k_similar": 19,
-    "similarity_weight": 0.6
+    "similarity_weight": 0.7
   }
 }
 ```
@@ -1609,10 +1618,10 @@ Strikers  | 200101  | 3     | 2   | 3   | 3          | ...
 - **Range**: 5-20 (typically 15-20, with 19 being optimal)
 - **Impact**: Higher values use more data but increase computation time
 
-**similarity_weight** (default: 0.6)
+**similarity_weight** (default: 0.7)
 - **Description**: Weight for similarity scores vs. sequence scores
 - **Range**: 0.0-1.0
-- **Impact**: 0.6 means 60% similarity, 40% sequence
+- **Impact**: 0.7 means 70% similarity, 30% sequence
 
 **similar_teams_lookahead_months** (default: 3)
 - **Description**: Months to look ahead for similar teams' improvements
@@ -1983,7 +1992,7 @@ backtest_engine = BacktestEngine(recommender, processor)
 results = backtest_engine.run_backtest(config={
     'top_n': 2,
     'k_similar': 19,
-    'similarity_weight': 0.6
+    'similarity_weight': 0.7
 })
 
 print(f"Accuracy: {results['overall_accuracy']:.1%}")

@@ -878,14 +878,14 @@ WeView       200402  2    2    1      1                1    1
 Edit constants in `src/ml/recommender.py`:
 - `k_similar = 19` - Number of similar teams to consider (optimized through validation)
 - `top_n = 2` - Number of recommendations to return (default, configurable)
-- `similarity_weight = 0.6` - Weight for similarity (0.6 = 60% similarity, 40% sequence)
+- `similarity_weight = 0.7` - Weight for similarity (0.7 = 70% similarity, 30% sequence)
 
 ### Complete Parameter Reference
 
 Default parameters (optimized through backtest validation):
 - `top_n = 2` - Number of recommendations (configurable to any value)
 - `k_similar = 19` - Number of similar teams for collaborative filtering
-- `similarity_weight = 0.6` - Hybrid scoring weight (60% similarity, 40% sequence)
+- `similarity_weight = 0.7` - Hybrid scoring weight (70% similarity, 30% sequence)
 - `similar_teams_lookahead_months = 3` - Months to check for similar team improvements
 - `recent_improvements_months = 3` - Months to look back for recent team improvements
 - `min_similarity_threshold = 0.75` - Minimum cosine similarity to consider teams similar

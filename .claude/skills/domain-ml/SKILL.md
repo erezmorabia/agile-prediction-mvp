@@ -28,7 +28,10 @@ Three tightly coupled components produce hybrid practice recommendations: `Simil
 ```
 final_score = similarity_weight × norm_sim_score + (1 − similarity_weight) × norm_seq_score
 ```
-- `similarity_weight` default: **0.6** (60% similarity, 40% sequence)
+- `similarity_weight` default: **0.7** (70% similarity, 30% sequence) — updated from a prior
+  default of 0.6 after a post-fix optimizer grid search found 0.7 performs at least as well on
+  every backtest month and metric (see fixed bug below and
+  `docs/known-issues/01-similarity-weight-shadowing.md`)
 - Each component normalized independently to [0, 1] before combining
 - Combined scores normalized again to [0, 1] before returning
 - **Deterministic tie-break**: final ranking sorts by `(-score, practice_name)`, and every
@@ -36,6 +39,12 @@ final_score = similarity_weight × norm_sim_score + (1 − similarity_weight) ×
   iterated in canonical `self.practices` order rather than raw `set`/dict iteration. Plain
   `set()` iteration order in Python depends on the process's hash seed, which previously made
   tied recommendations (and therefore backtest accuracy) non-reproducible across runs.
+- **Fixed variable-shadowing bug**: the loop that walks similar teams previously used
+  `similarity_weight` as its per-team-similarity loop variable name, silently overwriting the
+  function's own `similarity_weight` parameter before the Step 4 blend formula read it — so the
+  blend ratio was never actually tunable (every value behaved like the last similar team's
+  cosine-similarity score, always ≥ `min_similarity_threshold`). The loop variable is now named
+  `peer_similarity`.
 
 **Similarity score (per practice):**
 ```
@@ -54,7 +63,7 @@ sequence_scores[practice] += transition_probability
 |---|---|---|
 | `top_n` | 2 | Recommendations returned |
 | `k_similar` | 19 | Similar teams considered |
-| `similarity_weight` | 0.6 | Similarity vs sequence balance |
+| `similarity_weight` | 0.7 | Similarity vs sequence balance |
 | `similar_teams_lookahead_months` | 3 | Months ahead to check for improvements |
 | `recent_improvements_months` | 3 | Months back to detect recent improvements |
 | `min_similarity_threshold` | 0.75 | Min cosine similarity to include a team |

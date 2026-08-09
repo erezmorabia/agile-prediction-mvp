@@ -96,7 +96,7 @@ class BacktestEngine:
             config (dict, optional): Configuration dictionary with recommendation parameters:
                 - top_n (int): Number of recommendations to generate. Defaults to 2.
                 - k_similar (int): Number of similar teams to consider. Defaults to 19.
-                - similarity_weight (float): Weight for similarity vs sequences (0.0-1.0). Defaults to 0.6.
+                - similarity_weight (float): Weight for similarity vs sequences (0.0-1.0). Defaults to 0.7.
                 - similar_teams_lookahead_months (int): Months to look ahead for improvements. Defaults to 3.
                 - recent_improvements_months (int): Months to check back for recent improvements. Defaults to 3.
                 - min_similarity_threshold (float): Minimum similarity threshold (0.0-1.0). Defaults to 0.75.
@@ -157,7 +157,7 @@ class BacktestEngine:
             config = {}
         top_n = config.get("top_n", 2)
         k_similar = config.get("k_similar", 19)
-        similarity_weight = config.get("similarity_weight", 0.6)
+        similarity_weight = config.get("similarity_weight", 0.7)
         similar_teams_lookahead_months = config.get("similar_teams_lookahead_months", 3)
         recent_improvements_months = config.get("recent_improvements_months", 3)
         min_similarity_threshold = config.get("min_similarity_threshold", 0.75)

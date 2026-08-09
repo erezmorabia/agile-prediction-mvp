@@ -446,7 +446,7 @@ class APIService:
             config_dict = {
                 "top_n": config.get("top_n", 2),
                 "k_similar": config.get("k_similar", 19),
-                "similarity_weight": config.get("similarity_weight", 0.6),
+                "similarity_weight": config.get("similarity_weight", 0.7),
                 "similar_teams_lookahead_months": config.get("similar_teams_lookahead_months", 3),
                 "recent_improvements_months": config.get("recent_improvements_months", 3),
                 "min_similarity_threshold": config.get("min_similarity_threshold", 0.75),

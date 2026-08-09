@@ -29,7 +29,7 @@ class RecommendationEngine:
         top_n: int = 2,
         k_similar: int = 19,
         allow_first_three_months: bool = False,
-        similarity_weight: float = 0.6,
+        similarity_weight: float = 0.7,
         similar_teams_lookahead_months: int = 3,
         recent_improvements_months: int = 3,
         min_similarity_threshold: float = 0.75,
@@ -74,8 +74,8 @@ class RecommendationEngine:
                 is in the first 3 months globally. Used for backtesting scenarios.
                 Defaults to False.
             similarity_weight (float, optional): Weight for similarity-based scores vs sequence
-                scores. Range 0.0-1.0. 0.6 means 60% weight on similarity, 40% on sequences.
-                Defaults to 0.6.
+                scores. Range 0.0-1.0. 0.7 means 70% weight on similarity, 30% on sequences.
+                Defaults to 0.7.
             similar_teams_lookahead_months (int, optional): How many months ahead to check
                 for improvements by similar teams. Higher values capture delayed improvements
                 but may be less relevant. Defaults to 3.
@@ -155,7 +155,7 @@ class RecommendationEngine:
         # happen every month.
         similarity_scores = defaultdict(float)  # Track similarity-based scores separately
 
-        for similar_team, similarity_weight, historical_month in similar_teams:
+        for similar_team, peer_similarity, historical_month in similar_teams:
             try:
                 similar_history = self.processor.get_team_history(similar_team)
 
@@ -204,7 +204,7 @@ class RecommendationEngine:
 
                 # Add the best improvements found (weighted by similarity)
                 for practice_name, improvement_magnitude in best_improvements.items():
-                    similarity_scores[practice_name] += similarity_weight * improvement_magnitude
+                    similarity_scores[practice_name] += peer_similarity * improvement_magnitude
             except (KeyError, ValueError, IndexError):
                 continue
 
