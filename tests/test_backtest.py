@@ -2,6 +2,8 @@
 Tests for BacktestEngine class.
 """
 
+import warnings
+
 import pytest
 from unittest.mock import Mock, patch
 from src.validation.backtest import BacktestEngine
@@ -116,7 +118,27 @@ class TestBacktestEngine:
         if 'error' not in result:
             random_baseline = result['random_baseline']
             assert 0.0 <= random_baseline <= 1.0
-    
+
+    def test_baseline_from_k_avg_matches_hand_computed_value(self):
+        """Independently verify the hypergeometric formula against a hand-checkable example.
+
+        n=3 practices, 1 improves on average, 1 recommendation drawn at random:
+        P(hit) = 1 - C(2,1)/C(3,1) = 1 - 2/3 = 1/3.
+        """
+        baseline = BacktestEngine._baseline_from_k_avg(k_avg=1, total_practices=3, top_n=1)
+        assert baseline == pytest.approx(1 / 3)
+
+    def test_baseline_from_k_avg_handles_fractional_k_avg(self):
+        """comb(..., exact=False) must accept a non-integer k_avg without raising or warning.
+
+        n=5, k_avg=1.5 (average improvements per case), top_n=1:
+        P(hit) = 1 - C(3.5,1)/C(5,1) = 1 - 3.5/5 = 0.3.
+        """
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            baseline = BacktestEngine._baseline_from_k_avg(k_avg=1.5, total_practices=5, top_n=1)
+        assert baseline == pytest.approx(0.3)
+
     def test_run_backtest_improvement_gap(self, sample_recommender, sample_processor):
         """Test run_backtest calculates improvement gap."""
         backtest = BacktestEngine(sample_recommender, sample_processor)

@@ -80,7 +80,7 @@ class BacktestEngine:
             return 0.0
         if k_avg > 0 and top_n > 0 and total_practices >= k_avg and total_practices >= top_n:
             try:
-                p_none = comb(total_practices - k_avg, top_n, exact=True) / comb(total_practices, top_n, exact=True)
+                p_none = comb(total_practices - k_avg, top_n, exact=False) / comb(total_practices, top_n, exact=False)
                 return 1.0 - p_none
             except (ValueError, ZeroDivisionError):
                 return min(1.0, (k_avg / total_practices) * top_n)

@@ -43,3 +43,45 @@ Two independent fixes, one per issue:
 - A new test independently verifies the random-baseline formula against a hand-computed example.
 - The 23.5% random-baseline figure is confirmed unchanged (within rounding) after the fix.
 - Someone can point at the fixed line and explain, in one sentence, what was fragile about the old code and why the fix removes that fragility.
+
+---
+
+## Resolution (2026-08-09)
+
+**Decision:** `comb(..., exact=False)`, not rounding `k_avg`. Rationale: `exact=False` uses the
+Gamma-function generalization of the binomial coefficient, which is the standard continuous
+extension of "N choose k" to real-valued arguments — it accepts `k_avg`'s full precision natively
+instead of discretizing it, and doesn't require picking an arbitrary rounding rule (nearest? up?
+down?) that would make the result discontinuous as `k_avg` drifts across a `.5` boundary.
+
+**Implementation** (`src/validation/backtest.py`, `BacktestEngine._baseline_from_k_avg()`, line
+83): changed both `comb(...)` calls from `exact=True` to `exact=False`. No other logic in the
+method changed — same guard conditions, same fallback approximation, same
+`try/except (ValueError, ZeroDivisionError)`. The other two `comb(..., exact=True)` calls in this
+file (`_expected_random_mrr()`, lines 51/56) were left untouched since they receive genuine
+per-case integers, not an average — no deprecation risk applies there.
+
+**Tests added** (`tests/test_backtest.py`):
+- `test_baseline_from_k_avg_matches_hand_computed_value` — calls `_baseline_from_k_avg()` directly
+  with the doc's hand-computable example (`n=3, k_avg=1, top_n=1` → `1/3`), independent of the
+  existing self-consistency checks.
+- `test_baseline_from_k_avg_handles_fractional_k_avg` — a genuinely fractional case (`n=5,
+  k_avg=1.5, top_n=1` → `0.3`), run with `DeprecationWarning` elevated to an error, confirming the
+  fixed call path raises nothing.
+
+**Verified:**
+- `BacktestEngine._baseline_from_k_avg(1, 3, 1)` returns `0.3333...` with `warnings.simplefilter('error')` active — no `DeprecationWarning`.
+- `make test-file FILE=test_backtest.py` and `test_temporal_boundaries.py` pass.
+- Re-ran the real `BacktestEngine.run_backtest()` against `data/raw/combined_dataset.xlsx`
+  (defaults): **50.3% accuracy vs. 23.5% random baseline = 2.14x** — unchanged from the
+  post-Finding-4 figures, confirming this was a mechanical fix, not a formula change.
+
+**One sentence:** the old code fed a float average into a SciPy function whose exact-integer mode
+was about to start raising errors on non-integers; switching to the function's native
+continuous-value mode removes that fragility without changing the computed result.
+
+**Out of scope, left open:** the deeper Jensen's-inequality nuance also raised in
+[Finding 4](04-accuracy-vs-baseline-aggregation-mismatch.md) — `_baseline_from_k_avg()` computes
+`P_none(avg k)` rather than `avg(P_none(k))` per case (as `_expected_random_mrr()` already does
+correctly for MRR). Because the no-hit probability is convex in `k`, these aren't equal in
+general; not addressed here per explicit scope decision.
