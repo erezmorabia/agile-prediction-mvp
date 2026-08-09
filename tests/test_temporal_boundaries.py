@@ -12,6 +12,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from collections import Counter, defaultdict
+from unittest.mock import patch
 
 import pytest
 import pandas as pd
@@ -306,7 +307,9 @@ class TestTemporalBoundaries:
                 target_team,
                 target_month,
                 recommended_practice,
-                recent_improvements_months=3
+                recent_improvements_months=3,
+                k_similar=19,
+                min_similarity_threshold=0.0,
             )
 
             # Parse explanation for mentioned months (this is heuristic)
@@ -315,6 +318,29 @@ class TestTemporalBoundaries:
             # Verify explanation exists and is a dict
             assert isinstance(explanation, dict), "Explanation should be a dict"
             assert len(explanation) > 0, "Explanation should not be empty"
+
+            # Verify get_recommendation_explanation() actually threads k_similar/min_similarity_threshold
+            # into its SimilarityEngine.find_similar_teams() call, rather than using its own
+            # hardcoded, unfiltered lookup (docs/known-issues/03-explanation-peer-pool-mismatch.md).
+            # A subset-of-the-pool check isn't sufficient here since this fixture only has 2
+            # candidate teams total, so any k/threshold combination trivially returns the same
+            # pool - spy on the actual call to prove the specific values passed above are used.
+            with patch.object(
+                temporal_recommender.similarity_engine,
+                "find_similar_teams",
+                wraps=temporal_recommender.similarity_engine.find_similar_teams,
+            ) as spy_find_similar_teams:
+                temporal_recommender.get_recommendation_explanation(
+                    target_team,
+                    target_month,
+                    recommended_practice,
+                    recent_improvements_months=3,
+                    k_similar=7,
+                    min_similarity_threshold=0.42,
+                )
+                spy_find_similar_teams.assert_called_once_with(
+                    target_team, target_month, k=7, min_similarity=0.42
+                )
 
 
 class TestDataLeakageEdgeCases:

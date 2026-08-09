@@ -455,8 +455,16 @@ class CLIInterface:
 
                 actual_improvements.append((practice_name, improvement, improved_in_months))
 
-            # Use optimized defaults: top_n=2, k_similar=19 (matches web interface)
-            recommendations = self.recommender.recommend(team_name, prev_month, top_n=2, k_similar=19)
+            # Use optimized defaults: top_n=2, k_similar=19, min_similarity_threshold=0.75 (matches web interface)
+            k_similar = 19
+            min_similarity_threshold = 0.75
+            recommendations = self.recommender.recommend(
+                team_name,
+                prev_month,
+                top_n=2,
+                k_similar=k_similar,
+                min_similarity_threshold=min_similarity_threshold,
+            )
 
             # Display recommendations
             print(f"\nTop {len(recommendations)} Recommendations for {team_name} (Predicting month {month_to_predict}):")
@@ -502,7 +510,13 @@ class CLIInterface:
                 similar_teams_list = []
                 similar_count = 0
                 try:
-                    explanation = self.recommender.get_recommendation_explanation(team_name, prev_month, practice)
+                    explanation = self.recommender.get_recommendation_explanation(
+                        team_name,
+                        prev_month,
+                        practice,
+                        k_similar=k_similar,
+                        min_similarity_threshold=min_similarity_threshold,
+                    )
                     similar_count = explanation.get("similar_teams_improved", 0)
                     similar_teams_list = explanation.get("similar_teams_list", [])
                 except:

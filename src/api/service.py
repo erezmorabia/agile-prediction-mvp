@@ -211,7 +211,10 @@ class APIService:
         prev_month = months[month_to_predict_idx - 1]  # Use previous month as baseline
 
         # Get recommendations using previous month as baseline
-        recommendations = self.recommender.recommend(team_name, prev_month, top_n=top_n, k_similar=k_similar)
+        min_similarity_threshold = 0.75  # matches recommend()'s default; not exposed as an API param
+        recommendations = self.recommender.recommend(
+            team_name, prev_month, top_n=top_n, k_similar=k_similar, min_similarity_threshold=min_similarity_threshold
+        )
 
         # Check for actual improvements in the predicted month and next 2 months
         month_to_predict = month
@@ -357,7 +360,13 @@ class APIService:
             similar_teams_list = []
             why = "Recommended based on improvement sequences"
             try:
-                explanation = self.recommender.get_recommendation_explanation(team_name, prev_month, practice)
+                explanation = self.recommender.get_recommendation_explanation(
+                    team_name,
+                    prev_month,
+                    practice,
+                    k_similar=k_similar,
+                    min_similarity_threshold=min_similarity_threshold,
+                )
                 similar_count = explanation.get("similar_teams_improved", 0)
                 total_checked = explanation.get("total_similar_teams_checked", 0)
                 has_sequence_boost = explanation.get("has_sequence_boost", False)

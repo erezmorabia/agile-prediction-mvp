@@ -297,7 +297,13 @@ class RecommendationEngine:
         return recommendations[:top_n]
 
     def get_recommendation_explanation(
-        self, target_team: str, current_month: int, practice: str, recent_improvements_months: int = 3
+        self,
+        target_team: str,
+        current_month: int,
+        practice: str,
+        recent_improvements_months: int = 3,
+        k_similar: int = 19,
+        min_similarity_threshold: float = 0.75,
     ) -> dict:
         """
         Explain why a practice was recommended.
@@ -310,6 +316,11 @@ class RecommendationEngine:
             current_month (int): Current month (yyyymmdd format)
             practice (str): Practice name
             recent_improvements_months (int): Months to check back for recent improvements (default 3)
+            k_similar (int): Number of similar teams to consider. Should match the value passed
+                to the corresponding recommend() call, so the explanation describes the actual
+                peer pool behind the score. Defaults to 19.
+            min_similarity_threshold (float): Minimum cosine similarity to include a team. Should
+                match the value passed to the corresponding recommend() call. Defaults to 0.75.
 
         Returns:
             dict: Explanation details
@@ -359,7 +370,9 @@ class RecommendationEngine:
             except ValueError:
                 pass
 
-        similar_teams = self.similarity_engine.find_similar_teams(target_team, current_month, k=5)
+        similar_teams = self.similarity_engine.find_similar_teams(
+            target_team, current_month, k=k_similar, min_similarity=min_similarity_threshold
+        )
 
         # Track which similar teams improved this practice and when
         # IMPORTANT: Only use past data - check what similar teams improved from their

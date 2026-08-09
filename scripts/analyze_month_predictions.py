@@ -226,11 +226,22 @@ def analyze_month(month_to_analyze):
         # Get recommendations with explanations
         history = processor.get_team_history(team)
         try:
-            recommendations = recommender.recommend(team, prev_month, top_n=3, k_similar=5, allow_first_three_months=True)
-            
+            k_similar = 5
+            min_similarity_threshold = 0.75
+            recommendations = recommender.recommend(
+                team,
+                prev_month,
+                top_n=3,
+                k_similar=k_similar,
+                allow_first_three_months=True,
+                min_similarity_threshold=min_similarity_threshold,
+            )
+
             print(f"Recommended practices:")
             for practice, score, level in recommendations:
-                explanation = recommender.get_recommendation_explanation(team, prev_month, practice)
+                explanation = recommender.get_recommendation_explanation(
+                    team, prev_month, practice, k_similar=k_similar, min_similarity_threshold=min_similarity_threshold
+                )
                 print(f"  - {practice} (score: {score:.4f}):")
                 similar_teams_list = explanation.get('similar_teams_list', [])
                 similar_teams_count = explanation.get('similar_teams_improved', 0)

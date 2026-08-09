@@ -1,5 +1,7 @@
 # Finding 3: The "why" explanation doesn't use the same similar-teams pool as the recommendation
 
+**Status: Resolved.** `get_recommendation_explanation()` now accepts `k_similar`/`min_similarity_threshold` params (defaults 19/0.75, matching `recommend()`) and every call site threads through the same values used for the corresponding `recommend()` call. See `src/ml/recommender.py`, `src/api/service.py`, `src/interface/cli.py`, `scripts/analyze_month_predictions.py`, and the strengthened peer-pool assertion in `tests/test_temporal_boundaries.py::test_no_future_similar_teams_in_explanation`.
+
 ## Problem statement (user perspective)
 
 When the system gives you a recommendation, it also shows a human-readable explanation — something like "similar teams that improved this practice were X, Y, Z." The intent is for this explanation to justify the score: it should be built from the same pool of similar teams that actually produced the recommendation.
