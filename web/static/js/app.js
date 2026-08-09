@@ -914,7 +914,7 @@ function getBacktestConfig() {
     return {
         top_n: parseInt(document.getElementById('config-top-n').value) || 2,
         k_similar: parseInt(document.getElementById('config-k-similar').value) || 19,
-        similarity_weight: parseFloat(document.getElementById('config-similarity-weight').value) || 0.6,
+        similarity_weight: parseFloat(document.getElementById('config-similarity-weight').value) || 0.7,
         similar_teams_lookahead_months: parseInt(document.getElementById('config-lookahead-months').value) || 3,
         recent_improvements_months: parseInt(document.getElementById('config-recent-months').value) || 3,
         min_similarity_threshold: parseFloat(document.getElementById('config-min-similarity').value) || 0.75

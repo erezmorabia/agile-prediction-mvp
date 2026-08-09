@@ -124,3 +124,15 @@ instead. Verified end-to-end with Playwright (confirmed the rendered "Parameter 
 panel and search-space text) and via a direct `/api/optimize` call showing accuracy genuinely
 varies with `similarity_weight` (0.6 → 49.2%, 0.7 → 49.7%) when passed as a real range instead
 of `fixed_params`.
+
+**Also discovered and fixed (2026-08-09):** the manual "Run Backtest" flow's Similarity Weight
+slider still defaulted to `0.6` on page load — `web/index.html`'s slider `value` and display
+spans, and the `|| 0.6` fallback in `getBacktestConfig()` (`web/static/js/app.js`) — both stale
+relative to the `0.7` default now used everywhere else. Since the slider always sends an
+explicit value (never "unset"), a fresh page load + "Run Backtest" with no slider interaction
+silently sent `0.6` on the wire, overriding the corrected server-side default. Note: "Run
+Backtest" is *never* automatically based on the optimizer's result either way — it always reads
+whatever the sliders currently show at click time; the only link between the two flows is the
+manual "Apply This Configuration" button after a Find Optimal Config run, which copies the
+optimal values into these same sliders. Fixed the slider default and JS fallback to `0.7`;
+verified via Playwright that a fresh page load's "Run Backtest" now sends `similarity_weight: 0.7`.
