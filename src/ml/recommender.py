@@ -46,8 +46,9 @@ class RecommendationEngine:
         Step 1: Find K most similar teams by comparing target team's state at current_month
                 against all other teams' states at all past months (months < current_month).
                 Uses cosine similarity on practice maturity vectors.
-        Step 2: For each similar team, check what practices they improved in the next 1-3 months
-                (but only if those months are <= current_month to prevent data leakage).
+        Step 2: For each similar team, check what practices they improved in the next 1-N months
+                (N = similar_teams_lookahead_months, but only if those months are <= current_month
+                to prevent data leakage).
                 Weight improvements by similarity score and improvement magnitude.
         Step 3: Apply sequence boost - if target team recently improved practices (in last N months),
                 boost practices that typically follow those improved practices based on learned sequences.
@@ -169,10 +170,11 @@ class RecommendationEngine:
                 similar_months = sorted(similar_history.keys())
                 hist_idx = similar_months.index(historical_month)
 
-                # Check up to 3 months ahead (but only use months <= current_month)
-                # This captures improvements that don't happen every month
-                max_months_ahead = 3
-                best_improvements = {}  # Track max improvement per practice across 1-3 months
+                # Check up to similar_teams_lookahead_months months ahead (but only use
+                # months <= current_month). This captures improvements that don't happen
+                # every month.
+                max_months_ahead = similar_teams_lookahead_months
+                best_improvements = {}  # Track max improvement per practice across the lookahead window
 
                 for months_ahead in range(1, max_months_ahead + 1):
                     if hist_idx + months_ahead >= len(similar_months):
@@ -195,7 +197,7 @@ class RecommendationEngine:
                             practice_name = self.practices[j]
                             improvement_magnitude = future_state - hist_state
 
-                            # Keep the maximum improvement across all checked months (1-3)
+                            # Keep the maximum improvement across all checked months (1-N)
                             if (
                                 practice_name not in best_improvements
                                 or improvement_magnitude > best_improvements[practice_name]
@@ -304,6 +306,7 @@ class RecommendationEngine:
         recent_improvements_months: int = 3,
         k_similar: int = 19,
         min_similarity_threshold: float = 0.75,
+        similar_teams_lookahead_months: int = 3,
     ) -> dict:
         """
         Explain why a practice was recommended.
@@ -321,6 +324,10 @@ class RecommendationEngine:
                 peer pool behind the score. Defaults to 19.
             min_similarity_threshold (float): Minimum cosine similarity to include a team. Should
                 match the value passed to the corresponding recommend() call. Defaults to 0.75.
+            similar_teams_lookahead_months (int): How many months ahead to check for improvements
+                by similar teams. Should match the value passed to the corresponding recommend()
+                call, so the explanation describes the same window that produced the score.
+                Defaults to 3.
 
         Returns:
             dict: Explanation details
@@ -376,7 +383,7 @@ class RecommendationEngine:
 
         # Track which similar teams improved this practice and when
         # IMPORTANT: Only use past data - check what similar teams improved from their
-        # historical_month to THEIR next 1-3 months, but only if those months are <= current_month
+        # historical_month to THEIR next 1-N months, but only if those months are <= current_month
         # (not in the future). This prevents data leakage and captures improvements that don't
         # happen every month.
         improved_teams = []
@@ -398,9 +405,10 @@ class RecommendationEngine:
                 similar_months = sorted(similar_history.keys())
                 hist_idx = similar_months.index(historical_month)
 
-                # Check up to 3 months ahead (but only use months <= current_month)
-                # This captures improvements that don't happen every month
-                max_months_ahead = 3
+                # Check up to similar_teams_lookahead_months months ahead (but only use
+                # months <= current_month). This captures improvements that don't happen
+                # every month.
+                max_months_ahead = similar_teams_lookahead_months
                 practice_idx = self.practices.index(practice)
                 hist_state = similar_history[historical_month][practice_idx]
 

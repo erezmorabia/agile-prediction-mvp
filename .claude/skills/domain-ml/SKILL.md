@@ -10,8 +10,8 @@ Three tightly coupled components produce hybrid practice recommendations: `Simil
 
 ## Data Flows
 
-- **Recommendation:** `RecommendationEngine.recommend()` → `SequenceMapper.learn_sequences_up_to_month(current_month)` → `SimilarityEngine.find_similar_teams(target_team, current_month)` → for each similar team check improvements in next 1–3 months (capped at current_month) → apply sequence boost from recently improved practices → normalize each component separately → combine with weights → filter maxed-out practices → return top N
-- **Explanation:** `get_recommendation_explanation()` runs the same similarity + sequence lookup — now using the same `k_similar`/`min_similarity_threshold` as the `recommend()` call it's explaining, so the peer pool named in the explanation matches the one that actually produced the score — and returns a breakdown dict (similar_teams_list, improved_count, has_sequence_boost) instead of ranked scores
+- **Recommendation:** `RecommendationEngine.recommend()` → `SequenceMapper.learn_sequences_up_to_month(current_month)` → `SimilarityEngine.find_similar_teams(target_team, current_month)` → for each similar team check improvements in next 1–N months (N = `similar_teams_lookahead_months`, default 3; capped at current_month) → apply sequence boost from recently improved practices → normalize each component separately → combine with weights → filter maxed-out practices → return top N
+- **Explanation:** `get_recommendation_explanation()` runs the same similarity + sequence lookup — now using the same `k_similar`/`min_similarity_threshold`/`similar_teams_lookahead_months` as the `recommend()` call it's explaining, so both the peer pool and the lookahead window named in the explanation match what actually produced the score — and returns a breakdown dict (similar_teams_list, improved_count, has_sequence_boost) instead of ranked scores
 - **Sequence cache:** `learn_sequences_up_to_month(max_month)` stores results in `_sequence_cache[max_month]`; subsequent calls with the same max_month return from cache, avoiding recomputation across backtest iterations
 
 ## Domain Validation Rules and Business Logic
@@ -45,12 +45,19 @@ final_score = similarity_weight × norm_sim_score + (1 − similarity_weight) ×
   blend ratio was never actually tunable (every value behaved like the last similar team's
   cosine-similarity score, always ≥ `min_similarity_threshold`). The loop variable is now named
   `peer_similarity`.
+- **Fixed dead lookahead parameter**: both `recommend()` and `get_recommendation_explanation()`
+  previously hardcoded the lookahead window to `max_months_ahead = 3`, ignoring the
+  `similar_teams_lookahead_months` parameter entirely (`get_recommendation_explanation()` didn't
+  even accept it as a parameter). Both now use `max_months_ahead = similar_teams_lookahead_months`
+  (see `docs/known-issues/02-similar-teams-lookahead-not-wired.md`). Default-neutral since the
+  parameter's default was already `3`; only matters once a caller (or the optimizer) sets a
+  different value.
 
 **Similarity score (per practice):**
 ```
 similarity_scores[practice] += similarity_score × improvement_magnitude
 ```
-- `improvement_magnitude` = max improvement across the 1–3 month lookahead window
+- `improvement_magnitude` = max improvement across the `similar_teams_lookahead_months` lookahead window (default 3)
 
 **Sequence score (per practice):**
 ```
@@ -77,7 +84,7 @@ sequence_scores[practice] += transition_probability
 | `SequenceMapper._learn_team_transitions()` | `src/ml/sequences.py:82` | `learn_sequences()`, `learn_sequences_up_to_month()` | `team_months, history` → mutates `transition_matrix`/`practice_improvement_freq` in place (first-order Markov construction) |
 | `SequenceMapper.get_typical_next_practices()` | `src/ml/sequences.py:178` | `RecommendationEngine.recommend()` | `practice, top_n` → `list[(practice_name, probability)]` |
 | `RecommendationEngine.recommend()` | `src/ml/recommender.py:25` | `APIService.get_recommendations()`, `BacktestEngine` | `target_team, current_month, top_n, k_similar, ...` → `list[(practice, score, current_level)]` |
-| `RecommendationEngine.get_recommendation_explanation()` | `src/ml/recommender.py:299` | `APIService.get_recommendations()` | `target_team, current_month, practice, recent_improvements_months, k_similar, min_similarity_threshold` → explanation dict |
+| `RecommendationEngine.get_recommendation_explanation()` | `src/ml/recommender.py:301` | `APIService.get_recommendations()` | `target_team, current_month, practice, recent_improvements_months, k_similar, min_similarity_threshold, similar_teams_lookahead_months` → explanation dict |
 
 ## Cross-references
 - **Related Use Case Skills:** `/uc-01-get-recommendations` (primary consumer of recommendations), `/uc-02-run-backtest-validation` (calls recommender in a loop), `/uc-03-run-parameter-optimization` (tunes ML parameters)
