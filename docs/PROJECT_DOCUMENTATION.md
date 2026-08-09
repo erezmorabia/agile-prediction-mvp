@@ -10,7 +10,7 @@
 
 ## Abstract
 
-This project addresses the critical challenge of large-scale agile transformation in organizations by developing a machine learning system that recommends the next agile practices for teams based on organizational history. The system uses collaborative filtering combined with Markov chain sequence learning to analyze patterns from 87 teams, 35 practices, and 10 months of historical data. Validation through backtesting demonstrates 50.3% prediction accuracy, representing a 2.06x improvement over random baseline (24.4%). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
+This project addresses the critical challenge of large-scale agile transformation in organizations by developing a machine learning system that recommends the next agile practices for teams based on organizational history. The system uses collaborative filtering combined with Markov chain sequence learning to analyze patterns from 87 teams, 35 practices, and 10 months of historical data. Validation through backtesting demonstrates 50.3% prediction accuracy, representing a 2.14x improvement over random baseline (23.5%). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
 
 ---
 
@@ -54,8 +54,8 @@ The system demonstrates strong performance and practical value:
 
 **Prediction Accuracy:**
 - **50.3% accuracy** in predicting which practices teams will improve
-- **2.06x improvement** over random baseline (24.4%)
-- **25.9 percentage point improvement gap** demonstrates significant value
+- **2.14x improvement** over random baseline (23.5%)
+- **26.8 percentage point improvement gap** demonstrates significant value
 - **142 validation cases** across multiple teams and months
 
 **System Capabilities:**
@@ -416,7 +416,7 @@ baseline:
 
 These are supplementary diagnostics computed by `BacktestEngine` (backed by
 `MetricsCalculator.calculate_hit_rate` and `calculate_mrr`) and shown in the Backtest tab; they do
-not change the headline 50.3% accuracy / 24.4% random baseline figures reported elsewhere in this
+not change the headline 50.3% accuracy / 23.5% random baseline figures reported elsewhere in this
 document.
 
 **Why Hit Rate@N Remains the Headline Metric**
@@ -427,7 +427,7 @@ and MRR each beat their own random baseline by a *larger* factor than Hit Rate@N
 
 | Metric | Improvement Factor vs. Random |
 |---|---|
-| Hit Rate@N (headline) | 2.06x |
+| Hit Rate@N (headline) | 2.14x |
 | Precision@N | 2.31x |
 | Recall@N | 2.93x |
 | MRR | 2.23x |
@@ -891,9 +891,9 @@ primary Accuracy metrics (see §3.6 for definitions and baseline formulas).
 
 **Overall Performance:**
 - **Accuracy (Hit Rate@N)**: 50.3%
-- **Random Baseline**: 24.4%
-- **Improvement Factor**: 2.06x better than random
-- **Improvement Gap**: 25.9 percentage points
+- **Random Baseline**: 23.5%
+- **Improvement Factor**: 2.14x better than random
+- **Improvement Gap**: 26.8 percentage points
 
 **Validation Details:**
 - **Total Predictions**: 142 cases
@@ -914,7 +914,7 @@ Results vary by month, with accuracy typically ranging from 40-55%, consistently
 | MRR | 0.40 | 0.18 | 2.23x |
 
 Each stricter, rank-aware metric shows an improvement factor over its own random baseline that
-*meets or exceeds* Hit Rate@N's 2.06x — see §3.6 for why Hit Rate@N is still reported as the
+*meets or exceeds* Hit Rate@N's 2.14x — see §3.6 for why Hit Rate@N is still reported as the
 headline metric despite this.
 
 **Popularity Baseline Comparison (same run):**
@@ -929,17 +929,17 @@ specific state entirely:
 |---|---|
 | Model | 50.3% |
 | Popularity Baseline | 43.6% |
-| Random Baseline | 24.4% |
+| Random Baseline | 23.5% |
 
 - **Model vs. Popularity Baseline**: +6.7 percentage points, 1.15x
-- **Model vs. Random Baseline**: +25.9 percentage points, 2.06x
+- **Model vs. Random Baseline**: +26.8 percentage points, 2.14x
 
 This is an important, honest caveat: most of the model's advantage over random selection is
 attributable to practices simply improving at very different rates organization-wide — a signal
 even a naive, non-personalized heuristic captures. The model's specific value-add — from
 personalizing to each team's own state via collaborative filtering and sequence learning — is
 the smaller remaining margin over the popularity baseline (1.15x, 6.7 percentage points), not the
-larger margin over random (2.06x). Both comparisons are reported because they answer different
+larger margin over random (2.14x). Both comparisons are reported because they answer different
 questions: random baseline establishes the problem isn't trivial to solve by chance; popularity
 baseline establishes how much value the model's personalization specifically adds on top of a
 "know the organization's general trends" heuristic.
@@ -983,8 +983,8 @@ supplementary metric, so the code default was updated to `0.7` to match.
 
 **Results:**
 - Optimal configuration achieves ~50.3% accuracy
-- Improvement factor of ~2.06x over random baseline
-- Random baseline: ~24.4% (calculated based on average improvements per case)
+- Improvement factor of ~2.14x over random baseline
+- Random baseline: ~23.5% (per-month average improvements per case, macro-averaged across months to match how accuracy is aggregated)
 - Parameters can be tuned for specific organizational contexts
 - Latest optimization tested 180 combinations, with 169 valid combinations
 
@@ -1114,7 +1114,7 @@ The implemented system successfully addresses all objectives stated in the origi
 **3. Validation:**
 - Uses historical backtesting methodology as proposed
 - Compares predictions against actual improvements
-- Demonstrates 50.3% accuracy with 2.06x improvement over random baseline (24.4%)
+- Demonstrates 50.3% accuracy with 2.14x improvement over random baseline (23.5%)
 
 **4. Practical Deployment:**
 - System is a functional prototype, ready for pilot testing with selected teams (see §7.3 for the gap to a hardened production deployment)
@@ -1201,9 +1201,9 @@ empirically validated result of this specific tool.
 ### 7.5 Comparison with Baseline
 
 **Random Baseline:**
-- Random practice selection achieves ~24.4% accuracy (calculated based on average improvements per case and number of recommendations)
-- System achieves 50.3% accuracy, representing 2.06x improvement
-- Improvement gap of 25.9 percentage points demonstrates significant value
+- Random practice selection achieves ~23.5% accuracy (per-month average improvements per case and number of recommendations, macro-averaged across months to match accuracy's own aggregation)
+- System achieves 50.3% accuracy, representing 2.14x improvement
+- Improvement gap of 26.8 percentage points demonstrates significant value
 
 **Manual Analysis Baseline:**
 - Manual analysis can serve 1-2 teams per coach per month
@@ -1242,7 +1242,7 @@ This project successfully implements a machine learning system for predicting la
 - Implemented collaborative filtering algorithm for finding similar teams
 - Implemented Markov chain sequence learning for identifying improvement patterns
 - Created hybrid recommendation system combining both approaches
-- Achieved 50.3% prediction accuracy, 2.06x better than random baseline (24.4%)
+- Achieved 50.3% prediction accuracy, 2.14x better than random baseline (23.5%)
 
 **Practical Achievements:**
 - Built a functional web interface, ready for pilot use (see §7.3 for the gap to production hardening)

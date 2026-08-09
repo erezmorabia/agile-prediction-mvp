@@ -28,7 +28,7 @@ See **[PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md)** for the full a
 ### What to Expect:
 - **Web Interface:** Modern, interactive UI at http://localhost:8000
 - **Recommendations:** Get personalized practice recommendations for teams
-- **Validation:** Run backtest validation with accuracy metrics (~50.3% accuracy, 2.06x better than random)
+- **Validation:** Run backtest validation with accuracy metrics (~50.3% accuracy, 2.14x better than random)
 - **Statistics:** View system statistics and practice definitions
 - **Sequences:** Explore learned improvement patterns
 
@@ -72,7 +72,7 @@ This MVP recommends which **agile practices** each team should focus on next (de
 
 | Metric | Baseline | With System | Impact |
 |--------|----------|-------------|--------|
-| **Decision Accuracy** | ~25% (random) | 50.3% | **2.06x better** |
+| **Decision Accuracy** | ~23.5% (random) | 50.3% | **2.14x better** |
 | **Manual Analysis Time** *(practitioner estimate, not measured — [see basis](docs/PROJECT_DOCUMENTATION.md))* | 4-8 hours/month | 0 hours | **100% automated** |
 | **Teams Served** | 1-2 | 70+ simultaneously | **Scale 35-70x** |
 | **Decision Confidence** | Intuition | Data-driven | **Proven model** |
@@ -112,7 +112,7 @@ This system automates and optimizes that guidance.
 - **Personalized** - Each team gets unique recommendations  
 - **Intelligent Sequencing** - Knows what's next in the improvement path  
 - **Evidence-Based** - Built on 655 data points across 87 teams  
-- **Validated** - 50.3% accuracy on historical data (2.06x better than random baseline)
+- **Validated** - 50.3% accuracy on historical data (2.14x better than random baseline)
 - **Scalable** - Works with any number of teams/practices
 - **Continuous Learning** - Gets smarter each month
 - **Pilot-Ready** - Tested and deployable for pilot use with selected teams (see [PROJECT_DOCUMENTATION.md §7.3](docs/PROJECT_DOCUMENTATION.md) for the gap to full production hardening)
@@ -236,7 +236,7 @@ results = backtest.run_backtest()
 
 **Why this matters:**
 - Proves the system actually works
-- 50.3% accuracy vs ~25% random = **2.06x better**
+- 50.3% accuracy vs ~23.5% random = **2.14x better**
 - Gives confidence to use recommendations
 
 ---
@@ -341,7 +341,7 @@ The system answers: **"What did successful peers do next?"**
 
 **Solution:** "Look at teams that are doing well, see what they did next, check if it fits the natural sequence, and recommend that."
 
-**Result:** 2.06x better decisions than random guessing, fully automated, works for 70+ teams simultaneously.
+**Result:** 2.14x better decisions than random guessing, fully automated, works for 70+ teams simultaneously.
 
 ## Features
 
@@ -583,8 +583,8 @@ BACKTEST RESULTS
 Total Predictions: 25
 Correct Predictions: 12
 Overall Accuracy: 50.3%
-Random Baseline: ~25%
-Improvement Over Baseline: 2.06x
+Random Baseline: ~23.5%
+Improvement Over Baseline: 2.14x
 
 Teams Tested: 85+
 Train Period: First 60% of months
@@ -701,7 +701,7 @@ With the implemented codebase:
 - **MVP Timeline**: 1-2 days
 - **Data Coverage**: 87 teams, 35 practices, 10 months
 - **Backtest Accuracy**: 50.3% accuracy (validated on historical data)
-- **vs Random Baseline**: 2.06x better than random baseline
+- **vs Random Baseline**: 2.14x better than random baseline
 
 ## ML Algorithm Details
 
@@ -777,7 +777,7 @@ The system is built in 5 modular components:
 ### **Validation & Testing**
 
 - **177+ test functions** - Comprehensive test suite covering all components
-- **50.3% backtest accuracy** - 2.06x better than random baseline
+- **50.3% backtest accuracy** - 2.14x better than random baseline
 - **Data validation** - Quality checks on input
 - **Error handling** - Robust edge case handling
 - **Pilot-ready** - Code ready for pilot deployment (see `PROJECT_DOCUMENTATION.md` §7.3 for production-hardening gaps: auth, monitoring, automated data pipeline, multi-tenancy)

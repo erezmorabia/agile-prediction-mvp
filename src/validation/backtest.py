@@ -59,6 +59,33 @@ class BacktestEngine:
         except (ValueError, ZeroDivisionError):
             return 0.0
 
+    @staticmethod
+    def _baseline_from_k_avg(k_avg: float, total_practices: int, top_n: int) -> float:
+        """
+        Probability of getting at least one correct recommendation by random selection.
+
+        P(at least one correct) = 1 - C(n-k_avg, top_n) / C(n, top_n), where n = total
+        practices, k_avg = average number of practices improved per case, top_n =
+        number of recommendations drawn.
+
+        Args:
+            k_avg (float): Average number of practices improved per case.
+            total_practices (int): Total number of practices (n).
+            top_n (int): Number of recommendations drawn.
+
+        Returns:
+            float: Random-baseline probability (0-1).
+        """
+        if total_practices <= 0:
+            return 0.0
+        if k_avg > 0 and top_n > 0 and total_practices >= k_avg and total_practices >= top_n:
+            try:
+                p_none = comb(total_practices - k_avg, top_n, exact=True) / comb(total_practices, top_n, exact=True)
+                return 1.0 - p_none
+            except (ValueError, ZeroDivisionError):
+                return min(1.0, (k_avg / total_practices) * top_n)
+        return min(1.0, (k_avg / total_practices) * top_n)
+
     def run_backtest(
         self, train_ratio: float = None, config: dict = None, cancellation_check: Callable[[], bool] | None = None
     ) -> dict:
@@ -87,8 +114,10 @@ class BacktestEngine:
 
         Random Baseline:
         Calculates the probability of getting at least one correct recommendation by random
-        selection, accounting for the average number of improvements per case. This provides
-        a meaningful baseline for comparison.
+        selection. Computed per test month (using that month's own average number of
+        improvements per case), then macro-averaged across months — the same aggregation
+        overall_accuracy uses — so the two headline figures are directly comparable. See
+        docs/known-issues/04-accuracy-vs-baseline-aggregation-mismatch.md.
 
         Args:
             train_ratio (float, optional): Ignored parameter kept for API compatibility.
@@ -171,8 +200,9 @@ class BacktestEngine:
         all_teams_tested = set()  # Track all teams that made predictions
 
         # Track improvements per case for random baseline calculation
-        improvements_per_case = []  # List of number of practices improved per case
+        improvements_per_case = []  # List of number of practices improved per case (pooled, all months)
         expected_mrr_per_case = []  # Exact per-case E[MRR] under random selection (for MRR baseline)
+        month_improvements_per_case = {}  # test_month -> list of improvements-per-case, for per-month baseline
 
         logger.debug(
             "Starting backtest with %d months, cancellation_check=%s",
@@ -194,6 +224,7 @@ class BacktestEngine:
                         all_teams_tested,
                         top_n,
                         expected_mrr_per_case,
+                        month_improvements_per_case,
                     )
 
             test_month = months[test_month_idx]
@@ -213,6 +244,7 @@ class BacktestEngine:
                     all_teams_tested,
                     top_n,
                     expected_mrr_per_case,
+                    month_improvements_per_case,
                 )
 
             # Learn sequences up to test_month (using sliding window)
@@ -228,6 +260,7 @@ class BacktestEngine:
             month_recall_sum = 0.0
             month_mrr_sum = 0.0
             teams_tested_this_month = set()
+            improvements_per_case_this_month = []  # For this month's own random baseline
 
             team_count = 0  # Track team count for cancellation checks
             for team in teams:
@@ -249,6 +282,7 @@ class BacktestEngine:
                             all_teams_tested,
                             top_n,
                             expected_mrr_per_case,
+                            month_improvements_per_case,
                         )
                 try:
                     history = self.processor.get_team_history(team)
@@ -305,6 +339,7 @@ class BacktestEngine:
 
                     # Track number of improvements for random baseline calculation
                     improvements_per_case.append(len(actual_improved))
+                    improvements_per_case_this_month.append(len(actual_improved))
                     expected_mrr_per_case.append(
                         self._expected_random_mrr(total_practices, len(actual_improved), top_n)
                     )
@@ -386,6 +421,7 @@ class BacktestEngine:
                     "teams_tested": len(teams_tested_this_month),
                 }
             )
+            month_improvements_per_case[test_month] = improvements_per_case_this_month
 
         # Calculate overall accuracy and rank-aware metrics (average of per-month values)
         if per_month_results:
@@ -417,18 +453,17 @@ class BacktestEngine:
 
         if improvements_per_case and total_practices > 0:
             k_avg = sum(improvements_per_case) / len(improvements_per_case)
-            # Calculate probability of getting at least one correct with random selection
-            if k_avg > 0 and top_n > 0 and total_practices >= k_avg and total_practices >= top_n:
-                # P(none correct) = C(n-k_avg, top_n) / C(n, top_n)
-                try:
-                    p_none = comb(total_practices - k_avg, top_n, exact=True) / comb(total_practices, top_n, exact=True)
-                    random_baseline = 1.0 - p_none
-                except (ValueError, ZeroDivisionError):
-                    # Fallback to simple approximation if combination calculation fails
-                    random_baseline = min(1.0, (k_avg / total_practices) * top_n)
-            else:
-                # Edge case: use simple approximation
-                random_baseline = min(1.0, (k_avg / total_practices) * top_n) if total_practices > 0 else 0.0
+
+            # random_baseline is macro-averaged per month (each month's own k_avg feeds that
+            # month's baseline probability, via _baseline_from_k_avg), matching how
+            # overall_accuracy is aggregated — so the headline accuracy/baseline figures are
+            # built the same way and can be validly compared/ratioed. See
+            # docs/known-issues/04-accuracy-vs-baseline-aggregation-mismatch.md.
+            per_month_baselines = [
+                self._baseline_from_k_avg(sum(cases) / len(cases) if cases else 0.0, total_practices, top_n)
+                for cases in month_improvements_per_case.values()
+            ]
+            random_baseline = sum(per_month_baselines) / len(per_month_baselines) if per_month_baselines else 0.0
 
             improvement_gap = overall_accuracy - random_baseline
 
@@ -502,6 +537,7 @@ class BacktestEngine:
         all_teams_tested: set,
         top_n: int,
         expected_mrr_per_case: list | None = None,
+        month_improvements_per_case: dict | None = None,
     ) -> dict:
         """
         Build partial results dictionary when backtest is cancelled mid-execution.
@@ -516,12 +552,16 @@ class BacktestEngine:
             total_predictions (int): Total number of predictions made before cancellation.
             total_correct (int): Total number of correct predictions before cancellation.
             improvements_per_case (list): List of integers representing number of improvements
-                per case (team/month combination) tested so far. Used for random baseline calculation.
+                per case (team/month combination) tested so far. Used for the precision/recall
+                random baselines, which are linear in k_avg regardless of pooling.
             all_teams_tested (set): Set of team names that were tested before cancellation.
             top_n (int): Number of recommendations generated per prediction. Used for
                 random baseline probability calculation.
             expected_mrr_per_case (list, optional): Per-case exact expected MRR under random
                 selection, tested so far. Used for the MRR random baseline.
+            month_improvements_per_case (dict, optional): test_month -> list of improvements-per-case
+                for completed months, used to compute the per-month random baseline that gets
+                macro-averaged (matching overall_accuracy's aggregation).
 
         Returns:
             dict: Partial backtest results dictionary with same structure as run_backtest()
@@ -540,6 +580,7 @@ class BacktestEngine:
             len(per_month_results), total_correct, total_predictions,
         )
         expected_mrr_per_case = expected_mrr_per_case or []
+        month_improvements_per_case = month_improvements_per_case or {}
 
         # Calculate overall accuracy and rank-aware metrics from completed months only
         if per_month_results:
@@ -570,18 +611,18 @@ class BacktestEngine:
 
         if improvements_per_case and total_practices > 0:
             k_avg = sum(improvements_per_case) / len(improvements_per_case)
-            # Calculate probability of getting at least one correct with random selection
-            if k_avg > 0 and top_n > 0 and total_practices >= k_avg and total_practices >= top_n:
-                # P(none correct) = C(n-k_avg, top_n) / C(n, top_n)
-                try:
-                    p_none = comb(total_practices - k_avg, top_n, exact=True) / comb(total_practices, top_n, exact=True)
-                    random_baseline = 1.0 - p_none
-                except (ValueError, ZeroDivisionError):
-                    # Fallback to simple approximation if combination calculation fails
-                    random_baseline = min(1.0, (k_avg / total_practices) * top_n)
+
+            # random_baseline is macro-averaged per month, matching overall_accuracy's
+            # aggregation (see docs/known-issues/04-accuracy-vs-baseline-aggregation-mismatch.md).
+            # Falls back to the pooled k_avg if no per-month breakdown was supplied.
+            if month_improvements_per_case:
+                per_month_baselines = [
+                    self._baseline_from_k_avg(sum(cases) / len(cases) if cases else 0.0, total_practices, top_n)
+                    for cases in month_improvements_per_case.values()
+                ]
+                random_baseline = sum(per_month_baselines) / len(per_month_baselines) if per_month_baselines else 0.0
             else:
-                # Edge case: use simple approximation
-                random_baseline = min(1.0, (k_avg / total_practices) * top_n) if total_practices > 0 else 0.0
+                random_baseline = self._baseline_from_k_avg(k_avg, total_practices, top_n)
 
             improvement_gap = overall_accuracy - random_baseline
 

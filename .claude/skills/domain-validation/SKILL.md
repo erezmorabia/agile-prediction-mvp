@@ -32,12 +32,23 @@ overall_accuracy = mean(per_month_accuracy for each test month)
 
 **Random baseline for HR@N** (probability of ≥1 correct recommendation by chance):
 ```
-random_baseline = 1 − C(n − k_avg, top_n) / C(n, top_n)
+month_baseline(m) = 1 − C(n − k_avg(m), top_n) / C(n, top_n)   # BacktestEngine._baseline_from_k_avg
+random_baseline    = mean(month_baseline(m) for each test month)
 ```
 - `n` = total number of practices
-- `k_avg` = average number of improvements per team/month case
+- `k_avg(m)` = average number of improvements per case, within test month `m` only
 - `top_n` = number of recommendations generated
 - Falls back to `min(1.0, (k_avg / n) * top_n)` if combination calculation fails
+- `random_baseline` is macro-averaged per month — the same aggregation `overall_accuracy` uses —
+  so the two headline figures are built the same way and can be validly ratioed. Before this fix,
+  `random_baseline` was computed once from a single `k_avg` pooled across the whole run, which
+  didn't match `overall_accuracy`'s per-month averaging; see
+  `docs/known-issues/04-accuracy-vs-baseline-aggregation-mismatch.md`.
+- `random_precision`/`random_recall` (below) still use the pooled `k_avg` (not macro-averaged per
+  month) while `overall_precision`/`overall_recall` are macro-averaged like accuracy — the same
+  kind of aggregation question this fix addressed for HR@N, just not yet applied there. Out of
+  scope for this fix; not known to matter in practice since these are supplementary diagnostics,
+  not the headline figure.
 
 **Improvement factor:**
 ```
@@ -99,7 +110,7 @@ popularity_gap = overall_accuracy - overall_popularity_baseline
 popularity_improvement_factor = overall_accuracy / overall_popularity_baseline
 ```
 
-On the reference dataset this comes out to ~43.6% (vs. the model's ~50.3%, and random's ~24.4%)
+On the reference dataset this comes out to ~43.6% (vs. the model's ~50.3%, and random's ~23.5%)
 — most of the model's edge over random is attributable to organization-wide popularity alone;
 the smaller remaining margin (~1.15x) over the popularity baseline is what's actually
 attributable to per-team personalization (collaborative filtering + sequences).
@@ -115,7 +126,8 @@ accuracy non-reproducible across process runs.
 |---|---|---|---|
 | `BacktestEngine.run_backtest()` | `src/validation/backtest.py:62` | `APIService.run_backtest()`, `OptimizationEngine` | `config: dict, cancellation_check: Callable` → results dict with `overall_accuracy`, `random_baseline`, `overall_popularity_baseline` (+ `popularity_gap`/`popularity_improvement_factor`), `overall_precision`/`overall_recall`/`overall_mrr` (+ matching random baselines), `per_month_results`, `cancelled` |
 | `BacktestEngine._expected_random_mrr()` | `src/validation/backtest.py:30` | `run_backtest()` (per case) | staticmethod; `n, k, top_n` → exact expected MRR under random selection, via negative hypergeometric rank distribution |
-| `BacktestEngine._build_partial_results()` | `src/validation/backtest.py:496` | `run_backtest()` on cancellation | internal; builds same structure as full results with `cancelled: True` |
+| `BacktestEngine._baseline_from_k_avg()` | `src/validation/backtest.py:62` | `run_backtest()`, `_build_partial_results()` (per month) | staticmethod; `k_avg, total_practices, top_n` → P(≥1 correct by chance) for that k_avg |
+| `BacktestEngine._build_partial_results()` | `src/validation/backtest.py:531` | `run_backtest()` on cancellation | internal; builds same structure as full results with `cancelled: True` |
 | `OptimizationEngine.find_optimal_config()` | `src/validation/optimizer.py` | `APIService.find_optimal_config()` | param range lists, `min_accuracy`, `fixed_params` → results dict with `optimal_config`, `all_results`, `cancelled` |
 | `OptimizationEngine.generate_parameter_combinations()` | `src/validation/optimizer.py:31` | `find_optimal_config()` | range lists → generator of config dicts |
 | `OptimizationEngine.cancel()` | `src/validation/optimizer.py` | `APIService.cancel_optimization()` | sets `self._cancelled = True` |
