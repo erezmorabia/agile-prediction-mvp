@@ -85,44 +85,6 @@ class TestDataProcessing:
             assert len(history) > 0
 
 
-class TestSimilarityEngine:
-    """Test similarity calculation."""
-    
-    @pytest.fixture
-    def engine_with_data(self):
-        """Create similarity engine with data."""
-        excel_path = 'data/raw/20250204_Cleaned_Dataset.xlsx'
-        if os.path.exists(excel_path):
-            loader = DataLoader(excel_path)
-            df = loader.load()
-            practices = loader.practices
-            processor = DataProcessor(df, practices)
-            processor.process()
-            engine = SimilarityEngine(processor)
-            return engine, processor
-        return None, None
-    
-    def test_similarity_engine_builds_matrix(self, engine_with_data):
-        """Test similarity matrix building."""
-        engine, processor = engine_with_data
-        if engine is None:
-            pytest.skip("Engine not available")
-        
-        months = processor.get_all_months()
-        if len(months) == 0:
-            pytest.skip("No months available")
-        
-        matrix = engine.build_similarity_matrix(months[0])
-        assert matrix is not None
-        assert len(matrix) > 0
-
-        # Check diagonal is 1.0 for non-zero vectors (zero vectors give 0 self-similarity)
-        diagonal = np.diag(matrix)
-        non_zero_diag = diagonal[diagonal > 1e-10]
-        assert len(non_zero_diag) > 0
-        np.testing.assert_array_almost_equal(non_zero_diag, np.ones(len(non_zero_diag)))
-
-
 class TestSequenceMapper:
     """Test sequence mapping."""
     

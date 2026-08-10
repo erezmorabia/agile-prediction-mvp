@@ -36,7 +36,7 @@ description: FastAPI app factory, route handlers, APIService orchestration, Pyda
 | `APIService.run_backtest()` | `src/api/service.py:430` | `POST /api/backtest` | `train_ratio, config` → backtest results dict |
 | `APIService.find_optimal_config()` | `src/api/service.py:507` | `POST /api/optimize` (via executor) | param range lists → optimization results dict |
 | `APIService.cancel_optimization()` | `src/api/service.py:550` | `POST /api/optimize/cancel` | → sets `optimizer_engine._cancelled = True` |
-| `APIService.get_system_stats()` | `src/api/service.py:556` | `GET /api/stats` | → dict with team/practice/month counts, similarity stats, definitions, missing values |
+| `APIService.get_system_stats()` | `src/api/service.py:556` | `GET /api/stats` | → dict with team/practice/month counts, definitions, missing values |
 | `APIService.get_improvement_sequences()` | `src/api/service.py:635` | `GET /api/sequences` | → dict with `sequences`, `grouped_sequences`, `stats` |
 | `APIService._get_practice_profile()` | `src/api/service.py:680` | `get_recommendations()` | `team_name, month` → `dict[str, list[str]]` (level_0 … level_3) |
 

@@ -187,7 +187,6 @@ class SystemStats(BaseModel):
     total_observations: int
     months: list[int]
     practices: list[str]
-    similarity_stats: dict[str, Any] | None = None
     missing_values: MissingValuesDetails | None = None
     practice_definitions: dict[str, dict[int, str]] | None = Field(
         None, description="Practice level definitions (practice_name -> level -> definition)"

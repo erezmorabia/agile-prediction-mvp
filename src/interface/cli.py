@@ -1130,12 +1130,6 @@ class CLIInterface:
 
             print("\nML Model Statistics:")
 
-            sim_stats = (
-                self.recommender.similarity_engine.get_similarity_stats()
-                if hasattr(self.recommender.similarity_engine, "get_similarity_stats")
-                else None
-            )
-
             print("\nSimilarity Engine:")
             print("   Status: Ready")
 

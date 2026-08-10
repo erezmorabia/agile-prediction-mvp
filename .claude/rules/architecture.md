@@ -119,4 +119,3 @@ web_main.py
 ## Known Technical Debt
 
 - Many pre-existing mypy type errors — scope type-check to new code only
-- `SimilarityEngine.build_similarity_matrix()` exists but is unused by the main recommendation path (cross-temporal `find_similar_teams()` recomputes per call without using the cached matrix)

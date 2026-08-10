@@ -3,7 +3,6 @@ Extended tests for SimilarityEngine class.
 """
 
 import pytest
-import numpy as np
 from src.ml.similarity import SimilarityEngine
 
 
@@ -206,91 +205,4 @@ class TestSimilarityEngineExtended:
         
         with pytest.raises(ValueError, match="No past months"):
             engine.find_similar_teams(target_team, first_month, k=5)
-    
-    def test_get_similarity_stats_not_built(self, sample_similarity_engine):
-        """Test get_similarity_stats returns status when matrix not built."""
-        engine = sample_similarity_engine
-        stats = engine.get_similarity_stats()
-        
-        assert isinstance(stats, dict)
-        assert stats.get('status') == 'not_built'
-    
-    def test_get_similarity_stats_after_build(self, sample_similarity_engine, sample_processor):
-        """Test get_similarity_stats after building matrix."""
-        engine = sample_similarity_engine
-        months = sample_processor.get_all_months()
-        
-        if len(months) == 0:
-            pytest.skip("No months available")
-        
-        target_month = months[0]
-        engine.build_similarity_matrix(target_month)
-        
-        stats = engine.get_similarity_stats()
-        
-        assert isinstance(stats, dict)
-        assert 'status' not in stats or stats.get('status') != 'not_built'
-        assert 'num_teams' in stats
-        assert 'mean_similarity' in stats
-        assert 'std_similarity' in stats
-        assert 'min_similarity' in stats
-        assert 'max_similarity' in stats
-        
-        # Check that stats are valid
-        assert stats['num_teams'] > 0
-        assert 0.0 <= stats['mean_similarity'] <= 1.0
-        assert stats['min_similarity'] >= 0.0
-        assert stats['max_similarity'] <= 1.0
-    
-    def test_build_similarity_matrix_no_data(self, sample_similarity_engine):
-        """Test build_similarity_matrix raises error when no data available."""
-        engine = sample_similarity_engine
-        invalid_month = 99999999
-        
-        with pytest.raises(ValueError, match="No data available"):
-            engine.build_similarity_matrix(invalid_month)
-    
-    def test_build_similarity_matrix_diagonal_ones(self, sample_similarity_engine, sample_processor):
-        """Test similarity matrix has ones on diagonal (self-similarity)."""
-        engine = sample_similarity_engine
-        months = sample_processor.get_all_months()
-        
-        if len(months) == 0:
-            pytest.skip("No months available")
-        
-        target_month = months[0]
-        matrix = engine.build_similarity_matrix(target_month)
-        
-        # Diagonal should be 1.0 (self-similarity)
-        diagonal = np.diag(matrix)
-        np.testing.assert_array_almost_equal(diagonal, np.ones(len(diagonal)))
-    
-    def test_build_similarity_matrix_symmetric(self, sample_similarity_engine, sample_processor):
-        """Test similarity matrix is symmetric."""
-        engine = sample_similarity_engine
-        months = sample_processor.get_all_months()
-        
-        if len(months) == 0:
-            pytest.skip("No months available")
-        
-        target_month = months[0]
-        matrix = engine.build_similarity_matrix(target_month)
-        
-        # Matrix should be symmetric (cosine similarity is symmetric)
-        np.testing.assert_array_almost_equal(matrix, matrix.T)
-    
-    def test_build_similarity_matrix_valid_range(self, sample_similarity_engine, sample_processor):
-        """Test similarity matrix values are in valid range [0, 1]."""
-        engine = sample_similarity_engine
-        months = sample_processor.get_all_months()
-        
-        if len(months) == 0:
-            pytest.skip("No months available")
-        
-        target_month = months[0]
-        matrix = engine.build_similarity_matrix(target_month)
-        
-        # All values should be in [0, 1] range (allow tiny floating-point noise)
-        assert np.all(matrix >= -1e-9)
-        assert np.all(matrix <= 1.0 + 1e-9)
 

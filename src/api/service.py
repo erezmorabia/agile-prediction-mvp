@@ -607,12 +607,6 @@ class APIService:
                 history = self.processor.get_team_history(team)
                 total_observations += len(history)
 
-            # Get similarity stats if available
-            similarity_stats = None
-            if hasattr(self.recommender, "similarity_engine"):
-                if hasattr(self.recommender.similarity_engine, "get_similarity_stats"):
-                    similarity_stats = self.recommender.similarity_engine.get_similarity_stats()
-
             # Validate practices list exists
             if not hasattr(self.recommender, 'practices') or not self.recommender.practices:
                 logger.warning("Recommender practices list is empty or missing")
@@ -627,7 +621,6 @@ class APIService:
                 "total_observations": int(total_observations),
                 "months": [int(m) for m in months],  # Ensure integers
                 "practices": practices_list,  # Ensure list
-                "similarity_stats": similarity_stats,
             }
 
             # Add practice definitions if available

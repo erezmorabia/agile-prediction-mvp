@@ -1875,7 +1875,6 @@ agile-prediction-mvp/
 **ML Module** (`src/ml/`):
 
 **similarity.py** - SimilarityEngine class:
-- `build_similarity_matrix(month)`: Builds similarity matrix for all teams
 - `find_similar_teams(team, month, k)`: Finds K most similar teams
 - Uses cosine similarity from scikit-learn
 
@@ -1938,7 +1937,6 @@ agile-prediction-mvp/
 - **Purpose**: Finds similar teams using cosine similarity
 - **Key Methods**:
   - `find_similar_teams()`: Finds K most similar teams
-  - `build_similarity_matrix()`: Builds similarity matrix
 - **Dependencies**: DataProcessor
 
 **SequenceMapper** (`src/ml/sequences.py`):
