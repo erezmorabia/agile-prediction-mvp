@@ -60,7 +60,8 @@ class SimilarityEngine:
         if not past_months:
             raise ValueError(f"No past months available before {target_month}")
 
-        # Collect all similarity comparisons across all past months
+        # Starts empty. Will hold one (team_name, similarity_score, historical_month) tuple
+        # per team/month comparison that passed the threshold - the same team can repeat.
         all_similarities = []
 
         # Look at every past month, one at a time, to see which teams were similar to
