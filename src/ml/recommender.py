@@ -17,9 +17,19 @@ class RecommendationEngine:
             sequence_mapper: SequenceMapper instance
             practices (list): List of practice names
         """
+        # Finds teams similar to a target team - the collaborative-filtering half
+        # of the recommendation.
         self.similarity_engine = similarity_engine
+
+        # Knows "what usually improves next" - the sequence-learning half
+        # of the recommendation.
         self.sequence_mapper = sequence_mapper
+
+        # The full list of practice names, in the same fixed order used everywhere else.
         self.practices = practices
+
+        # Reused from similarity_engine rather than passed in separately, since
+        # both engines need the same team-history lookups.
         self.processor = similarity_engine.processor
 
     def recommend(

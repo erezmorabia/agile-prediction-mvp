@@ -16,10 +16,18 @@ class CLIInterface:
             recommender_engine: RecommendationEngine instance
             processor: DataProcessor instance
         """
+        # The RecommendationEngine used to generate practice recommendations.
         self.recommender = recommender_engine
+
+        # Gives access to team histories, used to look up teams/months for menu options.
         self.processor = processor
+
+        # Formats results for display in the terminal.
         self.formatter = OutputFormatter()
-        self.missing_values_details = None  # Will be set by main.py
+
+        # Filled in later by main.py with details about missing/dropped data,
+        # shown to the user in the statistics menu option.
+        self.missing_values_details = None
 
     def run(self) -> None:
         """

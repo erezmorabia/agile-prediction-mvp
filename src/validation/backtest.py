@@ -23,7 +23,12 @@ class BacktestEngine:
             recommender_engine: RecommendationEngine instance
             processor: DataProcessor instance
         """
+        # The same RecommendationEngine used for live predictions - the backtest
+        # replays history through this exact model, not a separate copy.
         self.recommender = recommender_engine
+
+        # Gives access to every team's actual history, used to check whether
+        # a prediction turned out to be correct.
         self.processor = processor
 
     @staticmethod

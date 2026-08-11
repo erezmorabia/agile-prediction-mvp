@@ -16,12 +16,28 @@ class SequenceMapper:
             processor: DataProcessor instance with processed team histories
             practices (list): List of practice names
         """
+        # Reference to the DataProcessor, so we can look up any team's history
+        # whenever we need it, without copying that data in here.
         self.processor = processor
+
+        # The full list of practice names, in a fixed order. Team scores are stored
+        # as plain number lists elsewhere, so this tells us which number is which practice.
         self.practices = practices
+
+        # Starts empty. Once learned, holds for each practice: which other practices
+        # tended to improve right after it, and how often that happened.
         self.transition_matrix = defaultdict(Counter)
+
+        # Starts empty. Once learned, holds a running total per practice: how many
+        # times it was improved, across every team and month.
         self.practice_improvement_freq = Counter()
+
+        # On/off flag. False until learn_sequences() finishes running once;
+        # other methods check this before trusting the results above.
         self.learned = False
-        # Cache for time-limited sequences: {max_month: (transition_matrix, practice_improvement_freq)}
+
+        # Empty lookup table, keyed by cutoff month. Saves previously learned results
+        # so the same month's patterns aren't recalculated from scratch each time.
         self._sequence_cache = {}
 
     def learn_sequences(self) -> None:
@@ -66,13 +82,16 @@ class SequenceMapper:
         self.transition_matrix = defaultdict(Counter)
         self.practice_improvement_freq = Counter()
 
+        # Every team name in the dataset
         teams = self.processor.get_all_teams()
+        # Every month that appears anywhere in the dataset
         months = self.processor.get_all_months()
 
         for team in teams:
+            # This one team's full history: month -> that team's practice scores at that month
             history = self.processor.get_team_history(team)
 
-            # Sort months for this team
+            # Just this team's own months (not every month in the dataset), oldest to newest
             team_months = sorted([m for m in months if m in history])
 
             self._learn_team_transitions(team_months, history)
@@ -95,9 +114,12 @@ class SequenceMapper:
         improved_sets = []
 
         for i in range(len(team_months) - 1):
+            # This team's scores at one month...
             current_vector = history[team_months[i]]
+            # ...and at the very next month being compared against it
             next_vector = history[team_months[i + 1]]
 
+            # Which practices actually went up between those two months
             improved = [
                 self.practices[j]
                 for j, (curr, nxt) in enumerate(zip(current_vector, next_vector))
@@ -131,6 +153,7 @@ class SequenceMapper:
         """
         # Check cache first
         if max_month in self._sequence_cache:
+            # The results already worked out before for this exact cutoff month
             cached_transition_matrix, cached_practice_improvement_freq = self._sequence_cache[max_month]
             # Create copies to avoid mutation issues
             self.transition_matrix = defaultdict(Counter)
@@ -147,7 +170,7 @@ class SequenceMapper:
         teams = self.processor.get_all_teams()
         months = self.processor.get_all_months()
 
-        # Filter months to only those < max_month
+        # Only the months that come before the cutoff - the "no peeking at the future" boundary
         available_months = [m for m in months if m < max_month]
 
         if len(available_months) < 2:
@@ -195,7 +218,10 @@ class SequenceMapper:
         if practice not in self.transition_matrix:
             return []
 
+        # The top-N practices that most often followed this one, with their raw counts
         transitions = self.transition_matrix[practice].most_common(top_n)
+        # Every count following this practice, not just the top-N - the denominator
+        # used to turn counts into percentages
         total = sum(self.transition_matrix[practice].values())
 
         if total == 0:
@@ -225,6 +251,7 @@ class SequenceMapper:
         if not self.learned:
             return {"status": "not_learned"}
 
+        # The grand total of every transition ever recorded, summed across all practices
         total_transitions = sum(sum(v.values()) for v in self.transition_matrix.values())
 
         return {
@@ -253,13 +280,19 @@ class SequenceMapper:
         if not self.learned:
             return []
 
+        # Starts empty; will become the final flat list of results returned to the caller
         sequences = []
 
+        # One practice, and its Counter of "what follows it," at a time
         for from_practice, transitions in self.transition_matrix.items():
+            # How many times this practice was followed by anything at all -
+            # the denominator for this practice's probabilities
             total_from = sum(transitions.values())
 
+            # One specific "followed by" practice and its count, at a time
             for to_practice, count in transitions.items():
                 if count >= min_count:
+                    # How often to_practice followed from_practice, as a fraction
                     probability = count / total_from if total_from > 0 else 0
                     sequences.append((from_practice, to_practice, count, probability))
 

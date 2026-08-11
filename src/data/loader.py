@@ -20,10 +20,19 @@ class DataLoader:
         Args:
             file_path (str): Path to Excel file containing agile metrics
         """
+        # Where to read the Excel file from, once load() is called.
         self.file_path = file_path
+
+        # Starts empty. Will hold the raw data as a pandas DataFrame after load() runs.
         self.df = None
+
+        # Starts empty. Will hold the list of practice column names found in the file.
         self.practices = None
+
+        # Starts empty. Will hold the list of unique team names found in the file.
         self.teams = None
+
+        # Starts empty. Will hold the list of unique months found in the file.
         self.months = None
 
     def load(self) -> pd.DataFrame:

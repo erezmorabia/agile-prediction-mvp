@@ -20,8 +20,14 @@ class DataValidator:
             df (pd.DataFrame): Data frame to validate
             practices (list): List of practice column names
         """
+        # The data frame to run quality checks against.
         self.df = df
+
+        # The list of practice column names to check.
         self.practices = practices
+
+        # Starts empty. Each validation check appends its own findings here
+        # as validate() runs, building up the full list of problems found.
         self.issues = []
 
     def validate(self) -> bool:

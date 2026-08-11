@@ -19,9 +19,18 @@ class DataProcessor:
             df (pd.DataFrame): Raw data frame
             practices (list): List of practice column names
         """
+        # The raw data frame to be cleaned and normalized by process().
         self.df = df
+
+        # The list of practice column names present in df.
         self.practices = practices
+
+        # Starts empty. Once process() runs, holds each team's month-by-month
+        # scores as: team name -> {month: score vector}.
         self.team_histories = defaultdict(dict)
+
+        # On/off flag. False until process() finishes running once;
+        # other methods rely on this before trusting team_histories.
         self.processed = False
 
     def process(self) -> None:

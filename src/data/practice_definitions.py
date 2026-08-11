@@ -20,8 +20,13 @@ class PracticeDefinitionsLoader:
         Args:
             file_path (str): Path to Excel file containing practice definitions
         """
+        # Where to read the practice definitions Excel file from, once load() is called.
         self.file_path = file_path
+
+        # Starts empty. Will hold, per practice, what each maturity level (0-3) means.
         self.definitions: dict[str, dict[int, str]] | None = None
+
+        # Starts empty. Will hold any free-text remarks recorded per practice.
         self.remarks: dict[str, str] | None = None
 
     def load(self) -> dict[str, dict[int, str]]:

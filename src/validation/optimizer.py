@@ -25,8 +25,12 @@ class OptimizationEngine:
         Args:
             backtest_engine: BacktestEngine instance
         """
+        # Runs one backtest per parameter combination being tried.
         self.backtest_engine = backtest_engine
-        self._cancelled = False  # Cancellation flag
+
+        # On/off flag, checked periodically inside the search loop. Starts False;
+        # set to True by cancel() to stop an in-progress search early.
+        self._cancelled = False
 
     def generate_parameter_combinations(
         self,

@@ -24,12 +24,20 @@ class APIService:
             recommender: RecommendationEngine instance
             processor: DataProcessor instance
         """
+        # The RecommendationEngine that route handlers ultimately call into.
         self.recommender = recommender
+
+        # Gives access to team histories, shared with the engines below.
         self.processor = processor
+
+        # Wraps the same recommender/processor pair for the backtest endpoint.
         self.backtest_engine = BacktestEngine(recommender, processor)
+
+        # Wraps backtest_engine for the parameter-search endpoint.
         self.optimizer_engine = OptimizationEngine(self.backtest_engine)
-        # Load practice definitions (optional, fails gracefully if file not found)
-        # Try primary filename first, with fallback for legacy filename
+
+        # Locate the practice definitions file - optional, and tolerant of a
+        # legacy misspelled filename still present in some data exports.
         definitions_file = None
         import os
 
@@ -39,15 +47,21 @@ class APIService:
                 break
 
         if definitions_file:
+            # File found: load definitions/remarks for the Statistics tab.
             self.practice_definitions_loader = PracticeDefinitionsLoader(definitions_file)
             self.practice_definitions = self.practice_definitions_loader.get_definitions()
             self.practice_remarks = self.practice_definitions_loader.get_remarks()
         else:
+            # File not found: fail gracefully with empty definitions rather than crashing.
             self.practice_definitions_loader = None
             self.practice_definitions = {}
             self.practice_remarks = {}
-        self.missing_values_details = None  # Will be set by web_main.py
-        self.data_file_path: str | None = None  # Will be set by web_main.py
+
+        # Filled in later by web_main.py with details about missing/dropped data.
+        self.missing_values_details = None
+
+        # Filled in later by web_main.py with the path to the loaded Excel file.
+        self.data_file_path: str | None = None
 
     def get_all_teams(self) -> list[dict[str, Any]]:
         """
