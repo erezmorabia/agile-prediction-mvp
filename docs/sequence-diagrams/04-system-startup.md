@@ -30,7 +30,7 @@ sequenceDiagram
     WebMain->>ML: build the similarity engine
     Note right of ML: enables cosine-similarity lookups between teams
     WebMain->>ML: build the sequence mapper, learn sequences
-    Note right of ML: learns Markov transition probabilities from<br/>the full history, done eagerly here so the Sequences tab<br/>(UC-04) has data immediately; Flows 1-2 build their own<br/>leakage-safe version scoped to a prediction month
+    Note right of ML: learns Markov transition probabilities from<br/>the full history, done eagerly here so the Sequences tab<br/>(UC-04) has data immediately - Flows 1-2 build their own<br/>leakage-safe version scoped to a prediction month
     WebMain->>ML: build the recommendation engine
     Note right of ML: combines the similarity and sequence signals<br/>into the hybrid scorer used by Flows 1-3
 
