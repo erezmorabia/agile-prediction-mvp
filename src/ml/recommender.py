@@ -252,11 +252,14 @@ class RecommendationEngine:
                     if practice_name not in recently_improved_practices:
                         recently_improved_practices.add(practice_name)
 
-        # Apply sequence patterns for all recently improved practices
-        # Iterate in canonical practice order (not set iteration order, which is hash-seed
-        # dependent) so downstream dict insertion order - and any tie-break relying on it - is
-        # deterministic across runs
-        sequence_scores = defaultdict(float)  # Track sequence-based scores separately
+        # Starts empty. Will hold, for each practice, a running total of how strongly it's
+        # boosted by the sequence patterns - for example {"Code Review": 0.9, "Pair
+        # Programming": 0.3}. Built up below, one recently improved practice at a time.
+        sequence_scores = defaultdict(float)
+        # Go over each practice this team recently improved. For each one, find the
+        # practices that typically get improved next, and add their scores to the total
+        # (in a fixed order - self.practices - rather than the set's own order, so results
+        # stay consistent between runs).
         for recently_improved in [p for p in self.practices if p in recently_improved_practices]:
             # Get typical next practices (from sequences learned up to current_month)
             try:
