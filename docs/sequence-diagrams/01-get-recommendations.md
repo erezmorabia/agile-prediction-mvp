@@ -37,19 +37,12 @@ sequenceDiagram
     Note right of Browser: asks for the top-N practices<br/>this team should improve next
     Rec->>Peers: learn_sequences_up_to_month(current_month)
     Note right of Rec: leakage guard -<br/>only months before current_month
+    Note right of Peers: no reply here - just updates<br/>Peers' own notes for later
     Rec->>Peers: find_similar_teams(target_team, current_month)
     Note right of Rec: finds peer teams with similar practice maturity
     Peers-->>Rec: ranked similar teams
+    Note over Rec: blends peer similarity + sequence notes<br/>into one ranked list
     Rec-->>Browser: ranked recommendations
-
-    loop for each returned recommendation
-        Browser->>Rec: get_recommendation_explanation(...)
-        Note right of Browser: builds the "why" text for one<br/>recommendation, failures silently swallowed
-        Rec->>Peers: learn_sequences_up_to_month(current_month)
-        Rec->>Peers: find_similar_teams(...)
-        Note right of Rec: second, independent invocation<br/>of the same two lookups
-        Rec-->>Browser: why-explanation (similar teams, sequence boost)
-    end
 
     Browser->>Browser: render recommendation cards
 ```
@@ -76,11 +69,14 @@ sequenceDiagram
     this a hit?" badge shown in the UI, not part of the prediction itself.
   - `APIService._get_practice_profile(team, month)` (`service.py:680`) builds the level-0…3
     maturity breakdown shown alongside the recommendations.
-- **The explanation loop is a second, independent invocation** of the same two ML lookups
-  (`learn_sequences_up_to_month` — `recommender.py:337`, `find_similar_teams` — `recommender.py:380`),
-  once per recommendation, triggered by `service.py:363-369` (try/except swallows failures at
-  `service.py:388`) — distinct from the single `recommend()` call (`recommender.py:141,144-146`)
-  that produced the ranked list.
+- **Omitted from this diagram**: after the ranked list is returned, `Browser` calls
+  `get_recommendation_explanation(...)` once per recommendation to build the "why" text shown in
+  the UI (triggered by `service.py:363-369`, failures silently swallowed at `service.py:388`). It's
+  left out not because it's logic-free — it re-invokes the same two ML lookups
+  (`learn_sequences_up_to_month` — `recommender.py:337`, `find_similar_teams` — `recommender.py:380`)
+  — but because that invocation is a duplicate/redundant lookup done purely to generate explanation
+  text; its output doesn't feed back into the ranking already produced by the single `recommend()`
+  call (`recommender.py:141,144-146`) above.
 
 Citations current as of this session; re-verify against `app.js`, `api.js`, `routes.py`,
 `service.py`, `recommender.py`, `similarity.py`, `sequences.py` if the implementation changes.
