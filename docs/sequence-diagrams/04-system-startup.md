@@ -30,7 +30,7 @@ sequenceDiagram
     WebMain->>ML: build the similarity engine
     Note right of ML: enables cosine-similarity lookups between teams
     WebMain->>ML: build the sequence mapper, learn sequences
-    Note right of ML: learns Markov transition probabilities from<br/>the full history, done eagerly here at startup
+    Note right of ML: learns Markov transition probabilities from<br/>the full history, done eagerly here so the Sequences tab<br/>(UC-04) has data immediately; Flows 1-2 build their own<br/>leakage-safe version scoped to a prediction month
     WebMain->>ML: build the recommendation engine
     Note right of ML: combines the similarity and sequence signals<br/>into the hybrid scorer used by Flows 1-3
 
@@ -50,11 +50,17 @@ sequenceDiagram
   (`DataValidator.filter_high_missing_practices()`) does **not** mutate the practices list in
   place — it returns a new, filtered list, and `web_main.py` reassigns its local variable to that.
 - **Sequence learning is eager here, lazy everywhere else**: `SequenceMapper.learn_sequences()` runs
-  once at startup across the full history. Flows 1-3 instead call
-  `learn_sequences_up_to_month()`, a lazy, leakage-safe variant scoped to "months before the one
-  being predicted" — a different method, not a re-run of this same call.
+  once at startup across the full history — this is the matrix the Sequences tab (UC-04,
+  `GET /api/sequences`) displays, so it needs an org-wide, not-month-scoped view available
+  immediately. Flows 1-3 never read that startup matrix; they call
+  `learn_sequences_up_to_month(max_month)` instead, a leakage-safe variant that rebuilds the
+  transition matrix from scratch using only months `< max_month`. Backtest (Flow 2) calls this
+  **once per test month** as it walks the rolling window (`backtest.py:253`), producing a separate
+  rebuild for every period rather than one build reused across the run; results per `max_month` are
+  cached (`_sequence_cache`) so repeat calls for the same month are free.
 - `DataValidator.validate()`'s pass/fail result is discarded by `web_main.py` — a failed check only
   produces warning log lines, it never blocks startup.
 
 Citations current as of this session (`web_main.py:173-252`, `src/data/validator.py:27-57,182-218`,
-`src/ml/sequences.py:27,121`); re-verify against the code if the implementation changes.
+`src/ml/sequences.py:27,121`, `src/validation/backtest.py:253`); re-verify against the code if the
+implementation changes.
