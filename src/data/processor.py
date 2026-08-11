@@ -83,6 +83,7 @@ class DataProcessor:
         # Build team histories indexed by month
         for team in self.df["Team Name"].unique():
             team_data = self.df[self.df["Team Name"] == team].sort_values("Month")
+            # Walk through this one team's rows, oldest month first
             for _, row in team_data.iterrows():
                 month = int(row["Month"])
                 # Store practices as numpy array
@@ -130,6 +131,7 @@ class DataProcessor:
             ValueError: If process() has not been called yet.
         """
         all_months = set()
+        # Go through every team's history and collect the months it has data for
         for team_months in self.team_histories.values():
             all_months.update(team_months.keys())
         return sorted(list(all_months))
@@ -145,7 +147,9 @@ class DataProcessor:
             raise ValueError("Data not processed. Call process() first.")
 
         all_values = []
+        # Go through every team's history...
         for team_history in self.team_histories.values():
+            # ...and every month within it, pooling every score ever recorded
             for vector in team_history.values():
                 all_values.extend(vector)
 

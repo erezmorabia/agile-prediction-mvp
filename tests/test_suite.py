@@ -110,7 +110,7 @@ class TestSequenceMapper:
         
         mapper.learn_sequences()
         assert mapper.learned
-        assert len(mapper.transition_matrix) > 0 or len(mapper.practice_improvement_freq) > 0
+        assert len(mapper.transition_matrix) > 0 or len(mapper.practice_popularity) > 0
 
 
 class TestRecommendations:

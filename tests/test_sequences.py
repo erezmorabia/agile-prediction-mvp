@@ -73,14 +73,14 @@ class TestSequenceMapperExtended:
         with pytest.raises(ValueError, match="Sequences not learned"):
             mapper.get_typical_next_practices("Practice1", top_n=3)
     
-    def test_get_improvement_frequency(self, sample_sequence_mapper):
-        """Test get_improvement_frequency returns frequency dictionary."""
+    def test_get_practice_popularity(self, sample_sequence_mapper):
+        """Test get_practice_popularity returns frequency dictionary."""
         mapper = sample_sequence_mapper
         
         if not mapper.learned:
             mapper.learn_sequences()
         
-        freq = mapper.get_improvement_frequency()
+        freq = mapper.get_practice_popularity()
         
         assert isinstance(freq, dict)
         # All values should be non-negative integers
@@ -89,13 +89,13 @@ class TestSequenceMapperExtended:
             assert isinstance(count, int)
             assert count >= 0
     
-    def test_get_improvement_frequency_not_learned(self, sample_processor, sample_practices):
-        """Test get_improvement_frequency raises error when sequences not learned."""
+    def test_get_practice_popularity_not_learned(self, sample_processor, sample_practices):
+        """Test get_practice_popularity raises error when sequences not learned."""
         mapper = SequenceMapper(sample_processor, sample_practices)
         # Don't call learn_sequences()
         
         with pytest.raises(ValueError, match="Sequences not learned"):
-            mapper.get_improvement_frequency()
+            mapper.get_practice_popularity()
     
     def test_get_sequence_stats_not_learned(self, sample_processor, sample_practices):
         """Test get_sequence_stats returns status when not learned."""
@@ -205,7 +205,7 @@ class TestSequenceMapperExtended:
         assert mapper.learned
         
         # Should have learned some transitions
-        assert len(mapper.transition_matrix) >= 0 or len(mapper.practice_improvement_freq) >= 0
+        assert len(mapper.transition_matrix) >= 0 or len(mapper.practice_popularity) >= 0
     
     def test_learn_sequences_up_to_month_caching(self, sample_processor, sample_practices):
         """Test learn_sequences_up_to_month uses caching."""
@@ -220,12 +220,12 @@ class TestSequenceMapperExtended:
         # First call
         mapper.learn_sequences_up_to_month(max_month)
         first_transitions = dict(mapper.transition_matrix)
-        first_freq = dict(mapper.practice_improvement_freq)
+        first_freq = dict(mapper.practice_popularity)
         
         # Second call should use cache
         mapper.learn_sequences_up_to_month(max_month)
         second_transitions = dict(mapper.transition_matrix)
-        second_freq = dict(mapper.practice_improvement_freq)
+        second_freq = dict(mapper.practice_popularity)
         
         # Results should be the same (from cache)
         assert first_transitions == second_transitions
@@ -268,7 +268,7 @@ class TestSequenceMapperExtended:
         mapper.learn_sequences()
         
         assert mapper.learned
-        assert len(mapper.transition_matrix) >= 0 or len(mapper.practice_improvement_freq) >= 0
+        assert len(mapper.transition_matrix) >= 0 or len(mapper.practice_popularity) >= 0
     
     def test_learned_flag(self, sample_processor, sample_practices):
         """Test learned flag is set correctly."""

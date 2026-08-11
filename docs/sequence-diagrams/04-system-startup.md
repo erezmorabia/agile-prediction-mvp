@@ -51,7 +51,7 @@ sequenceDiagram
   place — it returns a new, filtered list, and `web_main.py` reassigns its local variable to that.
 - **Sequence learning is eager here, lazy everywhere else — and gets overwritten in place**:
   `SequenceMapper.learn_sequences()` runs once at startup across the full history, populating
-  `self.transition_matrix`/`self.practice_improvement_freq`. The Sequences tab (UC-04,
+  `self.transition_matrix`/`self.practice_popularity`. The Sequences tab (UC-04,
   `GET /api/sequences`) reads those two attributes directly with no re-learning call
   (`sequences.py:258`), so at startup it shows the org-wide view. Flows 1-2 instead call
   `learn_sequences_up_to_month(max_month)`, which clears and rebuilds those **same** attributes on

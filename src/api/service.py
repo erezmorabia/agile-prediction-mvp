@@ -73,6 +73,7 @@ class APIService:
         teams = self.processor.get_all_teams()
         result = []
 
+        # Build one info entry per team.
         for team in teams:
             history = self.processor.get_team_history(team)
             num_months = len(history)
@@ -110,6 +111,7 @@ class APIService:
         else:
             first_two_months = set()
 
+        # Check every team, one at a time, for month-to-month improvements.
         for team in all_teams:
             history = self.processor.get_team_history(team)
             months = sorted(history.keys())
@@ -128,6 +130,7 @@ class APIService:
 
                 # Count improvements
                 improvements = []
+                # Compare the two months' scores, practice by practice.
                 for j, (prev, pred) in enumerate(zip(prev_vector, predicted_vector)):
                     if pred > prev:
                         improvements.append(self.recommender.practices[j])
@@ -177,6 +180,7 @@ class APIService:
         # Further filter: only include months where the team has a previous month in their history
         # This handles cases where a team's first month of data is month 4 or later
         months_to_predict = []
+        # Keep only the months where this team already has a prior month to predict from.
         for month in months_3plus:
             month_idx = all_months.index(month)
             if month_idx > 0:  # Team has a previous month in their history
@@ -242,6 +246,7 @@ class APIService:
 
         # Get what actually improved in the predicted month
         improvements_month1 = {}
+        # Compare the baseline month to the predicted month, practice by practice.
         for j, (prev, pred) in enumerate(zip(prev_vector, predicted_vector)):
             if pred > prev:
                 practice_name = self.recommender.practices[j]
@@ -258,6 +263,7 @@ class APIService:
             month_after = months[month_to_predict_idx + 1]
             month_after_vector = history[month_after]
 
+            # Same comparison, one month further out.
             for j, (prev, after) in enumerate(zip(prev_vector, month_after_vector)):
                 if after > prev:
                     practice_name = self.recommender.practices[j]
@@ -274,6 +280,7 @@ class APIService:
             month_after_2 = months[month_to_predict_idx + 2]
             month_after_2_vector = history[month_after_2]
 
+            # Same comparison, two months further out.
             for j, (prev, after2) in enumerate(zip(prev_vector, month_after_2_vector)):
                 if after2 > prev:
                     practice_name = self.recommender.practices[j]
@@ -289,6 +296,8 @@ class APIService:
         all_practices = (
             set(improvements_month1.keys()) | set(improvements_month2.keys()) | set(improvements_month3.keys())
         )
+        # Merge the 3 months' worth of improvements into one entry per practice,
+        # keeping whichever month showed the biggest improvement.
         for practice_name in all_practices:
             improved_in_months = []
             best_improvement = None
@@ -350,6 +359,7 @@ class APIService:
 
         # Format recommendations
         formatted_recs = []
+        # Build one detailed, API-shaped entry per recommendation.
         for practice, score, current_level in recommendations:
             # Convert normalized level back to original 0-3 scale
             original_level = current_level * 3
@@ -406,6 +416,7 @@ class APIService:
             validated = False
             improved_in_months = None
             if month_to_predict:
+                # Look for this recommended practice among what actually improved.
                 for imp in actual_improvements:
                     if imp["practice"] == practice:
                         validated = True
@@ -414,6 +425,7 @@ class APIService:
 
             # Format similar teams list
             formatted_similar_teams = []
+            # Reformat each similar team's info into the API response shape.
             for st in similar_teams_list:
                 formatted_similar_teams.append(
                     {
@@ -485,6 +497,7 @@ class APIService:
         if "per_month_results" in result:
             # Ensure each result has all required fields
             formatted_per_month = []
+            # Rebuild each month's result dict with every field explicitly typed.
             for r in result["per_month_results"]:
                 formatted_per_month.append(
                     {
@@ -531,6 +544,7 @@ class APIService:
             result["avg_improvements_per_case"] = 0.0
 
         # Rank-aware supplementary metrics (precision@N, recall@N, MRR) and their baselines
+        # Make sure each of these fields is present and a float, defaulting to 0.0.
         for field in (
             "overall_precision",
             "overall_recall",
@@ -547,7 +561,8 @@ class APIService:
         ):
             result[field] = float(result.get(field, 0.0))
 
-        # Popularity baseline (always recommend the top-N globally most-improved practices)
+        # [Popularity] Popularity baseline (always recommend the top-N globally most-improved practices)
+        # Same "ensure present and typed" treatment as above, for these 3 fields.
         for field in ("overall_popularity_baseline", "popularity_gap", "popularity_improvement_factor"):
             result[field] = float(result.get(field, 0.0))
 
@@ -617,6 +632,7 @@ class APIService:
 
             # Calculate stats
             total_observations = 0
+            # Add up how many months of data each team contributes.
             for team in teams:
                 history = self.processor.get_team_history(team)
                 total_observations += len(history)
@@ -642,6 +658,7 @@ class APIService:
                 # Only include definitions for practices that exist in the system
                 practice_defs = {}
                 practice_remarks_dict = {}
+                # Only carry over definitions/remarks for practices actually in use.
                 for practice in practices_list:
                     if practice in self.practice_definitions:
                         practice_defs[practice] = self.practice_definitions[practice]
@@ -687,6 +704,7 @@ class APIService:
 
         # Format sequences for API
         formatted_sequences = []
+        # Reformat each learned sequence into the API response shape.
         for from_practice, to_practice, count, probability in sequences:
             formatted_sequences.append(
                 {
@@ -699,6 +717,7 @@ class APIService:
 
         # Group by from_practice for easier frontend display
         grouped_sequences = {}
+        # Bucket every sequence under the practice it starts from.
         for seq in formatted_sequences:
             from_p = seq["from_practice"]
             if from_p not in grouped_sequences:
@@ -751,6 +770,7 @@ class APIService:
         practice_vector = history[current_month]
         profile = {"level_0": [], "level_1": [], "level_2": [], "level_3": []}
 
+        # Sort each practice's score into its maturity level bucket.
         for j, normalized_value in enumerate(practice_vector):
             practice_name = self.recommender.practices[j]
 

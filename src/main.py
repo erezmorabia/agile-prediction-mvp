@@ -108,6 +108,7 @@ def main() -> int:
             if missing_details["practices_with_missing"]:
                 print(f"\n   Practices with missing values ({len(missing_details['practices_with_missing'])}):")
                 top_practices = missing_details["practices_with_missing"][:10]
+                # Print one line per practice with missing data, worst 10 only.
                 for practice in top_practices:
                     info = missing_details["by_practice"][practice]
                     print(f"     • {practice}: {info['count']} missing ({info['percentage']}%)")
@@ -117,6 +118,7 @@ def main() -> int:
             # Show months with missing values
             if missing_details["months_with_missing"]:
                 print(f"\n   Months with missing values ({len(missing_details['months_with_missing'])}):")
+                # Print one line per month with missing data, worst 10 only.
                 for month in missing_details["months_with_missing"][:10]:
                     info = missing_details["by_month"][month]
                     print(f"     • {month}: {info['count']} missing ({info['percentage']}%)")
@@ -131,6 +133,7 @@ def main() -> int:
         filtered_practices, excluded_practices = validator.filter_high_missing_practices(practices, threshold=90.0)
         if excluded_practices:
             print(f"   Warning: Excluding {len(excluded_practices)} practices with >90% missing values:")
+            # Print one line per excluded practice.
             for practice in excluded_practices:
                 print(f"      - {practice}")
             print(f"   Using {len(filtered_practices)} practices for analysis")
@@ -151,7 +154,7 @@ def main() -> int:
         # Step 4: Build ML models
         print("\n[4/5] Building ML models...")
 
-        # Similarity engine (will be built on demand)
+        # Similarity engine (will be built only when needed)
         similarity_engine = SimilarityEngine(processor)
 
         # Sequence mapper

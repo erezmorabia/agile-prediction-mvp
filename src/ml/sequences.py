@@ -28,16 +28,16 @@ class SequenceMapper:
         # tended to improve right after it, and how often that happened.
         self.transition_matrix = defaultdict(Counter)
 
-        # Starts empty. Once learned, holds a running total per practice: how many
-        # times it was improved, across every team and month.
-        self.practice_improvement_freq = Counter()
+        # [Popularity] Starts empty. Once learned, holds each practice's "popularity": a running
+        # total of how many times it was improved, across every team and month.
+        self.practice_popularity = Counter()
 
         # On/off flag. False until learn_sequences() finishes running once;
         # other methods check this before trusting the results above.
         self.learned = False
 
         # Empty lookup table, keyed by cutoff month. Saves previously learned results
-        # so the same month's patterns aren't recalculated from scratch each time.
+        # so the same month's patterns don't need to be calculated again each time.
         self._sequence_cache = {}
 
     def learn_sequences(self) -> None:
@@ -65,7 +65,7 @@ class SequenceMapper:
 
         Returns:
             None: Modifies internal state (self.transition_matrix and
-                self.practice_improvement_freq). Sets self.learned = True.
+                self.practice_popularity). Sets self.learned = True.
 
         Note:
             - Only considers improvements (increases in practice scores)
@@ -80,13 +80,15 @@ class SequenceMapper:
             Learned 45 transition patterns
         """
         self.transition_matrix = defaultdict(Counter)
-        self.practice_improvement_freq = Counter()
+        self.practice_popularity = Counter()
 
         # Every team name in the dataset
         teams = self.processor.get_all_teams()
         # Every month that appears anywhere in the dataset
         months = self.processor.get_all_months()
 
+        # Work through each team one at a time, learning that team's own
+        # "what improved, then what improved next" pattern.
         for team in teams:
             # This one team's full history: month -> that team's practice scores at that month
             history = self.processor.get_team_history(team)
@@ -102,7 +104,7 @@ class SequenceMapper:
         """
         Build first-order Markov transitions for one team's chronological history.
 
-        Mutates self.transition_matrix and self.practice_improvement_freq in place.
+        Mutates self.transition_matrix and self.practice_popularity in place.
 
         Args:
             team_months (list): Sorted months available for this team.
@@ -113,6 +115,8 @@ class SequenceMapper:
         # time something actually improved," not just the next calendar month)
         improved_sets = []
 
+        # Go through this team's months one pair at a time (this month, then the next),
+        # to see what changed between each pair.
         for i in range(len(team_months) - 1):
             # This team's scores at one month...
             current_vector = history[team_months[i]]
@@ -129,9 +133,10 @@ class SequenceMapper:
             if improved:
                 improved_sets.append(improved)
 
+        # [Popularity] Count, across every improvement step, how many times each practice improved.
         for practices_improved in improved_sets:
             for practice_name in practices_improved:
-                self.practice_improvement_freq[practice_name] += 1
+                self.practice_popularity[practice_name] += 1
 
         # Full cross-product between each improvement-bearing step and the next one;
         # no edges within a step, since simultaneous improvements have no known order
@@ -154,23 +159,23 @@ class SequenceMapper:
         # Check cache first
         if max_month in self._sequence_cache:
             # The results already worked out before for this exact cutoff month
-            cached_transition_matrix, cached_practice_improvement_freq = self._sequence_cache[max_month]
+            cached_transition_matrix, cached_practice_popularity = self._sequence_cache[max_month]
             # Create copies to avoid mutation issues
             self.transition_matrix = defaultdict(Counter)
             for k, v in cached_transition_matrix.items():
                 self.transition_matrix[k] = Counter(v)
-            self.practice_improvement_freq = Counter(cached_practice_improvement_freq)
+            self.practice_popularity = Counter(cached_practice_popularity)
             self.learned = True
             return
 
         # Clear previous state
         self.transition_matrix = defaultdict(Counter)
-        self.practice_improvement_freq = Counter()
+        self.practice_popularity = Counter()
 
         teams = self.processor.get_all_teams()
         months = self.processor.get_all_months()
 
-        # Only the months that come before the cutoff - the "no peeking at the future" boundary
+        # Only the months that come before the cutoff, so the model can never see the future
         available_months = [m for m in months if m < max_month]
 
         if len(available_months) < 2:
@@ -180,6 +185,8 @@ class SequenceMapper:
             self._sequence_cache[max_month] = (defaultdict(Counter), Counter())
             return
 
+        # Same per-team learning as learn_sequences() above, just restricted to
+        # months before the cutoff.
         for team in teams:
             history = self.processor.get_team_history(team)
 
@@ -194,9 +201,9 @@ class SequenceMapper:
         cached_transition_matrix = defaultdict(Counter)
         for k, v in self.transition_matrix.items():
             cached_transition_matrix[k] = Counter(v)
-        cached_practice_improvement_freq = Counter(self.practice_improvement_freq)
+        cached_practice_popularity = Counter(self.practice_popularity)
 
-        self._sequence_cache[max_month] = (cached_transition_matrix, cached_practice_improvement_freq)
+        self._sequence_cache[max_month] = (cached_transition_matrix, cached_practice_popularity)
 
     def get_typical_next_practices(self, practice: str, top_n: int = 3) -> list:
         """
@@ -227,11 +234,14 @@ class SequenceMapper:
         if total == 0:
             return []
 
+        # Turn each raw count into a percentage (count divided by total), keeping the
+        # same practice name. The result: for each of the top-N practices, how often
+        # it followed this one, as a fraction between 0 and 1.
         return [(p, count / total) for p, count in transitions]
 
-    def get_improvement_frequency(self) -> dict:
+    def get_practice_popularity(self) -> dict:
         """
-        Get how often each practice was improved across organization.
+        [Popularity] Get each practice's popularity: how often it was improved across the organization.
 
         Returns:
             dict: Dictionary of practice -> improvement count
@@ -239,7 +249,10 @@ class SequenceMapper:
         if not self.learned:
             raise ValueError("Sequences not learned. Call learn_sequences() first.")
 
-        return dict(self.practice_improvement_freq.most_common())
+        # [Popularity] most_common() with no argument returns every practice, ordered from
+        # most improved to least improved. dict(...) converts that ordered list into a plain
+        # dictionary of practice -> count, in that same order.
+        return dict(self.practice_popularity.most_common())
 
     def get_sequence_stats(self) -> dict:
         """
@@ -257,9 +270,9 @@ class SequenceMapper:
         return {
             "num_transition_types": len(self.transition_matrix),
             "total_transitions": total_transitions,
-            "practices_that_improved": len(self.practice_improvement_freq),
-            "most_improved_practice": self.practice_improvement_freq.most_common(1)[0]
-            if self.practice_improvement_freq
+            "practices_that_improved": len(self.practice_popularity),
+            "most_improved_practice": self.practice_popularity.most_common(1)[0]
+            if self.practice_popularity
             else None,
             "avg_transitions_per_type": (
                 total_transitions / len(self.transition_matrix) if self.transition_matrix else 0

@@ -17,7 +17,7 @@ class SimilarityEngine:
             processor: DataProcessor instance with processed team histories
         """
         # Gives access to every team's history, so similarity comparisons can
-        # look up any team's scores at any month on demand.
+        # look up any team's scores at any month whenever needed.
         self.processor = processor
 
     def find_similar_teams(self, target_team: str, target_month: int, k: int = 5, min_similarity: float = 0.0) -> list:
@@ -63,10 +63,13 @@ class SimilarityEngine:
         # Collect all similarity comparisons across all past months
         all_similarities = []
 
+        # Look at every past month, one at a time, to see which teams were similar to
+        # the target team at that month.
         for historical_month in past_months:
             # Get all teams that have data for this historical month
             all_teams = self.processor.get_all_teams()
 
+            # Compare the target team against every other team at this historical month.
             for team in all_teams:
                 # Skip the target team itself
                 if team == target_team:

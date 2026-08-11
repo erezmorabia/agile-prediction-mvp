@@ -203,7 +203,7 @@ def main() -> int:
         # Step 5: Build ML models
         logger.info("[5/5] Training recommendation models...")
 
-        # Similarity engine (will be built on demand)
+        # Similarity engine (will be built only when needed)
         similarity_engine = SimilarityEngine(processor)
 
         # Sequence mapper

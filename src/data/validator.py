@@ -55,6 +55,7 @@ class DataValidator:
         self._check_temporal_coverage()
 
         if self.issues:
+            # Log every problem found, one at a time, before reporting failure
             for issue in self.issues:
                 logger.warning("Validation: %s", issue)
             return False
@@ -79,6 +80,7 @@ class DataValidator:
 
     def _check_value_ranges(self) -> None:
         """Check that practice values are in valid range (0-3)."""
+        # Check each practice's column for scores outside the allowed 0-3 range
         for practice in self.practices:
             if practice not in self.df.columns:
                 continue
@@ -204,6 +206,7 @@ class DataValidator:
         filtered_practices = []
         excluded_practices = []
 
+        # Sort each practice into "keep" or "exclude" based on its missing-data percentage
         for practice in practices:
             if practice not in self.df.columns:
                 # Practice column doesn't exist, exclude it

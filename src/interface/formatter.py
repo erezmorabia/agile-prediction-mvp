@@ -36,6 +36,7 @@ class OutputFormatter:
         output = "TOP RECOMMENDATIONS:\n"
         output += "=" * 80 + "\n"
 
+        # Format one numbered line per recommendation.
         for i, (practice, score, level) in enumerate(recommendations, 1):
             output += f"{i}. {OutputFormatter.format_recommendation(practice, score, level)}\n"
 
@@ -58,6 +59,7 @@ class OutputFormatter:
         output = f"\nTEAM: {team_name} | MONTH: {month}\n"
         output += "=" * 80 + "\n"
 
+        # Format one line per stat.
         for key, value in stats.items():
             output += f"{key:30s}: {value}\n"
 

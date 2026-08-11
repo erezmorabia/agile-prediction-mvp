@@ -55,6 +55,7 @@ class CLIInterface:
         """
         self._show_header()
 
+        # Keep showing the menu and handling one choice at a time, until the user exits.
         while True:
             self._show_menu()
             choice = input("\nEnter choice (1-7): ").strip()
@@ -135,6 +136,7 @@ class CLIInterface:
         teams_with_improvements = []
         all_teams = self.processor.get_all_teams()
 
+        # Check every team, one at a time, for month-to-month improvements.
         for team in all_teams:
             history = self.processor.get_team_history(team)
             months = sorted(history.keys())
@@ -149,6 +151,7 @@ class CLIInterface:
 
                 # Count improvements
                 improvements = []
+                # Compare this month's scores to the next month's, practice by practice.
                 for j, (curr, nxt) in enumerate(zip(current_vector, next_vector)):
                     if nxt > curr:
                         improvements.append(self.recommender.practices[j])
@@ -203,6 +206,7 @@ class CLIInterface:
             if use_filter and teams_with_improvements:
                 # Group by team and show options
                 teams_dict = {}
+                # Group the flat improvement list by team name.
                 for team, month, next_month, num_improvements in teams_with_improvements:
                     if team not in teams_dict:
                         teams_dict[team] = []
@@ -212,6 +216,7 @@ class CLIInterface:
                 teams_sorted = sorted(teams_dict.items(), key=lambda x: (-len(x[1]), x[0]))
 
                 print(f"\nTeams with improvements ({len(teams_sorted)} teams):")
+                # Print one numbered line per team, up to the first 15.
                 for i, (team, months_list) in enumerate(teams_sorted[:15]):
                     months_str = ", ".join([f"{m[0]}→{m[1]}({m[2]} imp.)" for m in months_list])
                     print(f"  {i + 1:2d}. {team}: {months_str}")
@@ -251,6 +256,7 @@ class CLIInterface:
                     return
 
                 print(f"\nAvailable months to predict for {team_name} (with improvements):")
+                # Print one numbered line per selectable month.
                 for i, (month, next_month, num_imp) in enumerate(months_list):
                     print(f"  {i + 1}. Month to predict: {month} ({num_imp} improvements occurred)")
 
@@ -296,6 +302,7 @@ class CLIInterface:
 
                 # Sort teams by number of months they have data for (descending)
                 teams_with_data = []
+                # Count how many months of data each team has.
                 for team in all_teams:
                     history = self.processor.get_team_history(team)
                     num_months = len(history)
@@ -306,6 +313,7 @@ class CLIInterface:
                 teams = [team for team, _ in teams_with_data]
 
                 print(f"\nAvailable teams ({len(teams)} total, sorted by data availability):")
+                # Print one line per team, up to the first 10.
                 for i, team in enumerate(teams[:10]):
                     num_months = teams_with_data[i][1]
                     print(f"  {team} ({num_months} months)")
@@ -385,6 +393,7 @@ class CLIInterface:
                 if similar_teams:
                     print(f"\nTop {len(similar_teams)} Similar Teams (for collaborative filtering):")
                     print("-" * 60)
+                    # Print one line per similar team, in rank order.
                     for i, (similar_team, similarity_score, historical_month) in enumerate(similar_teams, 1):
                         similarity_pct = similarity_score * 100
                         print(
@@ -411,6 +420,7 @@ class CLIInterface:
 
             # Get what actually improved in the predicted month
             improvements_month1 = {}
+            # Compare the baseline month to the predicted month, practice by practice.
             for j, (prev, pred) in enumerate(zip(prev_vector, predicted_vector)):
                 if pred > prev:
                     practice_name = self.recommender.practices[j]
@@ -423,6 +433,7 @@ class CLIInterface:
                 month_after = months[month_to_predict_idx + 1]
                 month_after_vector = history[month_after]
 
+                # Same comparison, one month further out.
                 for j, (prev, after) in enumerate(zip(prev_vector, month_after_vector)):
                     if after > prev:
                         practice_name = self.recommender.practices[j]
@@ -435,6 +446,7 @@ class CLIInterface:
                 month_after_2 = months[month_to_predict_idx + 2]
                 month_after_2_vector = history[month_after_2]
 
+                # Same comparison, two months further out.
                 for j, (prev, after2) in enumerate(zip(prev_vector, month_after_2_vector)):
                     if after2 > prev:
                         practice_name = self.recommender.practices[j]
@@ -445,6 +457,8 @@ class CLIInterface:
             all_practices = (
                 set(improvements_month1.keys()) | set(improvements_month2.keys()) | set(improvements_month3.keys())
             )
+            # Merge the 3 months' worth of improvements into one entry per practice,
+            # keeping whichever month showed the biggest improvement.
             for practice_name in all_practices:
                 improved_in_months = []
                 improvement = 0.0
@@ -495,6 +509,7 @@ class CLIInterface:
 
             recommended_practices = [r[0] for r in recommendations]
 
+            # Print full detail (score, level, why, validation) for each recommendation.
             for i, (practice, score, current_level) in enumerate(recommendations, 1):
                 # Convert normalized level back to original 0-3 scale for display
                 original_level = current_level * 3
@@ -535,6 +550,7 @@ class CLIInterface:
                 improvement_amount = 0.0
                 improved_in_months = []
                 if next_month:
+                    # Look for this recommended practice among what actually improved.
                     for actual_practice, improvement, improved_in in actual_improvements:
                         if actual_practice == practice:
                             actually_improved = True
@@ -548,6 +564,7 @@ class CLIInterface:
                 if similar_count > 0:
                     print(f"   Why: {similar_count} similar team(s) improved this practice")
                     if similar_teams_list:
+                        # Print one line per similar team that improved this practice.
                         for st in similar_teams_list:
                             similar_at = st.get("similar_at_month", st["month"])
                             if similar_at != st["month"]:
@@ -597,6 +614,8 @@ class CLIInterface:
                 print(f"\nValidation Summary (checking improvements in {validation_months_text}):")
                 if actual_improvements:
                     print(f"   Practices that actually improved: {len(actual_improvements)}")
+                    # Print one line per practice that actually improved, flagging
+                    # whether it was one of the recommendations.
                     for practice, improvement, improved_in in actual_improvements:
                         improvement_pct = improvement * 100
                         status = "Recommended" if practice in recommended_practices else "Not recommended"
@@ -645,6 +664,7 @@ class CLIInterface:
             print("-" * 60)
             practice_profile = self._get_practice_profile(team_name, prev_month)
 
+            # Print each maturity level's practices as its own section.
             for level in [0, 1, 2, 3]:
                 practices = practice_profile[level]
                 if practices:
@@ -660,6 +680,7 @@ class CLIInterface:
                     print(f"\nLevel {level} ({level_name}): {len(practices)} practices")
                     # Display practices in columns for better readability
                     practices_sorted = sorted(practices)
+                    # Print 3 practice names per line.
                     for i in range(0, len(practices_sorted), 3):
                         chunk = practices_sorted[i : i + 3]
                         print(f"   {', '.join(chunk)}")
@@ -709,6 +730,7 @@ class CLIInterface:
         practice_vector = history[current_month]
         profile = {0: [], 1: [], 2: [], 3: []}
 
+        # Sort each practice's score into its maturity level bucket.
         for j, normalized_value in enumerate(practice_vector):
             practice_name = self.recommender.practices[j]
             # Convert normalized (0-1) back to original scale (0-3)
@@ -776,6 +798,7 @@ class CLIInterface:
             # Display per-month results
             print("\nPer-Month Results:")
             print("-" * 60)
+            # Print one summary block per tested month.
             for r in results["per_month_results"]:
                 print(f"   Month {r['month']}:")
                 print(
@@ -954,6 +977,7 @@ class CLIInterface:
                     f"{'Rank':<6} {'top_n':<8} {'sim_w':<8} {'k_sim':<8} {'min_sim':<10} {'Acc':<8} {'Random':<8} {'Gap':<8}"
                 )
                 print("-" * 60)
+                # Print one ranked row per configuration tried, best 10 only.
                 for idx, r in enumerate(all_results[:10], 1):
                     print(
                         f"{idx:<6} {r['config']['top_n']:<8} {r['config']['similarity_weight']:<8.2f} "
@@ -1090,6 +1114,7 @@ class CLIInterface:
                     f"{'Rank':<6} {'top_n':<8} {'sim_w':<8} {'k_sim':<8} {'min_sim':<10} {'Acc':<8} {'Random':<8} {'Gap':<8}"
                 )
                 print("-" * 60)
+                # Print one ranked row per configuration tried, best 10 only.
                 for idx, r in enumerate(all_results[:10], 1):
                     print(
                         f"{idx:<6} {r['config']['top_n']:<8} {r['config']['similarity_weight']:<8.2f} "
@@ -1154,6 +1179,7 @@ class CLIInterface:
                 if self.missing_values_details["practices_with_missing"]:
                     print("\n   Top practices with missing values:")
                     top_practices = self.missing_values_details["practices_with_missing"][:5]
+                    # Print one line per practice with missing data, worst 5 only.
                     for practice in top_practices:
                         info = self.missing_values_details["by_practice"][practice]
                         print(f"     • {practice}: {info['count']} missing ({info['percentage']}%)")
@@ -1162,6 +1188,7 @@ class CLIInterface:
 
                 if self.missing_values_details["months_with_missing"]:
                     print("\n   Months with missing values:")
+                    # Print one line per month with missing data, worst 5 only.
                     for month in self.missing_values_details["months_with_missing"][:5]:
                         info = self.missing_values_details["by_month"][month]
                         print(f"     • {month}: {info['count']} missing ({info['percentage']}%)")
@@ -1230,6 +1257,7 @@ class CLIInterface:
 
             # Group by from_practice for better readability
             from_practice_groups = {}
+            # Bucket every learned sequence under the practice it starts from.
             for from_p, to_p, count, prob in sequences:
                 if from_p not in from_practice_groups:
                     from_practice_groups[from_p] = []
@@ -1242,6 +1270,8 @@ class CLIInterface:
             max_to_show = 30
             shown = 0
 
+            # Print groups of sequences, from-practice by from-practice, stopping
+            # once max_to_show individual sequences have been printed.
             for from_practice, transitions in sorted_groups:
                 if shown >= max_to_show:
                     remaining = sum(
@@ -1251,6 +1281,7 @@ class CLIInterface:
                     break
 
                 print(f"\n   When '{from_practice}' improved:")
+                # Print this practice's top 5 "followed by" sequences.
                 for to_practice, count, prob in transitions[:5]:  # Top 5 for each practice
                     if shown >= max_to_show:
                         break

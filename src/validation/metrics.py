@@ -38,6 +38,8 @@ class MetricsCalculator:
         Returns:
             float: MRR (0-1, where 1 is perfect)
         """
+        # Walk through the recommendations in order, looking for the first one
+        # that actually turned out to be correct
         for rank, rec in enumerate(recommendations, 1):
             if rec in actual_improvements:
                 return 1.0 / rank

@@ -57,6 +57,8 @@ class BacktestEngine:
             if denom == 0:
                 return 0.0
             expected = 0.0
+            # Walk through every possible rank the first correct pick could land at,
+            # adding up its probability-weighted contribution to the expected score
             for r in range(1, min(top_n, n) + 1):
                 numer = comb(n - r, k - 1, exact=True)
                 expected += (numer / denom) / r
@@ -214,6 +216,8 @@ class BacktestEngine:
             len(months), "provided" if cancellation_check else "None",
         )
 
+        # Step through each month eligible to be tested, one at a time - starting
+        # once there's enough prior history for a fair prediction
         for test_month_idx in range(3, len(months)):  # Start from month 4 (index 3)
             # Check for cancellation at start of each month iteration
             if cancellation_check:
@@ -268,6 +272,7 @@ class BacktestEngine:
             improvements_per_case_this_month = []  # For this month's own random baseline
 
             team_count = 0  # Track team count for cancellation checks
+            # Check every team's prediction for this one month, one team at a time
             for team in teams:
                 # Check for cancellation every 10 teams (starting from team 1)
                 team_count += 1
@@ -310,6 +315,7 @@ class BacktestEngine:
 
                     # Check improvements in test_month (immediate next month)
                     actual_improved_month1 = set()
+                    # Compare this team's score on each practice, before vs. in the test month
                     for j, (p, t) in enumerate(zip(prev_vector, test_vector)):
                         if t > p:
                             actual_improved_month1.add(self.recommender.practices[j])
@@ -319,6 +325,7 @@ class BacktestEngine:
                     if test_idx + 1 < len(team_months):
                         next_month = team_months[test_idx + 1]
                         next_vector = history[next_month]
+                        # Same comparison, one month further out
                         for j, (p, n) in enumerate(zip(prev_vector, next_vector)):
                             if n > p:
                                 actual_improved_month2.add(self.recommender.practices[j])
@@ -328,6 +335,7 @@ class BacktestEngine:
                     if test_idx + 2 < len(team_months):
                         month_after_2 = team_months[test_idx + 2]
                         month_after_2_vector = history[month_after_2]
+                        # Same comparison again, two months further out
                         for j, (p, m2) in enumerate(zip(prev_vector, month_after_2_vector)):
                             if m2 > p:
                                 actual_improved_month3.add(self.recommender.practices[j])
@@ -376,16 +384,16 @@ class BacktestEngine:
                             month_correct += 1
                             total_correct += 1
 
-                        # Popularity baseline: always recommend the top-N globally most-improved
+                        # [Popularity] Popularity baseline: always recommend the top-N globally most-improved
                         # practices (learned only from months < prev_month, same cutoff the real
                         # model just used above), excluding practices this team has already maxed
-                        # out. This is a stronger sanity check than random selection - a naive
-                        # heuristic a reviewer would expect the model to beat.
-                        improvement_freq = self.recommender.sequence_mapper.get_improvement_frequency()
+                        # out. This is a tougher comparison than random selection - a simple
+                        # heuristic that the model should be able to beat.
+                        practice_popularity = self.recommender.sequence_mapper.get_practice_popularity()
                         maxed_out = {
                             self.recommender.practices[j] for j, level in enumerate(prev_vector) if level >= 1.0
                         }
-                        popularity_ranked = sorted(improvement_freq, key=improvement_freq.get, reverse=True)
+                        popularity_ranked = sorted(practice_popularity, key=practice_popularity.get, reverse=True)
                         popularity_recommended = [p for p in popularity_ranked if p not in maxed_out][:top_n]
                         if set(popularity_recommended) & actual_improved:
                             month_popularity_correct += 1
@@ -494,7 +502,7 @@ class BacktestEngine:
         recall_improvement_factor = overall_recall / random_recall if random_recall > 0 else 0
         mrr_improvement_factor = overall_mrr / random_mrr if random_mrr > 0 else 0
 
-        # Popularity baseline comparison: how much the model beats a naive heuristic
+        # [Popularity] Popularity baseline comparison: how much the model beats a naive heuristic
         # ("always recommend whatever improves most often organization-wide"), not just
         # random chance
         popularity_gap = overall_accuracy - overall_popularity_baseline
@@ -619,7 +627,7 @@ class BacktestEngine:
 
             # random_baseline is macro-averaged per month, matching overall_accuracy's
             # aggregation (see docs/known-issues/04-accuracy-vs-baseline-aggregation-mismatch.md).
-            # Falls back to the pooled k_avg if no per-month breakdown was supplied.
+            # Uses the pooled k_avg instead, if no per-month breakdown was supplied.
             if month_improvements_per_case:
                 per_month_baselines = [
                     self._baseline_from_k_avg(sum(cases) / len(cases) if cases else 0.0, total_practices, top_n)

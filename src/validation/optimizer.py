@@ -74,6 +74,7 @@ class OptimizationEngine:
             fixed_params = {}
 
         # Generate all combinations
+        # Walk through every combination of parameter values, one full combination at a time
         for top_n, similarity_weight, k_similar, lookahead, recent, min_sim in product(
             top_n_range,
             similarity_weight_range,
@@ -322,6 +323,7 @@ class OptimizationEngine:
         cancelled = False
 
         # Test each combination
+        # Try each parameter combination in turn, running a full backtest for each one
         for idx, config in enumerate(combinations):
             # Log progress every 10 iterations (or at start)
             if idx == 0 or (idx + 1) % 10 == 0:

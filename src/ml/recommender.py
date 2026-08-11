@@ -166,6 +166,8 @@ class RecommendationEngine:
         # happen every month.
         similarity_scores = defaultdict(float)  # Track similarity-based scores separately
 
+        # Go through each similar team one at a time, to see what they went on to
+        # improve after looking like the target team.
         for similar_team, peer_similarity, historical_month in similar_teams:
             try:
                 similar_history = self.processor.get_team_history(similar_team)
@@ -186,6 +188,8 @@ class RecommendationEngine:
                 max_months_ahead = similar_teams_lookahead_months
                 best_improvements = {}  # Track max improvement per practice across the lookahead window
 
+                # Look a few months ahead of when this team was similar, to find
+                # improvements that happened with a delay instead of right away.
                 for months_ahead in range(1, max_months_ahead + 1):
                     if hist_idx + months_ahead >= len(similar_months):
                         break  # No more months available
@@ -200,6 +204,7 @@ class RecommendationEngine:
                     similar_state_at_future = similar_history[similar_future_month]
 
                     # Find what this team improved from historical_month to this future month
+                    # by comparing every practice's score between the two points in time.
                     for j, (hist_state, future_state) in enumerate(
                         zip(similar_state_at_historical, similar_state_at_future)
                     ):
@@ -214,7 +219,8 @@ class RecommendationEngine:
                             ):
                                 best_improvements[practice_name] = improvement_magnitude
 
-                # Add the best improvements found (weighted by similarity)
+                # Add each of this peer's best improvements into that practice's running
+                # score, weighted by how similar this peer team was to the target team.
                 for practice_name, improvement_magnitude in best_improvements.items():
                     similarity_scores[practice_name] += peer_similarity * improvement_magnitude
             except (KeyError, ValueError, IndexError):
@@ -228,6 +234,8 @@ class RecommendationEngine:
 
         # Check up to N months back (or as many as available)
         months_to_check = min(recent_improvements_months, current_idx)
+        # Step backward through the team's own recent months, one at a time,
+        # to see what it improved lately.
         for months_back in range(1, months_to_check + 1):
             if current_idx - months_back < 0:
                 break
@@ -235,7 +243,7 @@ class RecommendationEngine:
             past_month = months_list[current_idx - months_back]
             past_scores = history[past_month]
 
-            # Compare past month to current month to find improvements
+            # Compare past month to current month, practice by practice, to find improvements
             for j, (past, curr) in enumerate(zip(past_scores, current_scores)):
                 if curr > past:  # Improved from past_month to current_month
                     practice_name = self.practices[j]
@@ -252,6 +260,8 @@ class RecommendationEngine:
         for recently_improved in [p for p in self.practices if p in recently_improved_practices]:
             # Get typical next practices (from sequences learned up to current_month)
             try:
+                # For this recently improved practice, boost whatever the model has
+                # learned tends to follow it.
                 for next_practice, transition_prob in self.sequence_mapper.get_typical_next_practices(
                     recently_improved, top_n=3
                 ):
@@ -289,6 +299,8 @@ class RecommendationEngine:
         # Find max score for final normalization (should be <= 1.0, but normalize to be safe)
         max_score = max(practices_scores.values()) if practices_scores else 1.0
 
+        # Go through every scored practice, keeping only the ones the team
+        # hasn't already maxed out.
         for practice, score in practices_scores.items():
             practice_idx = self.practices.index(practice)
             current_level = float(current_scores[practice_idx])
@@ -358,6 +370,8 @@ class RecommendationEngine:
         # Check if sequence boost applies (similar to recommend method)
         recently_improved_practices = set()
         months_to_check = min(recent_improvements_months, current_idx)
+        # Step backward through the team's own recent months, one at a time,
+        # to see what it improved lately.
         for months_back in range(1, months_to_check + 1):
             if current_idx - months_back < 0:
                 break
@@ -365,7 +379,7 @@ class RecommendationEngine:
             past_month = months_list[current_idx - months_back]
             past_scores = history[past_month]
 
-            # Compare past month to current month to find improvements
+            # Compare past month to current month, practice by practice, to find improvements
             for j, (past, curr) in enumerate(zip(past_scores, current_scores)):
                 if curr > past:  # Improved from past_month to current_month
                     practice_name = self.practices[j]
@@ -422,6 +436,8 @@ class RecommendationEngine:
                 practice_idx = self.practices.index(practice)
                 hist_state = similar_history[historical_month][practice_idx]
 
+                # Look a few months ahead of when this team was similar, to find
+                # improvements that happened with a delay instead of right away.
                 for months_ahead in range(1, max_months_ahead + 1):
                     if hist_idx + months_ahead >= len(similar_months):
                         break  # No more months available

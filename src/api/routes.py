@@ -182,6 +182,7 @@ def create_routes(service: APIService) -> APIRouter:
 
             # Format all_results
             formatted_results = []
+            # Reformat each tested configuration's result into the API response shape.
             for r in result.get("all_results", []):
                 formatted_results.append(
                     {

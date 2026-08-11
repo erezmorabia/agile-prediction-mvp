@@ -54,6 +54,7 @@ class PracticeDefinitionsLoader:
             definitions = {}
             remarks = {}
 
+            # Go through the spreadsheet one row at a time - each row is one practice
             for _, row in df.iterrows():
                 practice_name = str(row["Level"]).strip()
                 if not practice_name or pd.isna(practice_name):
@@ -61,6 +62,7 @@ class PracticeDefinitionsLoader:
 
                 # Extract level definitions (handle NaN values)
                 practice_defs = {}
+                # Get this practice's description at each maturity level, 0 through 3
                 for level in [0, 1, 2, 3]:
                     level_col = level  # Column name is integer 0, 1, 2, 3
                     if level_col in df.columns:

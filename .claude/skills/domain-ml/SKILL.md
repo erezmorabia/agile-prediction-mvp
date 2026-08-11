@@ -81,7 +81,7 @@ sequence_scores[practice] += transition_probability
 |---|---|---|---|
 | `SimilarityEngine.find_similar_teams()` | `src/ml/similarity.py:21` | `RecommendationEngine.recommend()` | `target_team, target_month, k, min_similarity` → `list[(team, score, historical_month)]` |
 | `SequenceMapper.learn_sequences_up_to_month()` | `src/ml/sequences.py:121` | `RecommendationEngine.recommend()`, `BacktestEngine.run_backtest()` | `max_month` → mutates `transition_matrix`; cached by `max_month` |
-| `SequenceMapper._learn_team_transitions()` | `src/ml/sequences.py:82` | `learn_sequences()`, `learn_sequences_up_to_month()` | `team_months, history` → mutates `transition_matrix`/`practice_improvement_freq` in place (first-order Markov construction) |
+| `SequenceMapper._learn_team_transitions()` | `src/ml/sequences.py:82` | `learn_sequences()`, `learn_sequences_up_to_month()` | `team_months, history` → mutates `transition_matrix`/`practice_popularity` in place (first-order Markov construction) |
 | `SequenceMapper.get_typical_next_practices()` | `src/ml/sequences.py:178` | `RecommendationEngine.recommend()` | `practice, top_n` → `list[(practice_name, probability)]` |
 | `RecommendationEngine.recommend()` | `src/ml/recommender.py:25` | `APIService.get_recommendations()`, `BacktestEngine` | `target_team, current_month, top_n, k_similar, ...` → `list[(practice, score, current_level)]` |
 | `RecommendationEngine.get_recommendation_explanation()` | `src/ml/recommender.py:301` | `APIService.get_recommendations()` | `target_team, current_month, practice, recent_improvements_months, k_similar, min_similarity_threshold, similar_teams_lookahead_months` → explanation dict |

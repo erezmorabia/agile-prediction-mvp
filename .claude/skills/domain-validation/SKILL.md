@@ -100,11 +100,11 @@ A stronger sanity check than random chance: always recommend the top-N practices
 most often organization-wide (ignoring the target team's own state entirely), learned from the
 same months < `prev_month` cutoff the real model just used for that case. Computed inline in the
 per-team loop right after the real recommendation's hit check, reusing
-`sequence_mapper.get_improvement_frequency()` (already populated as a side effect of the
+`sequence_mapper.get_practice_popularity()` (already populated as a side effect of the
 `recommend()` call that just ran — no extra learning pass needed):
 
 ```
-popularity_recommended = top_n practices by improvement_freq, excluding this team's maxed-out practices
+popularity_recommended = top_n practices by practice_popularity, excluding this team's maxed-out practices
 popularity_accuracy = mean(per_month popularity hit-rate)   # same per-month-mean aggregation as HR@N
 popularity_gap = overall_accuracy - overall_popularity_baseline
 popularity_improvement_factor = overall_accuracy / overall_popularity_baseline
