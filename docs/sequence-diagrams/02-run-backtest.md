@@ -41,28 +41,39 @@ sequenceDiagram
 
 ## Notes
 
-- **Collapsed layer**: `app.js`, `api.js`, `FastAPI Route`, and `APIService` are intentionally left
-  out as separate lifelines. `Browser` stands in for that whole round trip on both ends of the
-  diagram: click handler (`app.js:335-337` → `runBacktest()` `app.js:940`, config built
-  `app.js:913-922`) → `api.js:77-100` (POST `/api/backtest`) → `routes.py:116-125` →
-  `APIService.run_backtest()` (`service.py:452-464`, normalizes config then calls
-  `BacktestEngine`); response rendered by `displayBacktestResults()` (`app.js:997-1265`).
-- **Why "Recommendation Engine" is one lifeline, not two**: `BacktestEngine` calls
-  `SequenceMapper.learn_sequences_up_to_month()` directly once per test month
-  (`backtest.py:253`), then calls `RecommendationEngine.recommend()` once per team
-  (`backtest.py:351-361`) — and `recommend()` itself immediately re-calls that same
-  `learn_sequences_up_to_month()` internally (see Flow 1). Since `BacktestEngine` always drives
-  both together, on the same cadence, grouping them keeps this diagram to 3 lifelines without
-  losing any real call structure.
-- **The `loop`-within-`loop` (months, then teams-within-month) is the whole point of this diagram**
-  — don't flatten it into a linear sequence (`backtest.py:212` outer loop, `:266` inner loop). The
-  nesting is what shows why a full backtest run can take a while.
-- **Popularity baseline** is computed inline inside the per-team loop (`backtest.py:364-392`),
-  right alongside the real model's hit-check, reusing `sequence_mapper.get_improvement_frequency()`
-  which is already populated as a side effect of the `recommend()` call that just ran
-  (`backtest.py:351-361`) — no extra learning pass is needed to compute it.
-- Per-month finalization is `backtest.py:403-423`; `overall_accuracy` and `random_baseline` are
-  computed once after the outer loop, at `backtest.py:426-440` and `:442-484` respectively.
+- **Why sequences are learned once per month, but recommendations happen once per team**: the
+  sequence step asks a question about the whole dataset — "looking at every team's history up to
+  this month, what does a team usually improve next after improving X?" That answer is the same
+  for every team being predicted this month, since it only depends on how much history is
+  available so far, not on which team you're looking at. So it's worked out once per month and
+  then reused. Recommending, on the other hand, is always about one specific team — it needs that
+  team's current practice levels, its closest peer teams, and what it personally improved
+  recently — so that part has to run separately for each team, using the shared, once-per-month
+  answer as one of its ingredients.
+- **What "Browser" really stands for**: it's a stand-in for everything that happens between the
+  analyst clicking "Run Backtest" and the request actually reaching the backend — the button's
+  click handler, the settings getting bundled up, and the request being routed to the right
+  backend code. None of that changes how the backtest itself behaves, so it's folded into one box
+  to keep the diagram focused on the actual validation logic.
+- **Why "Recommendation Engine" is shown as one box, not two**: behind the scenes there are really
+  two pieces working together — one that learns "what usually comes next" patterns, and one that
+  turns those patterns (plus peer comparisons) into an actual recommendation. They're always used
+  together, in the same order, every single time a prediction is needed, so splitting them into
+  two boxes wouldn't show any real difference in how they're used — it would just make the diagram
+  busier.
+- **The two nested loops (months, then teams within each month) are the whole point of this
+  diagram** — don't read it as one flat sequence of steps. For every past month being tested,
+  every team is checked one by one before moving on to the next month. That nesting is exactly why
+  a full backtest can take a while to run: it's re-testing the model many times over, once per
+  team per month.
+- **The "popularity baseline" comparison is calculated for free** alongside the real predictions —
+  while each team's prediction is being checked for a hit, the same information is reused to also
+  work out how well a much simpler strategy ("just recommend whatever's popular") would have done.
+  No separate pass is needed to compute this comparison.
+- **After each month finishes, its results are summarized before moving to the next month.** Once
+  every month has been tested, the overall accuracy score and a "random guessing" baseline are
+  calculated by averaging across all tested months — these are the two headline numbers shown to
+  the analyst at the end.
 
-Citations current as of this session; re-verify against `app.js`, `api.js`, `routes.py`,
-`service.py`, `backtest.py` if the implementation changes.
+This description reflects how the backtest currently works — if the underlying logic changes
+significantly, this diagram may need to be revisited.
