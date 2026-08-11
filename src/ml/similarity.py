@@ -45,6 +45,9 @@ class SimilarityEngine:
         if target_month not in target_history:
             raise ValueError(f"Team '{target_team}' has no data for month {target_month}")
 
+        # target_vector: target team's practice maturity scores at target_month, one value
+        # per practice. Reshaped to (1, n_practices) since cosine_similarity expects a matrix
+        # of row vectors, even for a single team.
         target_vector = target_history[target_month]
         target_vector = np.array(target_vector).reshape(1, -1)
 
