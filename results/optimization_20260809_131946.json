@@ -1,0 +1,72 @@
+{
+  "optimal_config": {
+    "top_n": 2,
+    "similarity_weight": 0.7,
+    "k_similar": 19,
+    "similar_teams_lookahead_months": 3,
+    "recent_improvements_months": 3,
+    "min_similarity_threshold": 0.5
+  },
+  "model_accuracy": 0.49726860441146153,
+  "random_baseline": 0.24430840147664423,
+  "improvement_gap": 0.2529602029348173,
+  "improvement_factor": 2.035413442214349,
+  "total_predictions": 151,
+  "correct_predictions": 72,
+  "total_combinations_tested": 3,
+  "total_combinations_available": 6,
+  "valid_combinations": 3,
+  "all_results": [
+    {
+      "config": {
+        "top_n": 2,
+        "similarity_weight": 0.7,
+        "k_similar": 19,
+        "similar_teams_lookahead_months": 3,
+        "recent_improvements_months": 3,
+        "min_similarity_threshold": 0.5
+      },
+      "model_accuracy": 0.49726860441146153,
+      "random_baseline": 0.24430840147664423,
+      "improvement_gap": 0.2529602029348173,
+      "improvement_factor": 2.035413442214349,
+      "total_predictions": 151,
+      "correct_predictions": 72
+    },
+    {
+      "config": {
+        "top_n": 2,
+        "similarity_weight": 0.6,
+        "k_similar": 19,
+        "similar_teams_lookahead_months": 3,
+        "recent_improvements_months": 3,
+        "min_similarity_threshold": 0.5
+      },
+      "model_accuracy": 0.49197759912045624,
+      "random_baseline": 0.24430840147664423,
+      "improvement_gap": 0.247669197643812,
+      "improvement_factor": 2.0137563675536923,
+      "total_predictions": 151,
+      "correct_predictions": 71
+    },
+    {
+      "config": {
+        "top_n": 2,
+        "similarity_weight": 0.6,
+        "k_similar": 19,
+        "similar_teams_lookahead_months": 3,
+        "recent_improvements_months": 3,
+        "min_similarity_threshold": 0.75
+      },
+      "model_accuracy": 0.4918708620571975,
+      "random_baseline": 0.24430840147664423,
+      "improvement_gap": 0.24756246058055326,
+      "improvement_factor": 2.0133194727821104,
+      "total_predictions": 142,
+      "correct_predictions": 64
+    }
+  ],
+  "early_stopped": true,
+  "cancelled": false,
+  "timestamp": "2026-08-09T13:19:46.679792"
+}

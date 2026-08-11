@@ -1,0 +1,40 @@
+{
+  "optimal_config": {
+    "top_n": 2,
+    "similarity_weight": 0.6,
+    "k_similar": 5,
+    "similar_teams_lookahead_months": 3,
+    "recent_improvements_months": 3,
+    "min_similarity_threshold": 0.0
+  },
+  "model_accuracy": 0.8,
+  "random_baseline": 0.1,
+  "improvement_gap": 0.7,
+  "improvement_factor": 8.0,
+  "total_predictions": 100,
+  "correct_predictions": 80,
+  "total_combinations_tested": 1,
+  "total_combinations_available": 3,
+  "valid_combinations": 1,
+  "all_results": [
+    {
+      "config": {
+        "top_n": 2,
+        "similarity_weight": 0.6,
+        "k_similar": 5,
+        "similar_teams_lookahead_months": 3,
+        "recent_improvements_months": 3,
+        "min_similarity_threshold": 0.0
+      },
+      "model_accuracy": 0.8,
+      "random_baseline": 0.1,
+      "improvement_gap": 0.7,
+      "improvement_factor": 8.0,
+      "total_predictions": 100,
+      "correct_predictions": 80
+    }
+  ],
+  "early_stopped": true,
+  "cancelled": false,
+  "timestamp": "2026-08-09T13:10:52.999770"
+}
