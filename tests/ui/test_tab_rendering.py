@@ -34,7 +34,7 @@ class TestTabRendering:
         page.wait_for_selector("#sequences-tab.active", timeout=5_000)
         page.wait_for_selector("#sequences-results:not(.hidden)", timeout=20_000)
         # The section header is always present regardless of how many sequences exist
-        expect(page.locator("#sequences-results")).to_contain_text("Improvement Sequences")
+        expect(page.locator("#sequences-results")).to_contain_text("Practice Transition Model Overview")
 
     def test_recommendations_tab_renders(self, page: Page):
         """Recommendations tab shows the team dropdown populated with real teams."""
