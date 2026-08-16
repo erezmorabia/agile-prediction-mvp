@@ -1,6 +1,6 @@
 # Installation Guide
 
-This guide will help you set up the Agile Practice Prediction System on your computer.
+This guide will help you set up the Agile Practice Recommendation System on your computer.
 
 ## Prerequisites
 
@@ -120,4 +120,3 @@ If you encounter any issues not covered here, please check:
 2. All dependencies are installed correctly
 3. You're running commands from the project root directory
 4. Data files are present in `data/raw/` directory
-

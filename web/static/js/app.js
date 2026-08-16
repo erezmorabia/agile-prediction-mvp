@@ -535,7 +535,7 @@ async function loadRecommendations(team, month) {
 }
 
 /**
- * Build a single-line verdict badge summarising prediction accuracy.
+ * Build a single-line verdict badge summarising recommendation validation.
  */
 function buildVerdictLine(data) {
     if (!data.validation) return '';
@@ -547,7 +547,7 @@ function buildVerdictLine(data) {
 
         if (v.validated_count === v.total_recommendations) {
             const names = validatedRecs.map(r => r.practice).join(' and ');
-            return `<div class="verdict-line verdict-hit">✓ Prediction correct: ${v.validated_count}/${v.total_recommendations} — ${names} ${v.validated_count === 1 ? 'was' : 'were'} adopted</div>`;
+            return `<div class="verdict-line verdict-hit">✓ Recommendation validated: ${v.validated_count}/${v.total_recommendations} — ${names} ${v.validated_count === 1 ? 'was' : 'were'} adopted</div>`;
         } else if (v.validated_count > 0) {
             const hitNames = validatedRecs.map(r => r.practice).join(' and ');
             const missNames = unvalidatedRecs.map(r => r.practice).join(' and ');
@@ -602,7 +602,7 @@ function displayRecommendations(data) {
     let html = `
         <div class="recommendations-header">
             <h3>Top ${data.recommendations.length} Recommendations for ${data.team}</h3>
-            <p class="month-info">Predicting for month: ${formatMonth(data.month)}</p>
+            <p class="month-info">Likely next practices for: ${formatMonth(data.month)}</p>
             ${verdictLine}
             <p class="debug-info" style="font-size: 0.85em; color: #666; margin-top: 5px;">
                 Requested: top_n=${data.recommendations.length} (optimized default: 2)
@@ -649,7 +649,7 @@ function displayRecommendations(data) {
                         <ul>
                             <li>The system compares your team's current state against <strong>ALL teams at ALL past months</strong></li>
                             <li>It finds the <strong>19 most similar teams across all historical data</strong> (default, configurable; not just same month)</li>
-                            <li>It looks at <strong>what those similar teams improved</strong> in their next 1-3 months (checks up to 3 months ahead)</li>
+                            <li>It looks at <strong>subsequent observed improvements</strong> for similar teams within a 1–3-month window</li>
                             <li>Each improvement is weighted by:
                                 <ul>
                                     <li>How similar that team is to yours (higher similarity = more weight)</li>
@@ -662,10 +662,10 @@ function displayRecommendations(data) {
                     </div>
                     
                     <div class="explanation-section">
-                        <h5>2. Natural Sequences (40% weight, default)</h5>
+                        <h5>2. Practice Transition Model (40% weight, default)</h5>
                         <ul>
                             <li>The system learns patterns from <strong>ALL teams' improvement history</strong></li>
-                            <li>It identifies which practices typically follow others</li>
+                            <li>It identifies which practices typically follow others at the next improvement-bearing step</li>
                             <li><strong>Example patterns learned:</strong>
                                 <ul>
                                     <li>Teams that improved 'CI/CD' → often improve 'Test Automation' next (60% of cases)</li>
@@ -673,7 +673,7 @@ function displayRecommendations(data) {
                                 </ul>
                             </li>
                             <li>If your team improved a practice in the <strong>last 3 months</strong> (default), related practices get boosted</li>
-                            <li><strong>Why this works:</strong> Practices build on each other logically. CI/CD enables automated testing, so Test Automation naturally follows.</li>
+                            <li><strong>Why this helps:</strong> Observed transition patterns add organizational context to the recommendation score.</li>
                         </ul>
                     </div>
                     
@@ -682,7 +682,7 @@ function displayRecommendations(data) {
                         <ul>
                             <li>Both components are <strong>normalized separately</strong> (each divided by its maximum value) before combining</li>
                             <li>Then they're combined with weighted average:
-                                <div class="formula">Final Score = (Normalized Similarity Score × 0.7) + (Normalized Sequence Score × 0.3)</div>
+                                <div class="formula">Final Score = (Normalized Similarity Score × 0.7) + (Normalized Transition Score × 0.3)</div>
                                 <p style="font-size: 0.9em; color: #666; margin-top: 5px;">Note: The 0.7/0.3 split is the default (configurable via similarity_weight parameter)</p>
                             </li>
                             <li>Practices are then ranked by this combined score</li>
@@ -694,7 +694,7 @@ function displayRecommendations(data) {
                         <h5>Why This Hybrid Approach Works</h5>
                         <ul>
                             <li><strong>Similarity alone:</strong> "Teams like you improved X" (good but can be rigid)</li>
-                            <li><strong>Sequences alone:</strong> "X usually comes after Y" (good but too generic)</li>
+                            <li><strong>Transition patterns alone:</strong> "X often followed Y at the next improvement-bearing step" (useful but too generic on its own)</li>
                             <li><strong>Combined:</strong> "Teams like you improved X, AND it fits your natural next step"</li>
                             <li>This gives you both <strong>peer validation</strong> AND <strong>logical progression</strong></li>
                         </ul>
@@ -754,7 +754,7 @@ function displayRecommendations(data) {
                         </div>
                         ${data.validation ? `
                             <div class="rec-detail validation-status">
-                                <strong>Validation:</strong>${tip('Checked against actual data: did the team improve this practice in the 1–3 months after the prediction? \'Validated\' means the prediction came true.')} ${rec.improved_in_months ? 
+                                <strong>Validation:</strong>${tip('Checked against actual data: did the team improve this practice in the 1–3 months after the recommendation? \'Validated\' means the recommendation aligned with a later improvement.')} ${rec.improved_in_months ?
                                     (rec.improved_in_months.length === 3 
                                         ? `${validatedText} in month ${formatMonth(rec.improved_in_months[0])}, ${formatMonth(rec.improved_in_months[1])}, AND ${formatMonth(rec.improved_in_months[2])}`
                                         : rec.improved_in_months.length === 2 
@@ -1015,11 +1015,11 @@ function displayBacktestResults(data) {
                 <table class="results-table" style="width: 100%;">
                     <thead>
                         <tr>
-                            <th>Month ${tip('The month being predicted. The model uses only data from prior months to make predictions for this month.')}</th>
-                            <th>Training Months ${tip('Historical months the model trained on before predicting this month. Grows with each row as more history becomes available.')}</th>
-                            <th>Predictions ${tip('Total practice recommendations generated across all tested teams for this month. Each team receives top-N recommendations.')}</th>
+                            <th>Recommendation Month ${tip('The month for which likely next practices are identified. The model uses only data from prior months.')}</th>
+                            <th>Training Months ${tip('Historical months the model trained on before generating recommendations for this month. Grows with each row as more history becomes available.')}</th>
+                            <th>Recommendations ${tip('Total practice recommendations generated across all tested teams for this month. Each team receives top-N recommendations.')}</th>
                             <th>Correct ${tip('Recommendations that matched an actual practice improvement made by the team within the 3-month validation window following this month.')}</th>
-                            <th>Monthly Accuracy ${tip('Correct ÷ Predictions for this month only. The Overall Accuracy shown above is the simple average of this column — each month counted equally, regardless of how many teams it had.')}</th>
+                            <th>Monthly Accuracy ${tip('Validated recommendations ÷ recommendations for this month only. The Overall Accuracy shown above is the simple average of this column — each month counted equally, regardless of how many teams it had.')}</th>
                             <th>Popularity Baseline ${tip('Accuracy of a naive heuristic that always recommends the top-N globally most-improved practices (learned from the same past months as the model), ignoring the target team\'s own state. A stronger sanity check than random selection.')}</th>
                             <th>Precision@N ${tip('Correct recommendations ÷ recommendations made (top_n). Unlike Monthly Accuracy, this is penalized when only some of the N recommendations were right. Higher = fewer wasted suggestions.')}</th>
                             <th>Recall@N ${tip('Correct recommendations ÷ practices actually improved. Capped at top_n ÷ actual improvements, so a low value can reflect that cap rather than a weaker model. Higher = better coverage of what teams actually improved.')}</th>
@@ -1139,7 +1139,7 @@ function displayBacktestResults(data) {
             <div class="accuracy-comparison" style="margin: 20px 0; padding: 20px; background: #1e1d1a; border-radius: 8px; border: 1px solid #3a3835;">
                 <h4 style="margin-top: 0; text-align: center;">
                     Model vs Popularity Baseline
-                    ${tip('A stronger sanity check than random selection: this baseline always recommends the top-N practices that improve most often across the whole organization, ignoring the target team\'s own state and history entirely (learned only from months before the prediction, same as the model). Shows how much value the model\'s personalization specifically adds on top of "know the organization\'s general trends."')}
+                    ${tip('A stronger sanity check than random selection: this baseline always recommends the top-N practices that improve most often across the whole organization, ignoring the target team\'s own state and history entirely (learned only from months before the recommendation, same as the model). The improvement shown is an overall organizational backtest average, not a guaranteed result for every individual team.')}
                 </h4>
                 <div style="display: flex; justify-content: space-around; align-items: center; margin: 20px 0;">
                     <div style="text-align: center;">
@@ -1157,7 +1157,7 @@ function displayBacktestResults(data) {
                         <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Improvement Gap</div>
                         <div style="font-size: 3em; font-weight: bold; color: ${popularityGapColor};">${popularityGap > 0 ? '+' : ''}${popularityGap.toFixed(1)}%</div>
                         <div style="font-size: 0.85em; color: #8a8785; margin-top: 5px;">
-                            ${popularityGap > 0 ? 'Model beats popularity baseline by ' + popularityGap.toFixed(1) + ' percentage points' : 'Model underperforms popularity baseline by ' + Math.abs(popularityGap).toFixed(1) + ' percentage points'}
+                            ${popularityGap > 0 ? 'Model beats popularity baseline by ' + popularityGap.toFixed(1) + ' percentage points' : 'Model underperforms popularity baseline by ' + Math.abs(popularityGap).toFixed(1) + ' percentage points'}<br><span style="font-size: 0.9em;">Overall organizational backtest average; individual team results may differ.</span>
                         </div>
                     </div>
                     <div style="width: 1px; background: #3a3835; align-self: stretch;"></div>
@@ -1204,24 +1204,24 @@ function displayBacktestResults(data) {
             </div>
 
             <div style="margin-top: 14px; font-size: 0.82em; color: #6b6865; text-align: center;">
-                Rolling-window cross-validation · 87 teams · 35 practices · 10 months · 655 observations · no future data used${tip('Validation approach: time-series rolling window — model trains on past months and predicts on future months it has never seen. Temporal ordering is strictly enforced so no future data leaks into training. Results are compared against a random-selection baseline to establish statistical significance.')}
+                Rolling-window cross-validation · 87 teams · 35 practices · 10 months · 655 observations · no future data used${tip('Validation approach: time-series rolling window — model trains on past months and generates likely next-practice recommendations for future months it has never seen. Temporal ordering is strictly enforced so no future data leaks into training. Results are compared against a random-selection baseline to establish statistical significance.')}
             </div>
 
             <div class="metrics-grid">
                 <div class="metric">
-                    <div class="metric-label">Total Predictions${tip('Number of team/month test cases evaluated across all rolling windows where actual improvement data was available.')}</div>
+                    <div class="metric-label">Total Recommendations Evaluated${tip('Number of team/month test cases evaluated across all rolling windows where actual improvement data was available.')}</div>
                     <div class="metric-value">${data.total_predictions || 0}</div>
                     <div class="metric-description">team/month combinations</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-label">Correct Predictions${tip('Test cases where at least one recommended practice was actually adopted by the team within the 1–3 months following the prediction.')}</div>
+                    <div class="metric-label">Validated Recommendations${tip('Test cases where at least one recommended practice was actually adopted by the team within the 1–3 months following the recommendation.')}</div>
                     <div class="metric-value">${data.correct_predictions || 0}</div>
                 </div>
                 <div class="metric">
                     <div class="metric-label">Overall Accuracy${tip('Macro average: accuracy is computed per month first (correct ÷ total for that month), then those rates are averaged equally across all months. Each month gets the same weight regardless of how many teams were tested — so a month with 2 teams counts the same as a month with 30 teams.')}</div>
                     <div class="metric-value highlight">${modelAccuracy.toFixed(1)}%</div>
                     <div class="metric-description">macro avg · ${data.per_month_results ? data.per_month_results.length : 0} months</div>
-                    <div style="font-size:0.82em;color:#8a8785;margin-top:5px;">raw ratio: ${data.total_predictions > 0 ? ((data.correct_predictions / data.total_predictions) * 100).toFixed(1) + '%' : '—'} (${data.correct_predictions || 0} ÷ ${data.total_predictions || 0})${tip('Raw ratio = total correct ÷ total predictions across all months. Differs from the macro average above because months with more teams carry proportionally more weight — the macro average treats every month equally.')}</div>
+                    <div style="font-size:0.82em;color:#8a8785;margin-top:5px;">raw ratio: ${data.total_predictions > 0 ? ((data.correct_predictions / data.total_predictions) * 100).toFixed(1) + '%' : '—'} (${data.correct_predictions || 0} ÷ ${data.total_predictions || 0})${tip('Raw ratio = total validated recommendations ÷ total recommendations across all months. Differs from the macro average above because months with more teams carry proportionally more weight — the macro average treats every month equally.')}</div>
                 </div>
                 <div class="metric">
                     <div class="metric-label">Random Baseline${tip('Expected accuracy if practices were chosen randomly: top_n ÷ total_practices. Provides the performance floor to beat.')}</div>
@@ -1241,7 +1241,7 @@ function displayBacktestResults(data) {
                     <div class="metric-value">${data.per_month_results ? data.per_month_results.length : 0}</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-label">Avg Improvements/Case ${tip('Average number of practices a team actually improved within the 3-month validation window. Higher values mean more signal for the model to predict against.')}</div>
+                    <div class="metric-label">Avg Improvements/Case ${tip('Average number of practices a team actually improved within the 3-month validation window. Higher values mean more signal for evaluating recommendations.')}</div>
                     <div class="metric-value">${(data.avg_improvements_per_case || 0).toFixed(1)}</div>
                 </div>
             </div>
@@ -1249,14 +1249,14 @@ function displayBacktestResults(data) {
             ${perMonthTable}
             
             <div class="info-box" style="margin-top: 20px;">
-                <strong>What does "Total Predictions" mean?</strong>
-                <p>Total Predictions = ${data.total_predictions} <strong>team/month combinations</strong> where:</p>
+                <strong>What does “Total Recommendations Evaluated” mean?</strong>
+                <p>Total Recommendations Evaluated = ${data.total_predictions} <strong>team/month combinations</strong> where:</p>
                 <ul>
                     <li>A team had data in a test month</li>
                     <li>The team actually improved at least one practice in that month</li>
                     <li>We generated recommendations for that team/month</li>
                 </ul>
-                <p><strong>Example:</strong> If Team "Avengers" improved practices in months 20200906 and 20201005, that counts as <strong>2 predictions</strong> (one per month).</p>
+                <p><strong>Example:</strong> If Team "Avengers" improved practices in months 20200906 and 20201005, that counts as <strong>2 recommendation cases</strong> (one per month).</p>
             </div>
         </div>
     `;
@@ -1665,11 +1665,11 @@ function displayOptimizationResults(data, minAccuracy = 0.40) {
                     <div class="metric-description">met 40% accuracy threshold</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-label">Total Predictions</div>
+                    <div class="metric-label">Total Recommendations Evaluated</div>
                     <div class="metric-value">${data.total_predictions || 0}</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-label">Correct Predictions</div>
+                    <div class="metric-label">Validated Recommendations</div>
                     <div class="metric-value">${data.correct_predictions || 0}</div>
                 </div>
                 <div class="metric">
@@ -2208,27 +2208,27 @@ function displaySequences(data) {
     
     let html = `
         <div class="sequences-results">
-            <h3>Improvement Sequences Overview</h3>
+            <h3>Practice Transition Model Overview</h3>
             
             <div class="stats-grid" style="margin-bottom: 20px;">
                 <div class="stat-item">
-                    <strong>Total Transition Patterns:</strong>${tip('Number of unique practice-A → practice-B pairs learned. Each pair is one distinct Markov transition rule.')} ${stats.num_transition_types || 0}
+                    <strong>Total Transition Patterns:</strong>${tip('Number of unique practice-A → practice-B pairs learned from consecutive improvement-bearing steps. Same-step improvements do not create an ordered transition.')} ${stats.num_transition_types || 0}
                 </div>
                 <div class="stat-item">
-                    <strong>Total Transitions Observed:</strong>${tip('Raw co-improvement event count summed across all teams and months. More observations = higher confidence in transition probabilities.')} ${stats.total_transitions || 0}
+                    <strong>Total Transitions Observed:</strong>${tip('Raw practice-to-practice transition count summed across all teams and consecutive improvement-bearing steps. More observations provide more evidence for the displayed conditional frequencies.')} ${stats.total_transitions || 0}
                 </div>
                 <div class="stat-item">
                     <strong>Practices That Improved:</strong> ${stats.practices_that_improved || 0}
                 </div>
                 <div class="stat-item">
-                    <strong>Total Sequences:</strong> ${data.total_sequences || 0}
+                    <strong>Total Transition Records:</strong> ${data.total_sequences || 0}
                 </div>
             </div>
             
             <div class="info-box" style="margin-bottom: 20px;">
-                <strong>What these patterns mean</strong>
-                <p>Each row shows how often teams that improved Practice A also improved Practice B in the same month. Probability reflects how consistently this co-occurrence appears across all 87 teams.</p>
-                <p>These sequences contribute <strong>30% of the recommendation score</strong> — the rest comes from similar-team behavior.</p>
+                <strong>What these transitions mean</strong>
+                <p>Each row shows how often Practice B improved at the next improvement-bearing step after Practice A improved. The displayed probability is the conditional frequency of that observed transition across the organization; same-step improvements are not treated as ordered transitions.</p>
+                <p>The Practice Transition Model contributes <strong>30% of the recommendation score</strong> — the rest comes from similar-team behavior.</p>
             </div>
             
             <div style="margin-bottom: 20px; display: flex; gap: 10px;">
@@ -2236,7 +2236,7 @@ function displaySequences(data) {
                 <button id="collapse-all-sequences" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9em;">Collapse All</button>
             </div>
             
-            <h4 style="margin-top: 30px;">Improvement Sequences (sorted by frequency) — ${sortedPractices.length} practices:</h4>
+            <h4 style="margin-top: 30px;">Practice Transitions (sorted by frequency) — ${sortedPractices.length} practices:</h4>
             <div id="sequences-list">
     `;
     
@@ -2287,7 +2287,7 @@ function generateSequenceGroups(sortedPractices, grouped) {
                     <strong>${transition.to_practice}</strong>
                     <span class="sequence-meta">
                         <span class="sequence-count">${transition.count} times</span>
-                        <span class="sequence-prob-text">${(transition.probability * 100).toFixed(1)}%${tip('Bar color: green ≥ 60%, amber 30–59%, gray < 30%. Higher probability = more frequently observed co-improvement across all teams.')}</span>
+                        <span class="sequence-prob-text">${(transition.probability * 100).toFixed(1)}%${tip('Bar color: green ≥ 60%, amber 30–59%, gray < 30%. Higher probability = a more frequently observed transition to this practice at the next improvement-bearing step.')}</span>
                         <div class="probability-bar">
                             <div class="probability-fill ${probClass}" style="width: ${transition.probability * 100}%"></div>
                         </div>
@@ -2444,4 +2444,3 @@ function showError(message) {
         errorDiv.classList.add('hidden');
     }, 5000);
 }
-

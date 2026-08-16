@@ -1,4 +1,4 @@
-# Agile Practice Prediction MVP
+# Agile Practice Recommendation MVP
 
 **Minimum Viable Product using Collaborative Filtering + Sequence Learning**
 
@@ -32,6 +32,8 @@ See **[PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md)** for the full a
 - **Statistics:** View system statistics and practice definitions
 - **Sequences:** Explore learned improvement patterns
 
+> **Interpreting performance results:** Accuracy and improvement figures are aggregate historical backtest averages across the organization. They are not guarantees that every team, in every month, will improve or match a recommendation.
+
 ---
 
 ## What This System Does
@@ -60,7 +62,7 @@ This MVP recommends which **agile practices** each team should focus on next (de
 
 2. **Natural improvement sequences**
    - Identifies which practices typically follow others
-   - Uses Markov chains to learn organizational patterns
+   - Uses a Practice Transition Model to learn organizational transition patterns
    - Ensures recommendations make logical sense
 
 3. **Real organizational data**
@@ -80,22 +82,23 @@ This MVP recommends which **agile practices** each team should focus on next (de
 
 ### **Real-World Impact Example**
 
+*Illustrative scenario only; actual team outcomes depend on local context and are not guaranteed by the model.*
+
 **Month 1:**
 - System recommends Team A focus on "CI/CD" (based on 5 similar teams who succeeded)
-- Team A implements CI/CD
-- Result: 40% improvement in that practice
+- Team A may choose to implement CI/CD
+- The team evaluates whether the practice improves its maturity
 
 **Month 2:**
-- System learns from Team A's success
+- System incorporates newly available organizational history
 - Recommends similar practices to comparable teams
-- Those teams also see improvements
-- Recommendations get smarter
+- Comparable teams may see different outcomes
+- Recommendations can be re-evaluated as additional data becomes available
 
 **Month 3+:**
 - Organization-wide patterns strengthen
-- Recommendations become more accurate
-- Agile transformation accelerates
-- Business value compounds
+- Recommendation quality should be monitored with new backtests
+- Teams and the organization evaluate whether the recommendations add value
 
 ### **Typical ROI**
 
@@ -112,7 +115,7 @@ This system automates and optimizes that guidance.
 - **Personalized** - Each team gets unique recommendations  
 - **Intelligent Sequencing** - Knows what's next in the improvement path  
 - **Evidence-Based** - Built on 655 data points across 87 teams  
-- **Validated** - 50.3% accuracy on historical data (2.14x better than random baseline)
+- **Validated** - 50.3% aggregate historical backtest accuracy (2.14x better than the random baseline)
 - **Scalable** - Works with any number of teams/practices
 - **Continuous Learning** - Gets smarter each month
 - **Pilot-Ready** - Tested and deployable for pilot use with selected teams (see [PROJECT_DOCUMENTATION.md §7.3](docs/PROJECT_DOCUMENTATION.md) for the gap to full production hardening)
@@ -187,9 +190,9 @@ sequence_mapper.get_typical_next_practices(practice, top_n=5)
 
 **Example from data:**
 ```
-If CI/CD improved last month → next month usually Test Automation improves (60% of cases)
-If DoD improved last month → next month usually Code Review improves (55% of cases)
-If TDD improved last month → next month usually Refactoring improves (45% of cases)
+If CI/CD improved → Test Automation was subsequently observed to improve (60% of observed transitions)
+If DoD improved → Code Review was subsequently observed to improve (55% of observed transitions)
+If TDD improved → Refactoring was subsequently observed to improve (45% of observed transitions)
 ```
 
 ---
@@ -230,14 +233,14 @@ results = backtest.run_backtest()
 
 **What it does:**
 - Takes historical data from months 1-6 (training)
-- Uses it to predict what teams improved in months 8-10 (testing)
-- Checks: Did we predict correctly?
+- Uses it to identify likely next practices for teams in months 8-10 (testing)
+- Checks: Did the recommendations align with later improvements?
 - Calculates accuracy
 
 **Why this matters:**
-- Proves the system actually works
-- 50.3% accuracy vs ~23.5% random = **2.14x better**
-- Gives confidence to use recommendations
+- Evaluates recommendation alignment against historical data
+- 50.3% aggregate backtest accuracy vs ~23.5% random = **2.14x better**
+- Supports informed use of recommendations while individual outcomes remain uncertain
 
 ---
 
@@ -314,7 +317,7 @@ The system answers: **"What did successful peers do next?"**
 **It does:**
 - Personalized (tailored to each team's context)
 - Evidence-based (from 87 real teams)
-- Validated (68% accuracy proven)
+- Validated (50.3% aggregate historical backtest accuracy)
 - Scalable (works for all teams simultaneously)
 - Continuous learning (improves each month)
 
@@ -346,7 +349,7 @@ The system answers: **"What did successful peers do next?"**
 ## Features
 
 - **Data Loading** - Read and validate agile metrics from Excel
-- **ML Engine** - Collaborative filtering + Markov chain sequence learning
+- **ML Engine** - Collaborative filtering + Practice Transition Model
 - **Recommendations** - Top N practices for each team (default: 2)
 - **Backtest Validation** - Validate on historical data
 - **Web Interface** - Modern browser-based UI (NEW)
@@ -492,7 +495,7 @@ agile-prediction-mvp/
 │   │   └── validator.py     # Data validation
 │   ├── ml/                  # Machine learning engine
 │   │   ├── similarity.py    # Cosine similarity
-│   │   ├── sequences.py     # Markov chains
+│   │   ├── sequences.py     # Practice Transition Model
 │   │   └── recommender.py   # Main recommendation engine
 │   ├── interface/           # User interface
 │   │   ├── cli.py          # CLI interface
@@ -580,8 +583,8 @@ Note: Number of recommendations configurable with top_n parameter
 ```
 BACKTEST RESULTS
 ================
-Total Predictions: 25
-Correct Predictions: 12
+Total Recommendations Evaluated: 25
+Validated Recommendations: 12
 Overall Accuracy: 50.3%
 Random Baseline: ~23.5%
 Improvement Over Baseline: 2.14x
@@ -675,8 +678,8 @@ Code quality checks run automatically on push/PR via GitHub Actions (`.github/wo
 - Uses current practice profiles for similarity
 
 ### 3. Sequence Learning
-- Learns which practices typically improve together
-- Builds Markov transition matrix from historical data
+- Learns which practices typically follow one another across consecutive improvement-bearing steps
+- Builds a practice transition matrix from historical data
 - Identifies common improvement sequences
 
 ### 4. Recommendation Engine
@@ -700,7 +703,7 @@ With the implemented codebase:
 
 - **MVP Timeline**: 1-2 days
 - **Data Coverage**: 87 teams, 35 practices, 10 months
-- **Backtest Accuracy**: 50.3% accuracy (validated on historical data)
+- **Backtest Accuracy**: 50.3% aggregate accuracy (validated on historical data; not a per-team guarantee)
 - **vs Random Baseline**: 2.14x better than random baseline
 
 ## ML Algorithm Details
@@ -764,8 +767,8 @@ The system is built in 5 modular components:
    - Cosine similarity to find similar teams
    - Weighted recommendations from peer teams
 
-2. **Markov Chain Sequence Learning**
-   - Discovers which practices improve together
+2. **Practice Transition Model**
+   - Discovers which practices typically follow one another across consecutive improvement-bearing steps
    - Learns transition probabilities
    - Boosts logical improvement sequences
 
@@ -777,7 +780,7 @@ The system is built in 5 modular components:
 ### **Validation & Testing**
 
 - **177+ test functions** - Comprehensive test suite covering all components
-- **50.3% backtest accuracy** - 2.14x better than random baseline
+- **50.3% aggregate backtest accuracy** - 2.14x better than the random baseline; individual team outcomes may differ
 - **Data validation** - Quality checks on input
 - **Error handling** - Robust edge case handling
 - **Pilot-ready** - Code ready for pilot deployment (see `PROJECT_DOCUMENTATION.md` §7.3 for production-hardening gaps: auth, monitoring, automated data pipeline, multi-tenancy)

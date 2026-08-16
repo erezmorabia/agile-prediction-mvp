@@ -1,8 +1,8 @@
 # Flowchart — `SequenceMapper.learn_sequences_up_to_month`
 
-Learns first-order Markov transition patterns (practice A improved → practice B typically follows)
+Learns first-order practice transition patterns (practice A improved → practice B typically follows)
 using only months strictly before `max_month`, so no learned transition can straddle the boundary
-being predicted. Called from `RecommendationEngine.recommend()` /
+being evaluated. Called from `RecommendationEngine.recommend()` /
 `get_recommendation_explanation()` and from `BacktestEngine` before scoring each test month — it is
 the time-limited counterpart to `learn_sequences()`, which uses all available history.
 
@@ -29,7 +29,7 @@ flowchart TD
 ## Notes
 
 - **"Only look at history from before the target month" — `sequences.py:151`**: this is what keeps
-  the model honest — it can never peek at the outcome it's trying to predict. Only improvements that
+  the model honest — it can never peek at the outcome it is evaluating. Only improvements that
   actually happened before the month being evaluated are allowed to shape what gets learned. The
   same check is applied a second time per team (`sequences.py:164`), so nothing from the target
   month or later can sneak in.

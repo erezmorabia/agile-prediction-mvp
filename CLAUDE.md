@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-ML-powered recommendation system that predicts which agile practices a team should improve next, using collaborative filtering and Markov chain sequence learning on historical data from 87 teams across 10 months.
+ML-powered recommendation system that identifies likely next agile practices using collaborative filtering and a Practice Transition Model learned from historical data from 87 teams across 10 months.
 
 ---
 
@@ -102,7 +102,7 @@ make test-file FILE=test_temporal_boundaries.py
 | Skill | Topic | Key code areas |
 |---|---|---|
 | `/domain-data` | Excel loading, normalization, validation, practice definitions | `src/data/` |
-| `/domain-ml` | Collaborative filtering, Markov sequences, hybrid scoring | `src/ml/` |
+| `/domain-ml` | Collaborative filtering, practice transition patterns, hybrid scoring | `src/ml/` |
 | `/domain-validation` | Rolling window backtest, parameter optimization, accuracy metrics | `src/validation/` |
 | `/domain-api` | FastAPI routes, service layer, Pydantic models, startup | `src/api/`, `src/web_main.py` |
 | `/domain-frontend` | Single-page web UI, 4 tabs, API client, rendering | `web/` |
@@ -114,7 +114,7 @@ make test-file FILE=test_temporal_boundaries.py
 | `/uc-01-get-recommendations` | Team + month → top N practice recommendations with explanation | Changing recommendation request/response flow or UI rendering |
 | `/uc-02-run-backtest-validation` | Rolling window accuracy validation against historical data | Changing backtest trigger, display, or parameter configuration |
 | `/uc-03-run-parameter-optimization` | Grid search for optimal params, cancellation flow | Changing optimization workflow, param ranges, or cancel flow |
-| `/uc-04-explore-improvement-sequences` | View learned Markov transition patterns | Changing the Sequences tab or sequence data display |
+| `/uc-04-explore-improvement-sequences` | View learned practice transition patterns | Changing the Sequences tab or sequence data display |
 | `/uc-05-view-system-statistics` | System stats overview tab | Changing Statistics tab or the stats data model |
 
 ---

@@ -1,4 +1,4 @@
-# Predicting Large-Scale Agile Implementation Pathways
+# Identifying Likely Large-Scale Agile Implementation Pathways
 
 **Advanced Computer Science Project Documentation**
 
@@ -10,7 +10,7 @@
 
 ## Abstract
 
-This project addresses the critical challenge of large-scale agile transformation in organizations by developing a machine learning system that recommends the next agile practices for teams based on organizational history. The system uses collaborative filtering combined with Markov chain sequence learning to analyze patterns from 87 teams, 35 practices, and 10 months of historical data. Validation through backtesting demonstrates 50.3% prediction accuracy, representing a 2.14x improvement over random baseline (23.5%). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
+This project addresses the critical challenge of large-scale agile transformation in organizations by developing a machine learning system that recommends likely next agile practices for teams based on organizational history. The system uses collaborative filtering combined with a Practice Transition Model to analyze patterns from 87 teams, 35 practices, and 10 months of historical data. Validation through backtesting demonstrates that recommendations align with later improvements in 50.3% of evaluated cases, representing a 2.14x improvement over the random baseline (23.5%). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
 
 ---
 
@@ -30,8 +30,8 @@ This project developed a machine learning system that addresses this challenge t
 - Uses cosine similarity to measure team similarity
 - Recommends practices that similar teams successfully improved
 
-**2. Sequence Learning**
-- Learns natural improvement sequences using Markov chains
+**2. Practice Transition Model**
+- Learns empirical practice-to-practice transitions from consecutive improvement-bearing steps
 - Identifies which practices typically follow others in organizational improvement patterns
 - Ensures recommendations follow logical improvement pathways
 - Prevents recommending practices teams aren't ready for
@@ -44,7 +44,7 @@ This project developed a machine learning system that addresses this challenge t
 
 **4. Validation Methodology**
 - Uses historical backtesting: train on past months, test on future months
-- Rolling window approach: validates predictions against actual improvements
+- Rolling window approach: validates recommendations against actual improvements
 - Accounts for adoption timelines (validates across 3-month window)
 - Compares results against random baseline for meaningful evaluation
 
@@ -52,14 +52,16 @@ This project developed a machine learning system that addresses this challenge t
 
 The system demonstrates strong performance and practical value:
 
-**Prediction Accuracy:**
-- **50.3% accuracy** in predicting which practices teams will improve
+**Recommendation Accuracy:**
+- **50.3% alignment** between recommended practices and later team improvements
 - **2.14x improvement** over random baseline (23.5%)
 - **26.8 percentage point improvement gap** demonstrates significant value
 - **142 validation cases** across multiple teams and months
 
+**How to interpret these results:** All accuracy and improvement figures are aggregate backtest results across the organization (macro-averaged across tested months). They describe how the model performed on historical validation cases and do not guarantee an improvement, recommendation match, or maturity outcome for any individual team or month.
+
 **System Capabilities:**
-- Handles large-scale data efficiently (87 teams × 35 practices × 10 months)
+- Processes the project dataset efficiently (87 teams × 35 practices × 10 months, approximately 30,000 practice-level maturity values)
 - Working web interface for easy use by non-technical users (see §7.3 for what's still needed for full production deployment)
 - Real-time recommendations based on current organizational data
 - Parameter optimization framework for continuous improvement
@@ -127,13 +129,13 @@ Specific objectives include:
 
 **Scope:**
 - Analysis of organizational data from 87 teams, 35 practices, 10 months
-- Implementation of collaborative filtering and Markov chain sequence learning
+- Implementation of collaborative filtering and the Practice Transition Model
 - Web-based interface for recommendations and validation
 - Backtest validation methodology
 
 **Limitations:**
 - Recommendations are based on historical patterns and may not account for external factors
-- System requires at least 2 months of historical data to make predictions
+- System requires at least 2 months of historical data to generate recommendations
 - Accuracy depends on data quality and completeness
 - Recommendations are probabilistic, not deterministic guarantees
 
@@ -160,15 +162,15 @@ Agile adoption in large organizations has become increasingly common, with resea
 - **No Authoritative Source**: There are dozens of recommended practices, but the order of implementation and intensity of rollout varies from organization to organization, with no single written source detailing the correct sequence
 - **Resource Constraints**: A small number of agile coaches cannot manually analyze all pathways across a large organization's full team and practice volume, at the frequency (monthly) the data changes
 
-(See §1.1 for the specific data volume and scale figures at the target organization, Avaya, that make manual analysis impractical.) Software capable of managing this volume of organizational data and predicting the next required adoption steps has significant business value to the organization.
+(See §1.1 for the specific data volume and scale figures at the target organization, Avaya, that make manual analysis impractical.) Software capable of managing this volume of organizational data and identifying likely next adoption steps has significant business value to the organization.
 
 ### 2.2 Similarity-Based Recommendation
 
-Similarity-based recommendation systems use collaborative filtering techniques to predict preferences by identifying similar users or items. The underlying assumption is that users who agreed in the past tend to agree again in the future. This approach is particularly effective when dealing with large user-item matrices where explicit preferences are known.
+Similarity-based recommendation systems use collaborative filtering techniques to identify likely preferences by finding similar users or items. The underlying assumption is that users who agreed in the past tend to agree again in the future. This approach is particularly effective when dealing with large user-item matrices where explicit preferences are known.
 
 **Collaborative Filtering Concepts:**
 
-Collaborative filtering is a recommendation technique that predicts user preferences by collecting preferences from many users. The approach works by:
+Collaborative filtering is a recommendation technique that identifies likely user preferences from the preferences of many users. The approach works by:
 
 - **User-Item Matrix**: Representing users and items in a matrix where each cell contains a preference or rating value. In recommendation systems, this matrix captures user interactions with items.
 - **Neighborhood-Based Approach**: Finding users (or items) similar to a target user and using their preferences to make recommendations. The assumption is that similar users will have similar preferences.
@@ -208,14 +210,14 @@ Once similarity is computed, neighborhood-based collaborative filtering:
 
 This approach forms the theoretical foundation for similarity-based recommendation systems used in various domains, from e-commerce to content recommendation.
 
-### 2.3 Sequence Learning and Markov Chains
+### 2.3 Practice Transition Model
 
-Markov chains are stochastic models that describe a sequence of possible events where the probability of each event depends only on the state attained in the previous event. In this project, Markov chains are used to learn which practices typically follow others in improvement sequences.
+The Practice Transition Model is an empirical summary of observed practice-to-practice transitions in the organization. For each team, it compares consecutive improvement-bearing steps and counts how often a practice improved in one step and another practice improved in the following step. Those counts are normalized into conditional transition probabilities used as a recommendation signal.
 
 **Key Concepts:**
-- **Transition Matrix**: Matrix of probabilities showing likelihood of transitioning from one practice improvement to another
-- **State Space**: Set of all possible practices
-- **Memoryless Property**: The next practice improvement depends only on the current practice, not the entire history
+- **Transition Matrix**: Counts and conditional probabilities for observed practice-to-practice transitions
+- **Improvement-Bearing Step**: A chronological step in which at least one practice improved; steps without improvements are skipped
+- **Consecutive-Step Transition**: An ordered A → B relationship only when A occurs in one improvement-bearing step and B occurs in the next; practices that improve within the same step are not assigned an order
 
 ### 2.4 Hybrid Recommendation Approaches
 
@@ -279,7 +281,7 @@ The collaborative filtering algorithm finds similar teams and uses their improve
 - Deduplicate to ensure K different teams (not same team at different months)
 
 **Step 3: Extract Improvement Patterns**
-- For each similar team, check what practices they improved in the next 1-3 months
+- For each similar team, check which practices showed subsequent observed improvement within a 1–3-month window
 - Only use improvements that occurred before or at the target month (prevent data leakage)
 - Weight improvements by similarity score
 
@@ -293,7 +295,7 @@ Where:
 - similarity_weight is the cosine similarity between teams
 - improvement_magnitude is the change in practice score (0-1 range)
 
-### 3.4 Sequence Learning Algorithm (Markov Chains)
+### 3.4 Practice Transition Model Algorithm
 
 The sequence learning algorithm learns transition patterns from historical data:
 
@@ -314,8 +316,8 @@ The sequence learning algorithm learns transition patterns from historical data:
 
 **Step 2: Time-Limited Learning**
 - Only learn from months < current_month (prevent data leakage)
-- Use sliding window approach: learn sequences up to current month
-- Cache sequences for efficiency
+- Learn transition patterns up to the current month
+- Cache transition patterns for efficiency
 
 **Step 3: Apply Sequence Boost**
 - Check if target team recently improved any practices (last 1-3 months)
@@ -365,11 +367,11 @@ The validation methodology follows the original proposal's approach:
 **Rolling Window Backtest:**
 1. For each month starting from month 4:
    - Train on all months before it (months < test_month)
-   - Predict what will happen in that month
+   - Generate likely next-practice recommendations for that month
    - Validate against actual data for that month
 
 **Validation Criteria:**
-- Compare predictions against actual improvements in test_month, test_month+1, and test_month+2
+- Compare recommendations against actual improvements in test_month, test_month+1, and test_month+2
 - Account for adoption timelines (improvements may occur 1-3 months after recommendation)
 - Calculate accuracy: correct_predictions / total_predictions
 
@@ -393,7 +395,7 @@ The validation methodology follows the original proposal's approach:
   baseline
 
 **Improvement Metrics:**
-- **Accuracy**: Percentage of predictions that matched actual improvements
+- **Accuracy**: Percentage of recommendations that matched actual improvements
 - **Improvement Factor**: Accuracy / Random Baseline
 - **Improvement Gap**: Accuracy - Random Baseline
 
@@ -484,7 +486,7 @@ The system compares AADS's profile against all teams at all past months (months 
 | ... | ... | ... | ... |
 
 **Step 3: Extract Improvement Patterns**
-For each similar team, the system checks what practices they improved in the next 1-3 months (but only using months ≤ 200105 to prevent data leakage):
+For each similar team, the system checks which practices showed subsequent observed improvement within a 1–3-month window (but only using months ≤ 200105 to prevent data leakage):
 
 **Team B** (similarity: 0.92, at month 200103):
 - Improved "Test Automation" from 0 to 1 in month 200104 (improvement magnitude: 0.33)
@@ -672,7 +674,7 @@ The system is built using a modular architecture with clear separation of concer
 
 **ML Module** (`src/ml/`):
 - **SimilarityEngine**: Calculates cosine similarity between teams, finds K most similar teams
-- **SequenceMapper**: Learns Markov chain transition matrix from historical data
+- **SequenceMapper**: Learns the practice transition matrix from historical data
 - **RecommendationEngine**: Combines similarity and sequence signals, generates recommendations
 
 **Validation Module** (`src/validation/`):
@@ -704,8 +706,8 @@ The system is built using a modular architecture with clear separation of concer
    - Similarity Scores + Sequence Scores → RecommendationEngine → Final Recommendations
 
 3. **Validation**:
-   - Historical Data → BacktestEngine → Per-Month Predictions
-   - Predictions + Actual Data → BacktestEngine → Accuracy Metrics
+   - Historical Data → BacktestEngine → Per-Month Recommendations
+   - Recommendations + Actual Data → BacktestEngine → Accuracy Metrics
 
 ### 4.4 API Design (REST API with FastAPI)
 
@@ -792,7 +794,7 @@ The web interface is built with vanilla HTML/CSS/JavaScript using a Dark Academi
 
 **4. Data Leakage Prevention:**
 - All algorithms only use data from months <= current_month
-- Future months used only for validation, never for prediction
+- Future months used only for validation, never to generate recommendations
 - Explicit checks prevent using future data in recommendations
 
 **5. Normalization Strategy:**
@@ -823,7 +825,7 @@ src/
 
 ### 5.4 Performance Considerations
 
-**Big Data Handling:**
+**Performance and Scalability:**
 - Efficient data structures: Team histories stored as dictionaries indexed by month
 - Caching: Sequence learning results cached to avoid recomputation
 - Vectorized operations: NumPy arrays for efficient similarity calculations
@@ -876,7 +878,7 @@ This dataset aligns with the proposal's scale (70+ teams, 30+ practices) and rep
 **Secondary Metrics:**
 - **Per-Month Accuracy**: Accuracy broken down by validation month
 - **Teams Tested**: Number of teams included in validation
-- **Total Predictions**: Number of recommendation cases evaluated
+- **Total Recommendations Evaluated**: Number of recommendation cases evaluated
 - **Average Improvements per Case**: Average number of practices improved per team-month
 
 **Supplementary Rank-Aware Metrics:**
@@ -896,8 +898,8 @@ primary Accuracy metrics (see §3.6 for definitions and baseline formulas).
 - **Improvement Gap**: 26.8 percentage points
 
 **Validation Details:**
-- **Total Predictions**: 142 cases
-- **Correct Predictions**: 66 cases
+- **Total Recommendations Evaluated**: 142 cases
+- **Validated Recommendations**: 66 cases
 - **Teams Tested**: 43 teams across validation months
 - **Validation Window**: 3 months (immediate + 2 months ahead)
 - **Training Period**: Rolling window (all months before test month)
@@ -934,6 +936,8 @@ specific state entirely:
 - **Model vs. Popularity Baseline**: +6.7 percentage points, 1.15x
 - **Model vs. Random Baseline**: +26.8 percentage points, 2.14x
 
+The +6.7 percentage-point result is an aggregate organizational backtest result (a macro-average across the tested months), not a guarantee of improvement for every individual team. A team's result can be higher or lower depending on its history, maturity profile, and the practices it improves during the validation period.
+
 This is an important, honest caveat: most of the model's advantage over random selection is
 attributable to practices simply improving at very different rates organization-wide — a signal
 even a naive, non-personalized heuristic captures. The model's specific value-add — from
@@ -948,11 +952,11 @@ baseline establishes how much value the model's personalization specifically add
 
 The validation methodology follows the original proposal:
 - **Training**: Uses data from months before the test month
-- **Prediction**: Generates recommendations for the test month
-- **Validation**: Compares predictions against actual improvements in test month, test_month+1, and test_month+2
+- **Recommendation generation**: Generates likely next practices for the test month
+- **Validation**: Compares recommendations against actual improvements in test month, test_month+1, and test_month+2
 - **Success Criteria**: At least one recommended practice actually improved in the validation window
 
-Results demonstrate that the system successfully predicts next steps with high accuracy, validating the approach proposed in the original project proposal.
+Results demonstrate that the system identifies likely next practices with meaningful accuracy, validating the approach proposed in the original project proposal.
 
 ### 6.5 Parameter Optimization Results
 
@@ -1020,7 +1024,7 @@ The system is ready for real-world testing as proposed in the original project t
 - Can be deployed with selected teams for pilot testing
 - Supports real-time recommendations based on current data
 - Validation framework can evaluate real-world implementation results
-- Results can be compared against historical predictions
+- Results can be compared against historical recommendation outcomes
 
 ### 6.8 Learned Improvement Sequences
 
@@ -1081,9 +1085,9 @@ The following sequences represent the most common practice improvement transitio
 
 **Practical Implications:**
 
-- **Guided Progression**: Teams can follow these sequences as natural improvement pathways
-- **Readiness Indicators**: If a team improved Practice A, they're likely ready for practices that typically follow A
-- **Risk Reduction**: Following organizational patterns reduces risk compared to random practice selection
+- **Guided Progression**: Teams can use these sequences as evidence-informed improvement pathways
+- **Readiness Indicators**: If a team improved Practice A, practices that typically follow A may be useful candidates to consider
+- **Risk Reduction**: Following organizational patterns may reduce risk compared to random practice selection
 - **Customization**: While patterns exist, teams can still choose alternative paths based on their specific needs
 
 **Limitations:**
@@ -1108,13 +1112,13 @@ The implemented system successfully addresses all objectives stated in the origi
 
 **2. Machine Learning Application:**
 - Applies collaborative filtering to find similar teams
-- Uses sequence learning (Markov chains) to identify improvement patterns
-- Handles large-scale data efficiently
+- Uses the Practice Transition Model to identify improvement patterns
+- Processes the project dataset efficiently
 
 **3. Validation:**
 - Uses historical backtesting methodology as proposed
-- Compares predictions against actual improvements
-- Demonstrates 50.3% accuracy with 2.14x improvement over random baseline (23.5%)
+- Compares recommendations against actual improvements
+- Demonstrates 50.3% aggregate backtest accuracy with 2.14x improvement over the random baseline (23.5%); this is not a per-team guarantee
 
 **4. Practical Deployment:**
 - System is a functional prototype, ready for pilot testing with selected teams (see §7.3 for the gap to a hardened production deployment)
@@ -1126,7 +1130,7 @@ The implemented system successfully addresses all objectives stated in the origi
 **Technical Strengths:**
 - **Hybrid Approach**: Combines collaborative filtering and sequence learning for robust recommendations
 - **Data Leakage Prevention**: Careful implementation ensures no future data leakage
-- **Scalability**: Efficient algorithms handle large datasets
+- **Scalability**: Efficient algorithms support growth beyond the current project dataset
 - **Modular Architecture**: Clean separation enables maintenance and extension
 
 **Practical Strengths:**
@@ -1138,7 +1142,7 @@ The implemented system successfully addresses all objectives stated in the origi
 ### 7.3 Limitations
 
 **Data Limitations:**
-- Requires at least 2 months of historical data to make predictions
+- Requires at least 2 months of historical data to generate recommendations
 - Accuracy depends on data quality and completeness
 - May not account for external factors (organizational changes, market conditions)
 
@@ -1193,8 +1197,8 @@ informed estimate of the problem's scale from direct practitioner experience, no
 empirically validated result of this specific tool.
 
 **Organizational Impact:**
-- **Faster Transformation**: Teams focus on practices with highest success probability
-- **Reduced Waste**: Avoids recommending practices teams aren't ready for
+- **Faster Transformation**: Can help teams focus on practices with higher estimated success probability
+- **Reduced Waste**: Can reduce recommendations of practices teams may not be ready for
 - **Learning**: System learns from all teams' experiences, not just individual team history
 - **Continuous Improvement**: Gets smarter each month as more data accumulates
 
@@ -1205,15 +1209,17 @@ empirically validated result of this specific tool.
 - System achieves 50.3% accuracy, representing 2.14x improvement
 - Improvement gap of 26.8 percentage points demonstrates significant value
 
+These are aggregate organizational backtest results, not guaranteed outcomes for each team or month. Individual results can differ based on a team's history, maturity profile, and subsequent improvements.
+
 **Manual Analysis Baseline:**
 - Manual analysis can serve 1-2 teams per coach per month
 - System can serve all 70+ teams simultaneously
 - Manual analysis is subjective and inconsistent
 - System provides standardized, evidence-based recommendations
 
-### 7.6 Big Data Handling Capabilities
+### 7.6 Dataset Scale and Efficiency
 
-The system demonstrates effective handling of large-scale organizational data:
+The project uses a moderate-sized organizational dataset: 87 teams × 35 practices × 10 months, or approximately 30,000 practice-level maturity values. The system processes this dataset efficiently and can support future growth.
 
 **Efficiency:**
 - Processes 87 teams × 35 practices × 10 months in seconds
@@ -1236,13 +1242,13 @@ The system demonstrates effective handling of large-scale organizational data:
 
 ### 8.1 Summary of Achievements
 
-This project successfully implements a machine learning system for predicting large-scale agile implementation pathways, achieving the following:
+This project successfully implements a machine learning system for identifying likely large-scale agile implementation pathways, achieving the following:
 
 **Technical Achievements:**
 - Implemented collaborative filtering algorithm for finding similar teams
-- Implemented Markov chain sequence learning for identifying improvement patterns
+- Implemented the Practice Transition Model for identifying improvement patterns
 - Created hybrid recommendation system combining both approaches
-- Achieved 50.3% prediction accuracy, 2.14x better than random baseline (23.5%)
+- Achieved 50.3% aggregate recommendation alignment, 2.14x better than the random baseline (23.5%); individual team outcomes may differ
 
 **Practical Achievements:**
 - Built a functional web interface, ready for pilot use (see §7.3 for the gap to production hardening)
@@ -1271,7 +1277,7 @@ The system is ready for deployment and real-world testing:
 - System can be deployed with selected teams for pilot testing
 - Real-time recommendations based on current data
 - Validation framework can evaluate implementation results
-- Results can be compared against predictions
+- Results can be compared against recommendation outcomes
 
 **Next Steps for Deployment:**
 1. Select pilot teams for initial testing
@@ -1372,7 +1378,7 @@ The system is ready for deployment and real-world testing:
 
 **ML Module** (`src/ml/`):
 - **similarity.py**: Cosine similarity calculations, finds K similar teams
-- **sequences.py**: Markov chain learning, transition matrix construction
+- **sequences.py**: Practice transition learning, transition-matrix construction
 - **recommender.py**: Combines similarity and sequence, generates recommendations
 
 **Validation Module** (`src/validation/`):
@@ -1411,10 +1417,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 similarity = cosine_similarity(target_vector, team_vector)[0][0]
 ```
 
-**Markov Chain Transition Matrix:**
+**Practice Transition Matrix:**
 
-See §3.4 for the full construction algorithm (first-order Markov chain over chronological
-"improvement-bearing" steps, with no edge asserted between same-step co-improvements). Direct
+See §3.4 for the full construction algorithm over chronological improvement-bearing steps, with
+no edge asserted between same-step co-improvements. Direct
 code-level reference:
 ```python
 # per team: chronological list of practice-sets, one per improvement-bearing step
@@ -1651,11 +1657,11 @@ Strikers  | 200101  | 3     | 2   | 3   | 3          | ...
 
 ### 10.1 System Overview
 
-The Agile Practice Prediction System is a web-based application that recommends agile practices for teams based on organizational history. The system analyzes patterns from similar teams and improvement sequences to provide personalized recommendations.
+The Agile Practice Recommendation System is a web-based application that identifies likely next agile practices for teams based on organizational history. The system analyzes patterns from similar teams and improvement sequences to provide personalized recommendations.
 
 **Key Features:**
 - **Personalized Recommendations**: Get practice recommendations tailored to each team's current state
-- **Validation**: Run backtest validation to see how accurate predictions are
+- **Validation**: Run backtest validation to see how often recommendations align with later improvements
 - **Statistics**: View system statistics and practice definitions
 - **Sequences**: Explore learned improvement patterns
 - **Optimization**: Find optimal parameter configurations
@@ -1702,7 +1708,7 @@ See **docs/QUICK_START.md** for a 3-step quick start guide.
 
 **4. Recommendations Tab:**
 - Select a team from the dropdown
-- Select a month to predict
+- Select a recommendation month
 - Click "Get Recommendations"
 - View top recommended practices with scores and explanations
 - See validation summary if available
@@ -1745,10 +1751,10 @@ Enter month (yyyymmdd): 200105
 **Validation Summary:**
 - **Practices Improved**: Number of practices that actually improved
 - **Accuracy**: Percentage of recommendations that matched actual improvements
-- **Validation Window**: Months checked (next month, month after, month after that)
+- **Validation Window**: Subsequent observed-improvement window (the target month and the following two recorded months)
 
 **Backtest Results:**
-- **Overall Accuracy**: Percentage of correct predictions
+- **Overall Accuracy**: Percentage of validated recommendations
 - **Random Baseline**: Expected accuracy with random selection
 - **Improvement Factor**: How many times better than random
 - **Per-Month Results**: Accuracy broken down by month
@@ -1806,7 +1812,7 @@ agile-prediction-mvp/
 │   ├── ml/
 │   │   ├── __init__.py
 │   │   ├── similarity.py      # Cosine similarity engine
-│   │   ├── sequences.py        # Markov chain sequence learning
+│   │   ├── sequences.py        # Practice Transition Model
 │   │   └── recommender.py     # Hybrid recommendation engine
 │   ├── validation/
 │   │   ├── __init__.py
@@ -1894,7 +1900,7 @@ agile-prediction-mvp/
 
 **backtest.py** - BacktestEngine class:
 - `run_backtest(config)`: Runs rolling window backtest
-- Validates predictions against actual improvements
+- Validates recommendations against actual improvements
 - Calculates accuracy metrics and random baseline
 - Supports cancellation mid-execution
 
@@ -1940,7 +1946,7 @@ agile-prediction-mvp/
 - **Dependencies**: DataProcessor
 
 **SequenceMapper** (`src/ml/sequences.py`):
-- **Purpose**: Learns improvement sequences using Markov chains
+- **Purpose**: Learns empirical practice transition patterns
 - **Key Methods**:
   - `learn_sequences()`: Learns from all data
   - `learn_sequences_up_to_month()`: Learns up to specific month
@@ -2068,4 +2074,3 @@ pandoc PROJECT_DOCUMENTATION.md -o PROJECT_DOCUMENTATION.docx
 ---
 
 **End of Documentation**
-

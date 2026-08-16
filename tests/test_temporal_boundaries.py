@@ -64,7 +64,7 @@ class TestTemporalBoundaries:
     @staticmethod
     def _reconstruct_first_order_transitions(processor, practices, max_month):
         """
-        Independently reconstruct the expected first-order Markov transition matrix
+        Independently reconstruct the expected first-order practice transition matrix
         using only months < max_month, mirroring SequenceMapper's construction:
         chain each improvement-bearing step (skipping steps with zero improvements) to
         the next one, full cross-product, no edges within a step.

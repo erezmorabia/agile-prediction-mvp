@@ -1,14 +1,14 @@
 # Flow 1 — Get Recommendations
 
 Generates a ranked list of practices a specific team should improve next for a given month, by
-blending peer-team similarity with learned improvement sequences. This is UC-01, the core
-analyst-facing prediction flow that the other flows exist to validate and tune.
+blending peer-team similarity with learned practice transition patterns. This is UC-01, the core
+analyst-facing recommendation flow that the other flows exist to validate and tune.
 
 **Trigger**: user selects a team + month on the Recommendations tab, clicks "Get Recommendations."
 
 **Participants**: `Browser` (stands in for the click → app.js → api.js → FastAPI Route →
 APIService request/response round trip, collapsed out of this diagram — see notes), plus two
-backend modules: `RecommendationEngine`, and `Peer & Sequence Lookups` — a grouping of
+backend modules: `RecommendationEngine`, and `Peer & Transition Lookups` — a grouping of
 `SimilarityEngine` and `SequenceMapper`, the two lookups `RecommendationEngine` always calls
 together (see notes).
 
@@ -21,7 +21,7 @@ elided from the diagram itself):
   peer at all (defaults to `0.75`, set server-side in `APIService`).
 
 `recommend()` also uses three more tunables internally — `similarity_weight`, an weighting of
-similarity vs. sequence signal in the final score; `similar_teams_lookahead_months`, how many
+similarity vs. transition signal in the final score; `similar_teams_lookahead_months`, how many
 months ahead to check a peer for improvements; and `recent_improvements_months`, how many months
 back to look for a team's own recent improvements — but this flow doesn't expose them, so they run
 at their function defaults. They only become configurable via Flow 2 (Run Backtest) and Flow 3 (Run
@@ -31,7 +31,7 @@ Parameter Optimization).
 sequenceDiagram
     participant Browser
     participant Rec as RecommendationEngine
-    participant Peers as Peer & Sequence Lookups
+    participant Peers as Peer & Transition Lookups
 
     Browser->>Rec: recommend(team, prev_month)
     Note right of Browser: asks for the top-N practices<br/>this team should improve next
@@ -41,7 +41,7 @@ sequenceDiagram
     Rec->>Peers: find_similar_teams(target_team, current_month)
     Note right of Rec: finds peer teams with similar practice maturity
     Peers-->>Rec: ranked similar teams
-    Note over Rec: blends peer similarity + sequence notes<br/>into one ranked list
+    Note over Rec: blends peer similarity + transition patterns<br/>into one ranked list
     Rec-->>Browser: ranked recommendations
 
     Browser->>Browser: render recommendation cards
@@ -55,7 +55,7 @@ sequenceDiagram
   click handler (`app.js:294` → `loadRecommendations()` `app.js:521`) → `api.js:47-64` (POST
   `/api/recommendations`) → `routes.py:98-104` → `APIService.get_recommendations()`
   (`service.py:204-217`, which computes `prev_month` before calling `recommend()`).
-- **Why "Peer & Sequence Lookups" is one lifeline, not two**: `RecommendationEngine` never calls
+- **Why "Peer & Transition Lookups" is one lifeline, not two**: `RecommendationEngine` never calls
   `SimilarityEngine` or `SequenceMapper` in isolation — every path through `recommend()` (and
   `get_recommendation_explanation()`) calls `learn_sequences_up_to_month()` immediately followed by
   `find_similar_teams()`, one right after the other, with no branching between them. Grouping them
@@ -66,7 +66,7 @@ sequenceDiagram
   - After `recommend()` returns, `APIService` independently recomputes ground truth by checking
     `month`, `month+1`, `month+2` for actual improvements (`service.py:219-335`). This happens
     *after* the recommendation is generated and doesn't influence it — it's purely for the "was
-    this a hit?" badge shown in the UI, not part of the prediction itself.
+    this a hit?" badge shown in the UI, not part of the recommendation itself.
   - `APIService._get_practice_profile(team, month)` (`service.py:680`) builds the level-0…3
     maturity breakdown shown alongside the recommendations.
 - **Omitted from this diagram**: after the ranked list is returned, `Browser` calls

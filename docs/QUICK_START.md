@@ -28,10 +28,10 @@ Press `CTRL+C` to stop.
 
 | Tab | What it does |
 |-----|-------------|
-| **Recommendations** | Select a team + month → get top predicted practices with explanations |
-| **Backtest** | Validate accuracy on historical data (~49%, 2.0× better than random) |
+| **Recommendations** | Select a team + month → get likely next practices with explanations |
+| **Backtest** | Validate aggregate historical accuracy (~49%, 2.0× better than random; not a per-team guarantee) |
 | **Statistics** | Dataset overview: 87 teams, 35 practices, 10 months |
-| **Sequences** | Learned Markov transition patterns between practices |
+| **Sequences** | Learned practice transition patterns between consecutive improvement-bearing steps |
 
 **Suggested walkthrough:**
 1. **Statistics** — understand the dataset

@@ -1,7 +1,7 @@
 # Flowchart — `BacktestEngine.run_backtest`
 
-Answers "how good is the model, really?" by replaying history: for every past month, it predicts
-the same way a live recommendation would, then checks the prediction against what teams actually
+Answers "how good is the model, really?" by replaying history: for every past month, it generates
+likely next-practice recommendations the same way a live recommendation would, then checks them against what teams actually
 went on to improve. This is the engine behind UC-02 (Run Backtest Validation) — see
 `docs/sequence-diagrams/02-run-backtest.md` for how it fits into the request/response round trip
 with the Backtest tab.
@@ -18,7 +18,7 @@ flowchart TD
     A[Look at every month teams were tracked] --> B{At least 4 months<br/>of history available?}
     B -->|no| Z1[Not enough history for a backtest — stop]
     B -->|yes| C[Move to the next month to test,<br/>starting from the 4th]
-    C --> D["Learn what usually comes after what,<br/>using only months before this one<br/>(same leakage guard as live predictions)"]
+    C --> D["Learn what usually comes after what,<br/>using only months before this one<br/>(same leakage guard as live recommendations)"]
     D --> E[Move to the next team]
     E --> F[Check what this team actually improved<br/>in this month and the two after it]
     F --> G{Did they improve<br/>anything in that window?}
@@ -43,7 +43,7 @@ flowchart TD
   error rather than producing a partial or misleading result.
 - **"starting from the 4th" — `backtest.py:212`**: the first 3 months are never tested directly —
   they only ever serve as training history for later months. The 4th month is the earliest one
-  with enough "before" data to make a fair prediction against.
+  with enough "before" data to make a fair recommendation evaluation.
 - **"Learn what usually comes after what... using only months before this one" —
   `backtest.py:253`**: this is the same temporal leakage guard used everywhere else in the system
   (see `/domain-validation` and the `learn-sequences-up-to-month` flowchart) — the model is never
@@ -57,7 +57,7 @@ flowchart TD
   nothing at all in the 3-month window are skipped for this case, not scored as a miss. There was
   nothing for any recommendation to have caught, so it isn't counted as evidence the model failed.
 - **"Ask the model... recommended for this team back then" — `backtest.py:351-361`**: this calls
-  the exact same hybrid recommender used for live predictions (see `/domain-ml`), fed only the
+  the exact same hybrid recommender used for live recommendations (see `/domain-ml`), fed only the
   team's state as of the month right before the test month — it has no more information than a
   real recommendation would have had at that point in time.
 - **"For comparison, also check how a naive 'just recommend what's popular' guess would have done"
@@ -82,9 +82,9 @@ flowchart TD
     better than random" factor)
   - **Supplementary numbers**: precision@N, recall@N, and MRR, each with its own baseline and
     improvement factor — more detailed than the headline accuracy, but not what's shown by default
-  - **Totals**: how many predictions were made in total, how many were correct, how many distinct
+  - **Totals**: how many recommendation cases were evaluated in total, how many were validated, how many distinct
     teams were tested, and the average number of practices a team improved per case
-  - **Per-month breakdown**: one row per tested month — predictions made, correct, accuracy,
+  - **Per-month breakdown**: one row per tested month — recommendations evaluated, validated, accuracy,
     popularity-baseline accuracy, precision, recall, MRR, and teams tested that month — this is
     what fills the table on the Backtest tab
   - **`cancelled`**: `false` on a full run; the analyst never sees a partial result on the happy

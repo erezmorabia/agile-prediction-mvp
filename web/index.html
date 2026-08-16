@@ -22,7 +22,7 @@
                 <div class="header-text">
                     <div class="header-badge">MSc Research Instrument · Agile Intelligence Lab</div>
                     <h1>Agile Practice Recommendation Engine</h1>
-                    <p class="subtitle">ML-Driven Agile Transformation - Collaborative Filtering<span class="tooltip-icon" data-tooltip="Teams with similar agile practice profiles (cosine similarity) are identified. Their past improvements are used to predict what your team should work on next — the more similar a team, the more weight its history carries." role="img" aria-label="More information">ⓘ</span> + Markov Chain<span class="tooltip-icon" data-tooltip="The system learns transition patterns: when a team improves practice A, which practice B tends to follow next? These sequences are extracted from all 87 teams and used as a second recommendation signal." role="img" aria-label="More information">ⓘ</span> Sequence Learning</p>
+                    <p class="subtitle">ML-Driven Agile Transformation - Collaborative Filtering<span class="tooltip-icon" data-tooltip="Teams with similar agile practice profiles (cosine similarity) are identified. Their past improvements help identify your team’s likely next practice — the more similar a team, the more weight its history carries." role="img" aria-label="More information">ⓘ</span> + Practice Transition Model<span class="tooltip-icon" data-tooltip="The model counts observed practice-to-practice transitions between consecutive improvement-bearing steps: after practice A improves, which practice B tends to improve at the next such step? These patterns are learned from all 87 teams and used as a second recommendation signal." role="img" aria-label="More information">ⓘ</span></p>
                     <p class="header-meta">
                         <span>Erez Morabia</span>
                         <span class="header-meta-sep">·</span>
@@ -38,9 +38,9 @@
 
         <nav class="tabs">
             <button class="tab-btn active" data-tab="stats">Statistics<span class="tooltip-icon tooltip-below" data-tooltip="Shows dataset-level facts: team count, practice count, observation totals, and any missing data in the training set." role="img" aria-label="More information">ⓘ</span></button>
-            <button class="tab-btn" data-tab="backtest">Backtest Validation<span class="tooltip-icon tooltip-below" data-tooltip="Runs a rolling-window test against historical data to measure how accurately the model predicts real past improvements." role="img" aria-label="More information">ⓘ</span></button>
-            <button class="tab-btn" data-tab="sequences">Sequences<span class="tooltip-icon tooltip-below" data-tooltip="Displays Markov-chain transition patterns - which practices teams typically improve together or in sequence across the dataset." role="img" aria-label="More information">ⓘ</span></button>
-            <button class="tab-btn tooltip-right" data-tab="recommendations">Recommendations<span class="tooltip-icon tooltip-below tooltip-right" data-tooltip="Predicts which agile practices your team should adopt next, based on similar teams and learned improvement sequences." role="img" aria-label="More information">ⓘ</span></button>
+            <button class="tab-btn" data-tab="backtest">Backtest Validation<span class="tooltip-icon tooltip-below" data-tooltip="Runs a rolling-window test against historical data to measure how often recommendations align with real past improvements." role="img" aria-label="More information">ⓘ</span></button>
+            <button class="tab-btn" data-tab="sequences">Practice Transitions<span class="tooltip-icon tooltip-below" data-tooltip="Displays observed practice-to-practice transitions between consecutive improvement-bearing steps across the dataset. Same-step improvements are not treated as ordered transitions." role="img" aria-label="More information">ⓘ</span></button>
+            <button class="tab-btn tooltip-right" data-tab="recommendations">Recommendations<span class="tooltip-icon tooltip-below tooltip-right" data-tooltip="Identifies likely next agile practices for your team, based on similar teams and learned improvement sequences." role="img" aria-label="More information">ⓘ</span></button>
         </nav>
 
         <!-- Statistics Tab -->
@@ -68,19 +68,19 @@
                         <li>For each month starting from month 4:
                             <ul>
                                 <li>Train on all previous months</li>
-                                <li>Predict what will happen in that month</li>
+                                <li>Identify likely next practices for that month</li>
                                 <li>Validate against actual data (checks that month, month+1, AND month+2)</li>
                             </ul>
                         </li>
                         <li>Shows accuracy per month and overall average</li>
                         <li><strong>Note:</strong> Validation checks 3 months ahead to account for adoption timelines (This aligns with recommendation logic which looks up to 3 months ahead)</li>
-                        <li>Each prediction combines two algorithms: <strong>Collaborative Filtering</strong> (60% default) — what similar teams improved next — and <strong>Markov Chain</strong> (40% default) — learned practice transition patterns. The balance is configurable below.</li>
+                        <li>Each recommendation combines two algorithms: <strong>Collaborative Filtering</strong> (60% default) — what similar teams improved next — and the <strong>Practice Transition Model</strong> (40% default) — observed transitions between consecutive improvement-bearing steps. The balance is configurable below.</li>
                     </ul>
                 </div>
 
                 <div style="margin-bottom: 20px; font-size: 0.82em; color: #6b6865;">
-                    Strict temporal isolation enforced — predictions never use future data
-                    <span class="tooltip-icon" data-tooltip-html="For each prediction at month M:&lt;ul&gt;&lt;li&gt;Similar teams found from months &amp;lt; M only&lt;/li&gt;&lt;li&gt;Sequences learned from months &amp;lt; M only&lt;/li&gt;&lt;li&gt;No peeking at future improvements&lt;/li&gt;&lt;/ul&gt;Validated by rolling-window backtest (time-series cross-validation). Ensures reported accuracy (49%, 2.0× vs random) is trustworthy." role="img" aria-label="More information">ⓘ</span>
+                    Strict temporal isolation enforced — recommendations never use future data
+                    <span class="tooltip-icon" data-tooltip-html="For each recommendation at month M:&lt;ul&gt;&lt;li&gt;Similar teams found from months &amp;lt; M only&lt;/li&gt;&lt;li&gt;Practice transition patterns learned from months &amp;lt; M only&lt;/li&gt;&lt;li&gt;No peeking at future improvements&lt;/li&gt;&lt;/ul&gt;Validated by rolling-window backtest (time-series cross-validation). This makes the reported accuracy (49%, 2.0× vs random) a trustworthy measure of recommendation quality." role="img" aria-label="More information">ⓘ</span>
                 </div>
 
                 <!-- Configuration Panel -->
@@ -99,17 +99,17 @@
                                     <span id="config-top-n-value">2</span>
                                 </label>
                                 <input type="range" id="config-top-n" min="1" max="10" value="2" step="1">
-                                <small>Controls how many best practices will be recommended for a team to implement in the following month. More recommendations give teams more options but also increase the chance of getting one right by chance (higher random baseline).</small>
+                                <small>Controls how many practices are recommended as likely subsequent improvements. More recommendations give teams more options but also increase the chance of getting one right by chance (higher random baseline).</small>
                             </div>
 
                             <div class="form-group">
                                 <label for="config-similarity-weight">
                                     Similarity Weight:
                                     <span id="config-similarity-weight-value">0.7</span>
-                                    (Sequence Weight: <span id="config-sequence-weight-value">0.3</span>)
+                                    (Transition Model Weight: <span id="config-sequence-weight-value">0.3</span>)
                                 </label>
                                 <input type="range" id="config-similarity-weight" min="0" max="1" value="0.7" step="0.05">
-                                <small>Controls the balance between two recommendation sources: (1) What similar teams improved (peer learning) vs (2) Natural practice sequences (what typically follows other practices). Higher values favor peer learning, lower values favor natural sequences.</small>
+                                <small>Controls the balance between two recommendation sources: (1) What similar teams improved (peer learning) vs (2) the Practice Transition Model (what typically follows at the next improvement-bearing step). Higher values favor peer learning, lower values favor transition patterns.</small>
                             </div>
                         </div>
                     </div>
@@ -190,12 +190,12 @@
             <div id="backtest-results" class="results hidden"></div>
         </div>
 
-        <!-- Sequences Tab -->
+        <!-- Practice Transitions Tab -->
         <div id="sequences-tab" class="tab-content">
             <div class="section">
-                <h2>Improvement Sequences</h2>
+                <h2>Practice Transition Model</h2>
                 <p class="demo-step">Here's what was learned</p>
-                <p>View learned improvement patterns from all teams and practices</p>
+                <p>View observed practice-to-practice transitions from all teams and practices</p>
             </div>
 
             <div id="sequences-results" class="results hidden"></div>
@@ -216,11 +216,11 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="month-select">Select Month to Predict:<span class="tooltip-icon" data-tooltip="The month you want predictions for. Only data before this month is used - months 1–2 are consumed as minimum history, so predictions start from month 3." role="img" aria-label="More information">ⓘ</span></label>
+                    <label for="month-select">Select Recommendation Month:<span class="tooltip-icon" data-tooltip="The month for which you want likely next-practice recommendations. Only data before this month is used — months 1–2 provide the minimum history, so recommendations start from month 3." role="img" aria-label="More information">ⓘ</span></label>
                     <select id="month-select" disabled>
                         <option value="">Select a team first</option>
                     </select>
-                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">Month to predict starts from month 3 (we need months 1-2 as history)</small>
+                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">Recommendations start from month 3 (we need months 1–2 as history)</small>
                 </div>
 
                 <button id="get-recommendations-btn" class="btn btn-primary" disabled>Get Recommendations</button>
@@ -243,7 +243,7 @@
             <div class="modal-header">
                 <div>
                     <h3 class="modal-title">Project Documentation</h3>
-                    <p class="modal-subtitle">Predicting Large-Scale Agile Implementation Pathways · Final Project Course · Open University of Israel 2025</p>
+                    <p class="modal-subtitle">Identifying Likely Large-Scale Agile Implementation Pathways · Final Project Course · Open University of Israel 2025</p>
                 </div>
                 <button class="modal-close" onclick="closeAboutModal()" aria-label="Close">&times;</button>
             </div>

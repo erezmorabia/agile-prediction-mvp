@@ -1,5 +1,5 @@
 /**
- * API Client for Agile Practice Prediction System
+ * API Client for Agile Practice Recommendation System
  */
 
 const API_BASE = '';
@@ -194,4 +194,3 @@ class APIClient {
 
 // Export singleton instance
 const apiClient = new APIClient();
-

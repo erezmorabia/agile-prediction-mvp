@@ -29,7 +29,7 @@ flowchart TD
 - **"Look at what they improved... a few months afterward" — `recommender.py:173-206`**: this
   hides a data-leakage guard that's worth knowing about even though it's not drawn: the "few months
   afterward" window (`similar_teams_lookahead_months`, default 3) never looks past the month
-  currently being predicted for — the same rule enforced in `learn_sequences_up_to_month` (see
+currently being evaluated for recommendations — the same rule enforced in `learn_sequences_up_to_month` (see
   `/learn-sequences-up-to-month`). It's checked separately for every similar team, since each team's
   own "matching month" differs.
 - **"Remember the biggest improvement seen" — `recommender.py:200-205`**: improvements don't

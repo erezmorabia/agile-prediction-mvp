@@ -29,8 +29,8 @@ sequenceDiagram
 
     WebMain->>ML: build the similarity engine
     Note right of ML: enables cosine-similarity lookups between teams
-    WebMain->>ML: build the sequence mapper, learn sequences
-    Note right of ML: learns Markov transition probabilities from<br/>the full history, done eagerly here so the Sequences tab<br/>(UC-04) has data immediately - Flows 1-2 later overwrite<br/>this same matrix in place, scoped to a prediction month
+    WebMain->>ML: build the transition model, learn practice transitions
+    Note right of ML: learns practice-transition probabilities from<br/>the full history, done eagerly here so the Practice Transitions tab<br/>(UC-04) has data immediately - Flows 1-2 later overwrite<br/>this same matrix in place, scoped to a recommendation month
     WebMain->>ML: build the recommendation engine
     Note right of ML: wires the two prebuilt engines together —<br/>construction itself does no computation,<br/>hybrid scoring runs later, per request, in Flows 1-3
 
@@ -49,15 +49,15 @@ sequenceDiagram
 - **Correction vs. a prior claim in `architecture.md`**: the missing-value filter
   (`DataValidator.filter_high_missing_practices()`) does **not** mutate the practices list in
   place — it returns a new, filtered list, and `web_main.py` reassigns its local variable to that.
-- **Sequence learning is eager here, lazy everywhere else — and gets overwritten in place**:
+- **Practice-transition learning is eager here, lazy everywhere else — and gets overwritten in place**:
   `SequenceMapper.learn_sequences()` runs once at startup across the full history, populating
-  `self.transition_matrix`/`self.practice_popularity`. The Sequences tab (UC-04,
+  `self.transition_matrix`/`self.practice_popularity`. The Practice Transitions tab (UC-04,
   `GET /api/sequences`) reads those two attributes directly with no re-learning call
   (`sequences.py:258`), so at startup it shows the org-wide view. Flows 1-2 instead call
   `learn_sequences_up_to_month(max_month)`, which clears and rebuilds those **same** attributes on
   the **same** `SequenceMapper` instance, scoped to months `< max_month` — there's no separate copy.
   So the first recommendation or backtest call after startup overwrites the full-history matrix in
-  place, and the Sequences tab then reflects whatever `max_month` was last requested rather than the
+  place, and the Practice Transitions tab then reflects whatever `max_month` was last requested rather than the
   org-wide view it's meant to show, until the process restarts. Backtest (Flow 2) calls this **once
   per test month** as it walks the rolling window (`backtest.py:253`); results per `max_month` are
   cached (`_sequence_cache`) so repeat calls for the same month are free, but nothing restores the

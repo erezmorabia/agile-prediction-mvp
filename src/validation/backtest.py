@@ -313,7 +313,7 @@ class BacktestEngine:
                     prev_vector = history[prev_month]
                     test_vector = history[test_month]
 
-                    # Check improvements in test_month (immediate next month)
+                    # Check observed improvements in test_month (the first validation point).
                     actual_improved_month1 = set()
                     # Compare this team's score on each practice, before vs. in the test month
                     for j, (p, t) in enumerate(zip(prev_vector, test_vector)):

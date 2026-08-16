@@ -1,5 +1,5 @@
 """
-SequenceMapper: Learn first-order Markov chain improvement sequences.
+SequenceMapper: Learn empirical practice transition patterns.
 """
 
 from collections import Counter, defaultdict
@@ -42,7 +42,7 @@ class SequenceMapper:
 
     def learn_sequences(self) -> None:
         """
-        Learn first-order Markov transition patterns from historical data across all teams.
+        Learn first-order practice transition patterns from historical data across all teams.
 
         For each team, builds the chronological sequence of "improvement-bearing" months
         (months where at least one practice improved relative to the prior month), skipping
@@ -102,7 +102,7 @@ class SequenceMapper:
 
     def _learn_team_transitions(self, team_months: list, history: dict) -> None:
         """
-        Build first-order Markov transitions for one team's chronological history.
+        Build first-order practice transitions for one team's chronological history.
 
         Mutates self.transition_matrix and self.practice_popularity in place.
 
@@ -120,7 +120,7 @@ class SequenceMapper:
         for i in range(len(team_months) - 1):
             # This team's scores at one month...
             current_vector = history[team_months[i]]
-            # ...and at the very next month being compared against it
+            # ...and at the subsequent recorded month being compared against it
             next_vector = history[team_months[i + 1]]
 
             # Which practices actually went up between those two months
@@ -147,7 +147,7 @@ class SequenceMapper:
 
     def learn_sequences_up_to_month(self, max_month: int) -> None:
         """
-        Learn first-order Markov transition patterns from historical data up to (but not
+        Learn first-order practice transition patterns from historical data up to (but not
         including) max_month. See learn_sequences() for the transition-construction algorithm;
         this variant restricts each team's month history to months < max_month before applying
         it, so no transition can straddle the max_month boundary. Uses caching to avoid

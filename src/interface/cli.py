@@ -115,7 +115,7 @@ class CLIInterface:
 
     def _find_teams_with_improvements(self) -> list[tuple[str, int, int, int]]:
         """
-        Find teams and months where improvements occurred in the next month.
+        Find teams and months where improvements were observed in the subsequent recorded month.
 
         Scans all teams and identifies consecutive month pairs where practices improved.
         Used to filter teams for recommendation display (shows teams with validation data).
@@ -141,7 +141,7 @@ class CLIInterface:
             history = self.processor.get_team_history(team)
             months = sorted(history.keys())
 
-            # Check each month (except the last one, which has no next month)
+            # Check each month (except the last one, which has no subsequent recorded month)
             for i in range(len(months) - 1):
                 current_month = months[i]
                 next_month = months[i + 1]
@@ -151,7 +151,7 @@ class CLIInterface:
 
                 # Count improvements
                 improvements = []
-                # Compare this month's scores to the next month's, practice by practice.
+                # Compare this month's scores to the subsequent recorded month's, practice by practice.
                 for j, (curr, nxt) in enumerate(zip(current_vector, next_vector)):
                     if nxt > curr:
                         improvements.append(self.recommender.practices[j])
@@ -194,12 +194,12 @@ class CLIInterface:
             teams_with_improvements = self._find_teams_with_improvements()
 
             if not teams_with_improvements:
-                print("\nWarning: No teams found with improvements in next month")
+                print("\nWarning: No teams found with subsequently observed improvements")
                 print("   You can still get recommendations, but validation won't be available")
                 use_filter = False
             else:
                 print(f"\nFound {len(teams_with_improvements)} team/month combinations with improvements")
-                print("   (These allow validation in the next month)")
+                print("   (These allow validation against subsequently observed improvements)")
                 use_filter = input("\nShow only teams with improvements? (y/n, default=y): ").strip().lower()
                 use_filter = use_filter != "n"
 
@@ -545,7 +545,7 @@ class CLIInterface:
                 except:
                     pass
 
-                # Check if this was actually improved in next month or month after
+                # Check whether this practice showed a subsequently observed improvement.
                 actually_improved = False
                 improvement_amount = 0.0
                 improved_in_months = []
