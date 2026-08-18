@@ -1,0 +1,2806 @@
+{
+  "study": "fully nested per-team component and factor optimization (exploratory research only)",
+  "created_at": "2026-08-18T10:24:59",
+  "protocol": {
+    "component_configurations": 108,
+    "component_grid": {
+      "k_similar": [
+        5,
+        10,
+        19
+      ],
+      "similar_teams_lookahead_months": [
+        1,
+        2,
+        3,
+        5
+      ],
+      "recent_improvements_months": [
+        1,
+        2,
+        3
+      ],
+      "min_similarity_threshold": [
+        0.0,
+        0.5,
+        0.75
+      ]
+    },
+    "factor_weight_combinations": 15,
+    "popularity_recency_choices": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "total_per_team_candidate_policies": 8100,
+    "selection": "maximize each team's mean HR@2 on its earlier fully completed outcomes",
+    "bootstrap": "global 100% popularity with 50% recent / 50% historical popularity",
+    "outcome_availability_rule": "inner_month_index + 2 < outer_month_index",
+    "warning": "At most four completed team outcomes exist; this is an overfitting stress test, not confirmation."
+  },
+  "primary_summary": {
+    "global_fully_optimized": 0.5797859547859547,
+    "time_aware_popularity": 0.5566378066378066,
+    "per_team_fully_optimized": 0.53997113997114,
+    "per_team_time_aware_gap": -0.016666666666666607
+  },
+  "sensitivity_summary": {
+    "global_fully_optimized": 0.5093709200852058,
+    "time_aware_popularity": 0.47497938569367143,
+    "per_team_fully_optimized": 0.4630746237889095,
+    "per_team_time_aware_gap": -0.011904761904761918
+  },
+  "per_month": [
+    {
+      "month": 20200503,
+      "eligible_cases": 21,
+      "full_outcome_window": true,
+      "completed_inner_months": [],
+      "global_component_config": {
+        "k_similar": 5,
+        "similar_teams_lookahead_months": 1,
+        "recent_improvements_months": 1,
+        "min_similarity_threshold": 0.0
+      },
+      "global_weights": {
+        "similarity": 0.0,
+        "sequence": 0.0,
+        "popularity": 1.0
+      },
+      "global_recency_weight": 0.5,
+      "global_fully_optimized_hit_rate": 0.2857142857142857,
+      "time_aware_popularity_recency_weight": 0.5,
+      "time_aware_popularity_hit_rate": 0.2857142857142857,
+      "per_team_fully_optimized_hit_rate": 0.2857142857142857,
+      "team_policies": [
+        {
+          "team": "ACM",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Avengers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Black Pearl",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Comrades",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "GME",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "JaguarScript",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Kraken",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Lollipop",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Pancakes",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Pole Dancers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Puffin",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Rangers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Strikers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Vikings",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Warriors",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "WeView",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        }
+      ]
+    },
+    {
+      "month": 20200608,
+      "eligible_cases": 22,
+      "full_outcome_window": true,
+      "completed_inner_months": [],
+      "global_component_config": {
+        "k_similar": 5,
+        "similar_teams_lookahead_months": 1,
+        "recent_improvements_months": 1,
+        "min_similarity_threshold": 0.0
+      },
+      "global_weights": {
+        "similarity": 0.0,
+        "sequence": 0.0,
+        "popularity": 1.0
+      },
+      "global_recency_weight": 0.5,
+      "global_fully_optimized_hit_rate": 0.6363636363636364,
+      "time_aware_popularity_recency_weight": 0.5,
+      "time_aware_popularity_hit_rate": 0.6363636363636364,
+      "per_team_fully_optimized_hit_rate": 0.6363636363636364,
+      "team_policies": [
+        {
+          "team": "ACM",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Aha\u1e41 Brahm\u0101smi",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Avengers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Black Pearl",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Comrades",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "GME",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "JaguarScript",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Kraken",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "POM",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Phantom",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Pole Dancers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Puffin",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Rangers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Strikers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "The Edge",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Thunder",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Vikings",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        }
+      ]
+    },
+    {
+      "month": 20200705,
+      "eligible_cases": 27,
+      "full_outcome_window": true,
+      "completed_inner_months": [],
+      "global_component_config": {
+        "k_similar": 5,
+        "similar_teams_lookahead_months": 1,
+        "recent_improvements_months": 1,
+        "min_similarity_threshold": 0.0
+      },
+      "global_weights": {
+        "similarity": 0.0,
+        "sequence": 0.0,
+        "popularity": 1.0
+      },
+      "global_recency_weight": 0.5,
+      "global_fully_optimized_hit_rate": 0.6666666666666666,
+      "time_aware_popularity_recency_weight": 0.5,
+      "time_aware_popularity_hit_rate": 0.6666666666666666,
+      "per_team_fully_optimized_hit_rate": 0.6666666666666666,
+      "team_policies": [
+        {
+          "team": "AADS",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "ACM",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Aha\u1e41 Brahm\u0101smi",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Arya",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Assisted 3.x",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Avaya Agent for Desktop",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Avaya Desktop Wallboard",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Black Pearl",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Comrades",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Context Store/Cust Mgt",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Fernets",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Hakuna Matata",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Kraken",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Lollipop",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "POM",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Pancakes",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Phantom",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Puffin",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Slicers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Space Invaders",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Thunder",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Warriors",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        }
+      ]
+    },
+    {
+      "month": 20200803,
+      "eligible_cases": 24,
+      "full_outcome_window": true,
+      "completed_inner_months": [
+        20200503
+      ],
+      "global_component_config": {
+        "k_similar": 10,
+        "similar_teams_lookahead_months": 1,
+        "recent_improvements_months": 1,
+        "min_similarity_threshold": 0.75
+      },
+      "global_weights": {
+        "similarity": 0.25,
+        "sequence": 0.25,
+        "popularity": 0.5
+      },
+      "global_recency_weight": 0.0,
+      "global_fully_optimized_hit_rate": 0.7916666666666666,
+      "time_aware_popularity_recency_weight": 0.0,
+      "time_aware_popularity_hit_rate": 0.75,
+      "per_team_fully_optimized_hit_rate": 0.6666666666666666,
+      "team_policies": [
+        {
+          "team": "AADS",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Aha\u1e41 Brahm\u0101smi",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Arya",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Assisted 3.x",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Avaya Desktop Wallboard",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Black Pearl",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 1.0
+        },
+        {
+          "team": "CM",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Context Store/Cust Mgt",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 1.0
+        },
+        {
+          "team": "Fernets",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Hakuna Matata",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Harkonnen",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "Kraken",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Lollipop",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.5,
+            "sequence": 0.25,
+            "popularity": 0.25
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "POM",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Pancakes",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 1.0
+        },
+        {
+          "team": "Puffin",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Slicers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Space Invaders",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "Warriors",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.5,
+            "sequence": 0.0,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 1.0
+        }
+      ]
+    },
+    {
+      "month": 20200906,
+      "eligible_cases": 27,
+      "full_outcome_window": true,
+      "completed_inner_months": [
+        20200503,
+        20200608
+      ],
+      "global_component_config": {
+        "k_similar": 19,
+        "similar_teams_lookahead_months": 2,
+        "recent_improvements_months": 1,
+        "min_similarity_threshold": 0.0
+      },
+      "global_weights": {
+        "similarity": 0.25,
+        "sequence": 0.0,
+        "popularity": 0.75
+      },
+      "global_recency_weight": 1.0,
+      "global_fully_optimized_hit_rate": 0.5185185185185185,
+      "time_aware_popularity_recency_weight": 0.75,
+      "time_aware_popularity_hit_rate": 0.4444444444444444,
+      "per_team_fully_optimized_hit_rate": 0.4444444444444444,
+      "team_policies": [
+        {
+          "team": "A-Team",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 1.0
+        },
+        {
+          "team": "AADS",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Aha\u1e41 Brahm\u0101smi",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Arya",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Assisted 3.x",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Avaya Desktop Wallboard",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Avengers",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "CM",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Context Store/Cust Mgt",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Digital/OCP",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "Fernets",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Hakuna Matata",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Harkonnen",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "Lollipop",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.5,
+            "sequence": 0.25,
+            "popularity": 0.25
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Pancakes",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "Puffin",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Slicers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Snapins",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Space Invaders",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Strikers",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "Warriors",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.5,
+            "sequence": 0.0,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 1.0
+        },
+        {
+          "team": "WebRTC",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 1.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        }
+      ]
+    },
+    {
+      "month": 20201005,
+      "eligible_cases": 24,
+      "full_outcome_window": false,
+      "completed_inner_months": [
+        20200503,
+        20200608,
+        20200705
+      ],
+      "global_component_config": {
+        "k_similar": 19,
+        "similar_teams_lookahead_months": 2,
+        "recent_improvements_months": 1,
+        "min_similarity_threshold": 0.0
+      },
+      "global_weights": {
+        "similarity": 0.25,
+        "sequence": 0.25,
+        "popularity": 0.5
+      },
+      "global_recency_weight": 0.25,
+      "global_fully_optimized_hit_rate": 0.3333333333333333,
+      "time_aware_popularity_recency_weight": 0.75,
+      "time_aware_popularity_hit_rate": 0.20833333333333334,
+      "per_team_fully_optimized_hit_rate": 0.375,
+      "team_policies": [
+        {
+          "team": "A-Team",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "AADS",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Aha\u1e41 Brahm\u0101smi",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 5,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.5,
+            "sequence": 0.0,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "Arya",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Avaya Desktop Wallboard",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.5,
+            "sequence": 0.0,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Avengers",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "CM",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 1.0
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 3,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Fernets",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Hakuna Matata",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Harkonnen",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 1.0
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 3,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Komodo",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "Lollipop",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.75
+          },
+          "weights": {
+            "similarity": 0.5,
+            "sequence": 0.25,
+            "popularity": 0.25
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Panthers",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 1.0
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 3,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 2,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Scrummy Bears",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 1.0
+        },
+        {
+          "team": "Slicers",
+          "completed_team_cases": 1,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 1.0
+        },
+        {
+          "team": "Strikers",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Team Titans Go",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 3,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 3,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Warriors",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.5,
+            "sequence": 0.0,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 1.0
+        },
+        {
+          "team": "WebRTC",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 3,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 5,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        }
+      ]
+    },
+    {
+      "month": 20201104,
+      "eligible_cases": 6,
+      "full_outcome_window": false,
+      "completed_inner_months": [
+        20200503,
+        20200608,
+        20200705,
+        20200803
+      ],
+      "global_component_config": {
+        "k_similar": 19,
+        "similar_teams_lookahead_months": 2,
+        "recent_improvements_months": 2,
+        "min_similarity_threshold": 0.0
+      },
+      "global_weights": {
+        "similarity": 0.25,
+        "sequence": 0.5,
+        "popularity": 0.25
+      },
+      "global_recency_weight": 0.25,
+      "global_fully_optimized_hit_rate": 0.3333333333333333,
+      "time_aware_popularity_recency_weight": 0.75,
+      "time_aware_popularity_hit_rate": 0.3333333333333333,
+      "per_team_fully_optimized_hit_rate": 0.16666666666666666,
+      "team_policies": [
+        {
+          "team": "A-Team",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 2,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.5,
+            "popularity": 0.25
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        },
+        {
+          "team": "AADS",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 10,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 0.0
+        },
+        {
+          "team": "Arya",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.5,
+          "hit": 1.0
+        },
+        {
+          "team": "Avengers",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "Strikers",
+          "completed_team_cases": 2,
+          "component_config": {
+            "k_similar": 5,
+            "similar_teams_lookahead_months": 1,
+            "recent_improvements_months": 1,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "popularity_recency_weight": 0.0,
+          "hit": 0.0
+        },
+        {
+          "team": "WebRTC",
+          "completed_team_cases": 0,
+          "component_config": {
+            "k_similar": 19,
+            "similar_teams_lookahead_months": 2,
+            "recent_improvements_months": 2,
+            "min_similarity_threshold": 0.0
+          },
+          "weights": {
+            "similarity": 0.25,
+            "sequence": 0.5,
+            "popularity": 0.25
+          },
+          "popularity_recency_weight": 0.25,
+          "hit": 0.0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,197 @@
+{
+  "study": "popularity baseline strategies",
+  "created_at": "2026-08-17T13:06:15",
+  "data": "data/raw/combined_dataset.xlsx",
+  "protocol": {
+    "top_n": 2,
+    "primary_population": "outer test months with complete three-month outcome windows",
+    "sensitivity_population": "all seven eligible outer test months",
+    "selection": "thresholds and blend weights use prior outer-month outcomes only",
+    "policies": [
+      "switch",
+      "split",
+      "blend"
+    ]
+  },
+  "primary_summary": {
+    "popularity": 0.43571428571428567,
+    "switch": 0.45619047619047615,
+    "split": 0.4445396825396825,
+    "blend": 0.5492063492063493,
+    "switch_popularity_gap": 0.02047619047619048,
+    "split_popularity_gap": 0.008825396825396847,
+    "blend_popularity_gap": 0.11349206349206359
+  },
+  "sensitivity_summary": {
+    "popularity": 0.43669032830523513,
+    "switch": 0.49603667553978115,
+    "split": 0.4305718229320714,
+    "blend": 0.5053337276939761,
+    "switch_popularity_gap": 0.059346347234546015,
+    "split_popularity_gap": -0.0061185053731637185,
+    "blend_popularity_gap": 0.06864339938874098
+  },
+  "per_month": [
+    {
+      "month": 20200503,
+      "full_outcome_window": true,
+      "eligible_cases": 18,
+      "convergence_hhi": 0.04878308002975874,
+      "selected_switch_threshold": 0.045,
+      "selected_blend_weight": 0.5,
+      "metrics": {
+        "popularity": 0.3333333333333333,
+        "split": 0.5555555555555556,
+        "switch:0.04": 0.3333333333333333,
+        "switch:0.05": 0.6111111111111112,
+        "blend:0.25": 0.3333333333333333,
+        "blend:0.50": 0.5555555555555556,
+        "blend:0.75": 0.5
+      },
+      "selected": {
+        "popularity": 0.3333333333333333,
+        "switch": 0.3333333333333333,
+        "split": 0.5555555555555556,
+        "blend": 0.5555555555555556
+      }
+    },
+    {
+      "month": 20200608,
+      "full_outcome_window": true,
+      "eligible_cases": 21,
+      "convergence_hhi": 0.046209428354990964,
+      "selected_switch_threshold": 0.047,
+      "selected_blend_weight": 0.5,
+      "metrics": {
+        "popularity": 0.2857142857142857,
+        "split": 0.3333333333333333,
+        "switch:0.04": 0.2857142857142857,
+        "switch:0.05": 0.3333333333333333,
+        "blend:0.25": 0.19047619047619047,
+        "blend:0.50": 0.38095238095238093,
+        "blend:0.75": 0.38095238095238093
+      },
+      "selected": {
+        "popularity": 0.2857142857142857,
+        "switch": 0.3333333333333333,
+        "split": 0.3333333333333333,
+        "blend": 0.38095238095238093
+      }
+    },
+    {
+      "month": 20200705,
+      "full_outcome_window": true,
+      "eligible_cases": 20,
+      "convergence_hhi": 0.042898792169929194,
+      "selected_switch_threshold": 0.047,
+      "selected_blend_weight": 0.5,
+      "metrics": {
+        "popularity": 0.35,
+        "split": 0.45,
+        "switch:0.04": 0.5,
+        "switch:0.05": 0.5,
+        "blend:0.25": 0.5,
+        "blend:0.50": 0.6,
+        "blend:0.75": 0.5
+      },
+      "selected": {
+        "popularity": 0.35,
+        "switch": 0.5,
+        "split": 0.45,
+        "blend": 0.6
+      }
+    },
+    {
+      "month": 20200803,
+      "full_outcome_window": true,
+      "eligible_cases": 21,
+      "convergence_hhi": 0.04631491589262345,
+      "selected_switch_threshold": 0.047,
+      "selected_blend_weight": 0.5,
+      "metrics": {
+        "popularity": 0.8095238095238095,
+        "split": 0.5238095238095238,
+        "switch:0.04": 0.8095238095238095,
+        "switch:0.05": 0.7142857142857143,
+        "blend:0.25": 0.8095238095238095,
+        "blend:0.50": 0.8095238095238095,
+        "blend:0.75": 0.7142857142857143
+      },
+      "selected": {
+        "popularity": 0.8095238095238095,
+        "switch": 0.7142857142857143,
+        "split": 0.5238095238095238,
+        "blend": 0.8095238095238095
+      }
+    },
+    {
+      "month": 20200906,
+      "full_outcome_window": true,
+      "eligible_cases": 25,
+      "convergence_hhi": 0.04493239588967009,
+      "selected_switch_threshold": 0.047,
+      "selected_blend_weight": 0.5,
+      "metrics": {
+        "popularity": 0.4,
+        "split": 0.36,
+        "switch:0.04": 0.4,
+        "switch:0.05": 0.4,
+        "blend:0.25": 0.4,
+        "blend:0.50": 0.4,
+        "blend:0.75": 0.44
+      },
+      "selected": {
+        "popularity": 0.4,
+        "switch": 0.4,
+        "split": 0.36,
+        "blend": 0.4
+      }
+    },
+    {
+      "month": 20201005,
+      "full_outcome_window": false,
+      "eligible_cases": 23,
+      "convergence_hhi": 0.04568411386593205,
+      "selected_switch_threshold": 0.047,
+      "selected_blend_weight": 0.5,
+      "metrics": {
+        "popularity": 0.4782608695652174,
+        "split": 0.391304347826087,
+        "switch:0.04": 0.4782608695652174,
+        "switch:0.05": 0.391304347826087,
+        "blend:0.25": 0.43478260869565216,
+        "blend:0.50": 0.391304347826087,
+        "blend:0.75": 0.391304347826087
+      },
+      "selected": {
+        "popularity": 0.4782608695652174,
+        "switch": 0.391304347826087,
+        "split": 0.391304347826087,
+        "blend": 0.391304347826087
+      }
+    },
+    {
+      "month": 20201104,
+      "full_outcome_window": false,
+      "eligible_cases": 5,
+      "convergence_hhi": 0.044463653229887,
+      "selected_switch_threshold": 0.047,
+      "selected_blend_weight": 0.5,
+      "metrics": {
+        "popularity": 0.4,
+        "split": 0.4,
+        "switch:0.04": 0.8,
+        "switch:0.05": 0.8,
+        "blend:0.25": 0.4,
+        "blend:0.50": 0.4,
+        "blend:0.75": 0.4
+      },
+      "selected": {
+        "popularity": 0.4,
+        "switch": 0.8,
+        "split": 0.4,
+        "blend": 0.4
+      }
+    }
+  ]
+}

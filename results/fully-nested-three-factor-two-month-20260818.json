@@ -1,0 +1,248 @@
+{
+  "study": "fully nested direct three-factor blend (research only)",
+  "created_at": "2026-08-18T09:45:33",
+  "protocol": {
+    "component_configuration": {
+      "k_similar": 10,
+      "similar_teams_lookahead_months": 2,
+      "recent_improvements_months": 2,
+      "min_similarity_threshold": 0.5
+    },
+    "factor_weight_grid": [
+      [
+        0.0,
+        0.0,
+        1.0
+      ],
+      [
+        0.0,
+        0.25,
+        0.75
+      ],
+      [
+        0.0,
+        0.5,
+        0.5
+      ],
+      [
+        0.0,
+        0.75,
+        0.25
+      ],
+      [
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.25,
+        0.0,
+        0.75
+      ],
+      [
+        0.25,
+        0.25,
+        0.5
+      ],
+      [
+        0.25,
+        0.5,
+        0.25
+      ],
+      [
+        0.25,
+        0.75,
+        0.0
+      ],
+      [
+        0.5,
+        0.0,
+        0.5
+      ],
+      [
+        0.5,
+        0.25,
+        0.25
+      ],
+      [
+        0.5,
+        0.5,
+        0.0
+      ],
+      [
+        0.75,
+        0.0,
+        0.25
+      ],
+      [
+        0.75,
+        0.25,
+        0.0
+      ],
+      [
+        1.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "factor_weight_rule": "similarity + sequence + popularity = 1.0",
+    "popularity_recency_weights": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "weight_selection": "jointly maximize mean HR@2 over earlier fully completed outer months",
+    "outcome_availability_rule": "inner_month_index + 2 < outer_month_index",
+    "bootstrap": "100% popularity with 50% recent / 50% historical popularity",
+    "cohort": "all cases with observed outcomes and two eligible popularity recommendations"
+  },
+  "primary_summary": {
+    "three_factor": 0.53997113997114,
+    "time_aware_popularity": 0.5566378066378066,
+    "static_popularity": 0.42845117845117847,
+    "three_factor_time_aware_gap": -0.016666666666666607
+  },
+  "sensitivity_summary": {
+    "three_factor": 0.4630746237889095,
+    "time_aware_popularity": 0.47497938569367143,
+    "static_popularity": 0.4429413179413179,
+    "three_factor_time_aware_gap": -0.011904761904761918
+  },
+  "per_month": [
+    {
+      "month": 20200503,
+      "eligible_cases": 21,
+      "full_outcome_window": true,
+      "completed_inner_months": [],
+      "selection_mode": "predeclared_popularity_bootstrap",
+      "selected_weights": {
+        "similarity": 0.0,
+        "sequence": 0.0,
+        "popularity": 1.0
+      },
+      "selected_recency_weight": 0.5,
+      "three_factor_hit_rate": 0.2857142857142857,
+      "time_aware_popularity_recency_weight": 0.5,
+      "time_aware_popularity_hit_rate": 0.2857142857142857,
+      "static_popularity_hit_rate": 0.3333333333333333
+    },
+    {
+      "month": 20200608,
+      "eligible_cases": 22,
+      "full_outcome_window": true,
+      "completed_inner_months": [],
+      "selection_mode": "predeclared_popularity_bootstrap",
+      "selected_weights": {
+        "similarity": 0.0,
+        "sequence": 0.0,
+        "popularity": 1.0
+      },
+      "selected_recency_weight": 0.5,
+      "three_factor_hit_rate": 0.6363636363636364,
+      "time_aware_popularity_recency_weight": 0.5,
+      "time_aware_popularity_hit_rate": 0.6363636363636364,
+      "static_popularity_hit_rate": 0.3181818181818182
+    },
+    {
+      "month": 20200705,
+      "eligible_cases": 27,
+      "full_outcome_window": true,
+      "completed_inner_months": [],
+      "selection_mode": "predeclared_popularity_bootstrap",
+      "selected_weights": {
+        "similarity": 0.0,
+        "sequence": 0.0,
+        "popularity": 1.0
+      },
+      "selected_recency_weight": 0.5,
+      "three_factor_hit_rate": 0.6666666666666666,
+      "time_aware_popularity_recency_weight": 0.5,
+      "time_aware_popularity_hit_rate": 0.6666666666666666,
+      "static_popularity_hit_rate": 0.3333333333333333
+    },
+    {
+      "month": 20200803,
+      "eligible_cases": 24,
+      "full_outcome_window": true,
+      "completed_inner_months": [
+        20200503
+      ],
+      "selection_mode": "nested",
+      "selected_weights": {
+        "similarity": 0.25,
+        "sequence": 0.0,
+        "popularity": 0.75
+      },
+      "selected_recency_weight": 0.25,
+      "three_factor_hit_rate": 0.6666666666666666,
+      "time_aware_popularity_recency_weight": 0.0,
+      "time_aware_popularity_hit_rate": 0.75,
+      "static_popularity_hit_rate": 0.75
+    },
+    {
+      "month": 20200906,
+      "eligible_cases": 27,
+      "full_outcome_window": true,
+      "completed_inner_months": [
+        20200503,
+        20200608
+      ],
+      "selection_mode": "nested",
+      "selected_weights": {
+        "similarity": 0.25,
+        "sequence": 0.0,
+        "popularity": 0.75
+      },
+      "selected_recency_weight": 1.0,
+      "three_factor_hit_rate": 0.4444444444444444,
+      "time_aware_popularity_recency_weight": 0.75,
+      "time_aware_popularity_hit_rate": 0.4444444444444444,
+      "static_popularity_hit_rate": 0.4074074074074074
+    },
+    {
+      "month": 20201005,
+      "eligible_cases": 24,
+      "full_outcome_window": false,
+      "completed_inner_months": [
+        20200503,
+        20200608,
+        20200705
+      ],
+      "selection_mode": "nested",
+      "selected_weights": {
+        "similarity": 0.0,
+        "sequence": 0.0,
+        "popularity": 1.0
+      },
+      "selected_recency_weight": 0.75,
+      "three_factor_hit_rate": 0.20833333333333334,
+      "time_aware_popularity_recency_weight": 0.75,
+      "time_aware_popularity_hit_rate": 0.20833333333333334,
+      "static_popularity_hit_rate": 0.4583333333333333
+    },
+    {
+      "month": 20201104,
+      "eligible_cases": 6,
+      "full_outcome_window": false,
+      "completed_inner_months": [
+        20200503,
+        20200608,
+        20200705,
+        20200803
+      ],
+      "selection_mode": "nested",
+      "selected_weights": {
+        "similarity": 0.25,
+        "sequence": 0.25,
+        "popularity": 0.5
+      },
+      "selected_recency_weight": 0.25,
+      "three_factor_hit_rate": 0.3333333333333333,
+      "time_aware_popularity_recency_weight": 0.75,
+      "time_aware_popularity_hit_rate": 0.3333333333333333,
+      "static_popularity_hit_rate": 0.5
+    }
+  ]
+}

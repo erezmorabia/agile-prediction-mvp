@@ -1,0 +1,318 @@
+{
+  "study": "fully nested popularity strategy evaluation",
+  "created_at": "2026-08-17T13:32:47",
+  "protocol": {
+    "grid_size": 162,
+    "top_n": 2,
+    "config_selection": "maximize personalized HR@2 minus popularity HR@2 over fully completed inner months",
+    "outcome_availability_rule": "inner_month_index + 2 < outer_month_index",
+    "bootstrap_config": {
+      "k_similar": 10,
+      "similarity_weight": 0.6,
+      "similar_teams_lookahead_months": 3,
+      "recent_improvements_months": 3,
+      "min_similarity_threshold": 0.5
+    },
+    "switch_thresholds": [
+      0.043,
+      0.045,
+      0.047,
+      0.049
+    ],
+    "blend_weights": [
+      0.25,
+      0.5,
+      0.75
+    ]
+  },
+  "primary_summary": {
+    "popularity": 0.48432900432900433,
+    "personalized": 0.477979797979798,
+    "switch": 0.5065512265512265,
+    "split": 0.3967715247715248,
+    "blend": 0.5148244348244349,
+    "personalized_popularity_gap": -0.006349206349206327,
+    "switch_popularity_gap": 0.0222222222222222,
+    "split_popularity_gap": -0.08755747955747956,
+    "blend_popularity_gap": 0.03049543049543052
+  },
+  "sensitivity_summary": {
+    "popularity": 0.4745207173778602,
+    "personalized": 0.5141414141414141,
+    "switch": 0.4903937332508761,
+    "split": 0.3989926475640761,
+    "blend": 0.47682264825121967,
+    "personalized_popularity_gap": 0.0396206967635539,
+    "switch_popularity_gap": 0.015873015873015872,
+    "split_popularity_gap": -0.07552806981378413,
+    "blend_popularity_gap": 0.002301930873359448
+  },
+  "per_month": [
+    {
+      "month": 20200503,
+      "completed_inner_months": [],
+      "selection_mode": "predeclared_bootstrap",
+      "selected_personalized_config": {
+        "k_similar": 10,
+        "similarity_weight": 0.6,
+        "similar_teams_lookahead_months": 3,
+        "recent_improvements_months": 3,
+        "min_similarity_threshold": 0.5
+      },
+      "selected_switch_threshold": 0.045,
+      "selected_blend_weight": 0.5,
+      "eligible_cases": 11,
+      "convergence_hhi": 0.04878308002975874,
+      "full_outcome_window": true,
+      "policy_metrics": {
+        "personalized": 0.5454545454545454,
+        "popularity": 0.5454545454545454,
+        "split": 0.45454545454545453,
+        "switch:0.043": 0.5454545454545454,
+        "switch:0.045": 0.5454545454545454,
+        "switch:0.047": 0.5454545454545454,
+        "switch:0.049": 0.5454545454545454,
+        "blend:0.25": 0.45454545454545453,
+        "blend:0.50": 0.45454545454545453,
+        "blend:0.75": 0.2727272727272727
+      },
+      "selected": {
+        "popularity": 0.5454545454545454,
+        "personalized": 0.5454545454545454,
+        "switch": 0.5454545454545454,
+        "split": 0.45454545454545453,
+        "blend": 0.45454545454545453
+      }
+    },
+    {
+      "month": 20200608,
+      "completed_inner_months": [],
+      "selection_mode": "predeclared_bootstrap",
+      "selected_personalized_config": {
+        "k_similar": 10,
+        "similarity_weight": 0.6,
+        "similar_teams_lookahead_months": 3,
+        "recent_improvements_months": 3,
+        "min_similarity_threshold": 0.5
+      },
+      "selected_switch_threshold": 0.045,
+      "selected_blend_weight": 0.5,
+      "eligible_cases": 21,
+      "convergence_hhi": 0.046209428354990964,
+      "full_outcome_window": true,
+      "policy_metrics": {
+        "personalized": 0.3333333333333333,
+        "popularity": 0.3333333333333333,
+        "split": 0.23809523809523808,
+        "switch:0.043": 0.3333333333333333,
+        "switch:0.045": 0.3333333333333333,
+        "switch:0.047": 0.3333333333333333,
+        "switch:0.049": 0.3333333333333333,
+        "blend:0.25": 0.2857142857142857,
+        "blend:0.50": 0.42857142857142855,
+        "blend:0.75": 0.38095238095238093
+      },
+      "selected": {
+        "popularity": 0.3333333333333333,
+        "personalized": 0.3333333333333333,
+        "switch": 0.3333333333333333,
+        "split": 0.23809523809523808,
+        "blend": 0.42857142857142855
+      }
+    },
+    {
+      "month": 20200705,
+      "completed_inner_months": [],
+      "selection_mode": "predeclared_bootstrap",
+      "selected_personalized_config": {
+        "k_similar": 10,
+        "similarity_weight": 0.6,
+        "similar_teams_lookahead_months": 3,
+        "recent_improvements_months": 3,
+        "min_similarity_threshold": 0.5
+      },
+      "selected_switch_threshold": 0.045,
+      "selected_blend_weight": 0.5,
+      "eligible_cases": 27,
+      "convergence_hhi": 0.042898792169929194,
+      "full_outcome_window": true,
+      "policy_metrics": {
+        "personalized": 0.4444444444444444,
+        "popularity": 0.3333333333333333,
+        "split": 0.4074074074074074,
+        "switch:0.043": 0.4444444444444444,
+        "switch:0.045": 0.4444444444444444,
+        "switch:0.047": 0.4444444444444444,
+        "switch:0.049": 0.4444444444444444,
+        "blend:0.25": 0.4444444444444444,
+        "blend:0.50": 0.48148148148148145,
+        "blend:0.75": 0.48148148148148145
+      },
+      "selected": {
+        "popularity": 0.3333333333333333,
+        "personalized": 0.4444444444444444,
+        "switch": 0.4444444444444444,
+        "split": 0.4074074074074074,
+        "blend": 0.48148148148148145
+      }
+    },
+    {
+      "month": 20200803,
+      "completed_inner_months": [
+        20200503
+      ],
+      "selection_mode": "nested",
+      "selected_personalized_config": {
+        "similarity_weight": 0.7,
+        "k_similar": 19,
+        "similar_teams_lookahead_months": 5,
+        "recent_improvements_months": 3,
+        "min_similarity_threshold": 0.75
+      },
+      "selected_switch_threshold": 0.043,
+      "selected_blend_weight": 0.25,
+      "eligible_cases": 21,
+      "convergence_hhi": 0.04631491589262345,
+      "full_outcome_window": true,
+      "policy_metrics": {
+        "personalized": 0.6666666666666666,
+        "popularity": 0.8095238095238095,
+        "split": 0.5238095238095238,
+        "switch:0.043": 0.8095238095238095,
+        "switch:0.045": 0.8095238095238095,
+        "switch:0.047": 0.6666666666666666,
+        "switch:0.049": 0.6666666666666666,
+        "blend:0.25": 0.8095238095238095,
+        "blend:0.50": 0.8095238095238095,
+        "blend:0.75": 0.7142857142857143
+      },
+      "selected": {
+        "popularity": 0.8095238095238095,
+        "personalized": 0.6666666666666666,
+        "switch": 0.8095238095238095,
+        "split": 0.5238095238095238,
+        "blend": 0.8095238095238095
+      }
+    },
+    {
+      "month": 20200906,
+      "completed_inner_months": [
+        20200503,
+        20200608
+      ],
+      "selection_mode": "nested",
+      "selected_personalized_config": {
+        "similarity_weight": 0.7,
+        "k_similar": 19,
+        "similar_teams_lookahead_months": 5,
+        "recent_improvements_months": 3,
+        "min_similarity_threshold": 0.75
+      },
+      "selected_switch_threshold": 0.043,
+      "selected_blend_weight": 0.5,
+      "eligible_cases": 25,
+      "convergence_hhi": 0.04493239588967009,
+      "full_outcome_window": true,
+      "policy_metrics": {
+        "personalized": 0.4,
+        "popularity": 0.4,
+        "split": 0.36,
+        "switch:0.043": 0.4,
+        "switch:0.045": 0.4,
+        "switch:0.047": 0.4,
+        "switch:0.049": 0.4,
+        "blend:0.25": 0.4,
+        "blend:0.50": 0.4,
+        "blend:0.75": 0.44
+      },
+      "selected": {
+        "popularity": 0.4,
+        "personalized": 0.4,
+        "switch": 0.4,
+        "split": 0.36,
+        "blend": 0.4
+      }
+    },
+    {
+      "month": 20201005,
+      "completed_inner_months": [
+        20200503,
+        20200608,
+        20200705
+      ],
+      "selection_mode": "nested",
+      "selected_personalized_config": {
+        "similarity_weight": 0.6,
+        "k_similar": 19,
+        "similar_teams_lookahead_months": 5,
+        "recent_improvements_months": 1,
+        "min_similarity_threshold": 0.75
+      },
+      "selected_switch_threshold": 0.043,
+      "selected_blend_weight": 0.5,
+      "eligible_cases": 22,
+      "convergence_hhi": 0.04568411386593205,
+      "full_outcome_window": false,
+      "policy_metrics": {
+        "personalized": 0.4090909090909091,
+        "popularity": 0.5,
+        "split": 0.4090909090909091,
+        "switch:0.043": 0.5,
+        "switch:0.045": 0.5,
+        "switch:0.047": 0.4090909090909091,
+        "switch:0.049": 0.4090909090909091,
+        "blend:0.25": 0.4090909090909091,
+        "blend:0.50": 0.36363636363636365,
+        "blend:0.75": 0.36363636363636365
+      },
+      "selected": {
+        "popularity": 0.5,
+        "personalized": 0.4090909090909091,
+        "switch": 0.5,
+        "split": 0.4090909090909091,
+        "blend": 0.36363636363636365
+      }
+    },
+    {
+      "month": 20201104,
+      "completed_inner_months": [
+        20200503,
+        20200608,
+        20200705,
+        20200803
+      ],
+      "selection_mode": "nested",
+      "selected_personalized_config": {
+        "similarity_weight": 0.5,
+        "k_similar": 19,
+        "similar_teams_lookahead_months": 5,
+        "recent_improvements_months": 1,
+        "min_similarity_threshold": 0.75
+      },
+      "selected_switch_threshold": 0.043,
+      "selected_blend_weight": 0.5,
+      "eligible_cases": 5,
+      "convergence_hhi": 0.044463653229887,
+      "full_outcome_window": false,
+      "policy_metrics": {
+        "personalized": 0.8,
+        "popularity": 0.4,
+        "split": 0.4,
+        "switch:0.043": 0.4,
+        "switch:0.045": 0.8,
+        "switch:0.047": 0.8,
+        "switch:0.049": 0.8,
+        "blend:0.25": 0.4,
+        "blend:0.50": 0.4,
+        "blend:0.75": 0.4
+      },
+      "selected": {
+        "popularity": 0.4,
+        "personalized": 0.8,
+        "switch": 0.4,
+        "split": 0.4,
+        "blend": 0.4
+      }
+    }
+  ]
+}

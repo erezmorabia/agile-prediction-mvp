@@ -1,0 +1,2830 @@
+{
+  "study": "fully nested team-adaptive direct three-factor blend (research only)",
+  "created_at": "2026-08-18T09:59:12",
+  "protocol": {
+    "factor_weight_rule": "similarity + sequence + popularity = 1.0",
+    "factor_weight_grid": [
+      [
+        0.0,
+        0.0,
+        1.0
+      ],
+      [
+        0.0,
+        0.25,
+        0.75
+      ],
+      [
+        0.0,
+        0.5,
+        0.5
+      ],
+      [
+        0.0,
+        0.75,
+        0.25
+      ],
+      [
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.25,
+        0.0,
+        0.75
+      ],
+      [
+        0.25,
+        0.25,
+        0.5
+      ],
+      [
+        0.25,
+        0.5,
+        0.25
+      ],
+      [
+        0.25,
+        0.75,
+        0.0
+      ],
+      [
+        0.5,
+        0.0,
+        0.5
+      ],
+      [
+        0.5,
+        0.25,
+        0.25
+      ],
+      [
+        0.5,
+        0.5,
+        0.0
+      ],
+      [
+        0.75,
+        0.0,
+        0.25
+      ],
+      [
+        0.75,
+        0.25,
+        0.0
+      ],
+      [
+        1.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "popularity_recency_weights": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "global_policy": "selected from all earlier fully completed team/month outcomes",
+    "per_team_policy": "selected from that team's earlier fully completed outcomes; global policy when none exist",
+    "adaptive_confidence": "linear shrinkage from global policy to per-team policy",
+    "team_prior_equivalent_cases": 5,
+    "team_confidence": "completed_team_cases / (completed_team_cases + team_prior_equivalent_cases)",
+    "outcome_availability_rule": "inner_month_index + 2 < outer_month_index",
+    "cohort": "all cases with observed outcomes and two eligible popularity recommendations"
+  },
+  "primary_summary": {
+    "global_three_factor_hit_rate": 0.53997113997114,
+    "time_aware_popularity_hit_rate": 0.5566378066378066,
+    "per_team_configuration_hit_rate": 0.53997113997114,
+    "adaptive_confidence_hit_rate": 0.53997113997114,
+    "per_team_time_aware_gap": -0.016666666666666607,
+    "adaptive_time_aware_gap": -0.016666666666666607
+  },
+  "sensitivity_summary": {
+    "global_three_factor_hit_rate": 0.4630746237889095,
+    "time_aware_popularity_hit_rate": 0.47497938569367143,
+    "per_team_configuration_hit_rate": 0.4571222428365285,
+    "adaptive_confidence_hit_rate": 0.4630746237889095,
+    "per_team_time_aware_gap": -0.017857142857142905,
+    "adaptive_time_aware_gap": -0.011904761904761918
+  },
+  "per_month": [
+    {
+      "month": 20200503,
+      "eligible_cases": 21,
+      "full_outcome_window": true,
+      "completed_inner_months": [],
+      "global_weights": {
+        "similarity": 0.0,
+        "sequence": 0.0,
+        "popularity": 1.0
+      },
+      "global_recency_weight": 0.5,
+      "global_three_factor_hit_rate": 0.2857142857142857,
+      "time_aware_popularity_recency_weight": 0.5,
+      "time_aware_popularity_hit_rate": 0.2857142857142857,
+      "per_team_configuration_hit_rate": 0.2857142857142857,
+      "adaptive_confidence_hit_rate": 0.2857142857142857,
+      "team_policies": [
+        {
+          "team": "ACM",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Avengers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Black Pearl",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Comrades",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "GME",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "JaguarScript",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Kraken",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Lollipop",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Pancakes",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Pole Dancers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Puffin",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Rangers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Strikers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Vikings",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Warriors",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "WeView",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        }
+      ]
+    },
+    {
+      "month": 20200608,
+      "eligible_cases": 22,
+      "full_outcome_window": true,
+      "completed_inner_months": [],
+      "global_weights": {
+        "similarity": 0.0,
+        "sequence": 0.0,
+        "popularity": 1.0
+      },
+      "global_recency_weight": 0.5,
+      "global_three_factor_hit_rate": 0.6363636363636364,
+      "time_aware_popularity_recency_weight": 0.5,
+      "time_aware_popularity_hit_rate": 0.6363636363636364,
+      "per_team_configuration_hit_rate": 0.6363636363636364,
+      "adaptive_confidence_hit_rate": 0.6363636363636364,
+      "team_policies": [
+        {
+          "team": "ACM",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Aha\u1e41 Brahm\u0101smi",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Avengers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Black Pearl",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Comrades",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "GME",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "JaguarScript",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Kraken",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "POM",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Phantom",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Pole Dancers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Puffin",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Rangers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Strikers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "The Edge",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Thunder",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Vikings",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        }
+      ]
+    },
+    {
+      "month": 20200705,
+      "eligible_cases": 27,
+      "full_outcome_window": true,
+      "completed_inner_months": [],
+      "global_weights": {
+        "similarity": 0.0,
+        "sequence": 0.0,
+        "popularity": 1.0
+      },
+      "global_recency_weight": 0.5,
+      "global_three_factor_hit_rate": 0.6666666666666666,
+      "time_aware_popularity_recency_weight": 0.5,
+      "time_aware_popularity_hit_rate": 0.6666666666666666,
+      "per_team_configuration_hit_rate": 0.6666666666666666,
+      "adaptive_confidence_hit_rate": 0.6666666666666666,
+      "team_policies": [
+        {
+          "team": "AADS",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "ACM",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Aha\u1e41 Brahm\u0101smi",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Arya",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Assisted 3.x",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Avaya Agent for Desktop",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Avaya Desktop Wallboard",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Black Pearl",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Comrades",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Context Store/Cust Mgt",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Fernets",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Hakuna Matata",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Kraken",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Lollipop",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "POM",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Pancakes",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Phantom",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Puffin",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Slicers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Space Invaders",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Thunder",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Warriors",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5
+        }
+      ]
+    },
+    {
+      "month": 20200803,
+      "eligible_cases": 24,
+      "full_outcome_window": true,
+      "completed_inner_months": [
+        20200503
+      ],
+      "global_weights": {
+        "similarity": 0.25,
+        "sequence": 0.0,
+        "popularity": 0.75
+      },
+      "global_recency_weight": 0.25,
+      "global_three_factor_hit_rate": 0.6666666666666666,
+      "time_aware_popularity_recency_weight": 0.0,
+      "time_aware_popularity_hit_rate": 0.75,
+      "per_team_configuration_hit_rate": 0.6666666666666666,
+      "adaptive_confidence_hit_rate": 0.6666666666666666,
+      "team_policies": [
+        {
+          "team": "AADS",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Aha\u1e41 Brahm\u0101smi",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Arya",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Assisted 3.x",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Avaya Desktop Wallboard",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Black Pearl",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.20833333333333334,
+            "sequence": 0.0,
+            "popularity": 0.7916666666666666
+          },
+          "adaptive_recency_weight": 0.20833333333333334
+        },
+        {
+          "team": "CM",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Context Store/Cust Mgt",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Fernets",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Hakuna Matata",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Harkonnen",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Kraken",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.20833333333333334,
+            "sequence": 0.0,
+            "popularity": 0.7916666666666666
+          },
+          "adaptive_recency_weight": 0.20833333333333334
+        },
+        {
+          "team": "Lollipop",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.20833333333333334,
+            "sequence": 0.0,
+            "popularity": 0.7916666666666666
+          },
+          "adaptive_recency_weight": 0.20833333333333334
+        },
+        {
+          "team": "POM",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Pancakes",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.20833333333333334,
+            "sequence": 0.0,
+            "popularity": 0.7916666666666666
+          },
+          "adaptive_recency_weight": 0.375
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Puffin",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.20833333333333334,
+            "sequence": 0.0,
+            "popularity": 0.7916666666666666
+          },
+          "adaptive_recency_weight": 0.20833333333333334
+        },
+        {
+          "team": "Slicers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Space Invaders",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "Warriors",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.20833333333333334,
+            "sequence": 0.0,
+            "popularity": 0.7916666666666666
+          },
+          "adaptive_recency_weight": 0.20833333333333334
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.25
+        }
+      ]
+    },
+    {
+      "month": 20200906,
+      "eligible_cases": 27,
+      "full_outcome_window": true,
+      "completed_inner_months": [
+        20200503,
+        20200608
+      ],
+      "global_weights": {
+        "similarity": 0.25,
+        "sequence": 0.0,
+        "popularity": 0.75
+      },
+      "global_recency_weight": 1.0,
+      "global_three_factor_hit_rate": 0.4444444444444444,
+      "time_aware_popularity_recency_weight": 0.75,
+      "time_aware_popularity_hit_rate": 0.4444444444444444,
+      "per_team_configuration_hit_rate": 0.4444444444444444,
+      "adaptive_confidence_hit_rate": 0.4444444444444444,
+      "team_policies": [
+        {
+          "team": "A-Team",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "AADS",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Aha\u1e41 Brahm\u0101smi",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.20833333333333334,
+            "sequence": 0.0,
+            "popularity": 0.7916666666666666
+          },
+          "adaptive_recency_weight": 0.8333333333333334
+        },
+        {
+          "team": "Arya",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Assisted 3.x",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Avaya Desktop Wallboard",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Avengers",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.17857142857142858,
+            "sequence": 0.0,
+            "popularity": 0.8214285714285714
+          },
+          "adaptive_recency_weight": 0.7142857142857143
+        },
+        {
+          "team": "CM",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Context Store/Cust Mgt",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Digital/OCP",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.8571428571428572
+        },
+        {
+          "team": "Fernets",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Hakuna Matata",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Harkonnen",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.7857142857142857
+        },
+        {
+          "team": "Lollipop",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.20833333333333334,
+            "sequence": 0.0,
+            "popularity": 0.7916666666666666
+          },
+          "adaptive_recency_weight": 0.8333333333333334
+        },
+        {
+          "team": "Pancakes",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.20833333333333334,
+            "sequence": 0.0,
+            "popularity": 0.7916666666666666
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.7857142857142857
+        },
+        {
+          "team": "Puffin",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.17857142857142858,
+            "sequence": 0.0,
+            "popularity": 0.8214285714285714
+          },
+          "adaptive_recency_weight": 0.7142857142857143
+        },
+        {
+          "team": "Slicers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Snapins",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Space Invaders",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Strikers",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.17857142857142858,
+            "sequence": 0.0,
+            "popularity": 0.8214285714285714
+          },
+          "adaptive_recency_weight": 0.7142857142857143
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.8571428571428572
+        },
+        {
+          "team": "Warriors",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.20833333333333334,
+            "sequence": 0.0,
+            "popularity": 0.7916666666666666
+          },
+          "adaptive_recency_weight": 0.8333333333333334
+        },
+        {
+          "team": "WebRTC",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 1.0,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 1.0
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "adaptive_recency_weight": 0.8571428571428572
+        }
+      ]
+    },
+    {
+      "month": 20201005,
+      "eligible_cases": 24,
+      "full_outcome_window": false,
+      "completed_inner_months": [
+        20200503,
+        20200608,
+        20200705
+      ],
+      "global_weights": {
+        "similarity": 0.0,
+        "sequence": 0.0,
+        "popularity": 1.0
+      },
+      "global_recency_weight": 0.75,
+      "global_three_factor_hit_rate": 0.20833333333333334,
+      "time_aware_popularity_recency_weight": 0.75,
+      "time_aware_popularity_hit_rate": 0.20833333333333334,
+      "per_team_configuration_hit_rate": 0.3333333333333333,
+      "adaptive_confidence_hit_rate": 0.20833333333333334,
+      "team_policies": [
+        {
+          "team": "A-Team",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.75,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.75
+        },
+        {
+          "team": "AADS",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.041666666666666664,
+            "sequence": 0.0,
+            "popularity": 0.9583333333333334
+          },
+          "adaptive_recency_weight": 0.625
+        },
+        {
+          "team": "Aha\u1e41 Brahm\u0101smi",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5357142857142857
+        },
+        {
+          "team": "Arya",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.625
+        },
+        {
+          "team": "Avaya Desktop Wallboard",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.5,
+            "sequence": 0.0,
+            "popularity": 0.5
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.08333333333333333,
+            "sequence": 0.0,
+            "popularity": 0.9166666666666667
+          },
+          "adaptive_recency_weight": 0.625
+        },
+        {
+          "team": "Avengers",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5357142857142857
+        },
+        {
+          "team": "CM",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.75,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.75
+        },
+        {
+          "team": "Dragon",
+          "completed_team_cases": 3,
+          "team_confidence": 0.375,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.65625
+        },
+        {
+          "team": "Fernets",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.625
+        },
+        {
+          "team": "Hakuna Matata",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.625
+        },
+        {
+          "team": "Harkonnen",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.75,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.75
+        },
+        {
+          "team": "Hippogriff",
+          "completed_team_cases": 3,
+          "team_confidence": 0.375,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.65625
+        },
+        {
+          "team": "Komodo",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.75,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.75
+        },
+        {
+          "team": "Lollipop",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.6071428571428571
+        },
+        {
+          "team": "Panthers",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.75,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.75
+        },
+        {
+          "team": "Phoenix",
+          "completed_team_cases": 3,
+          "team_confidence": 0.375,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.09375,
+            "sequence": 0.09375,
+            "popularity": 0.8125
+          },
+          "adaptive_recency_weight": 0.46875
+        },
+        {
+          "team": "Scrummy Bears",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.75,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.75
+        },
+        {
+          "team": "Slicers",
+          "completed_team_cases": 1,
+          "team_confidence": 0.16666666666666666,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.625
+        },
+        {
+          "team": "Strikers",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.5357142857142857
+        },
+        {
+          "team": "Team Titans Go",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.75,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.75
+        },
+        {
+          "team": "Unicorn",
+          "completed_team_cases": 3,
+          "team_confidence": 0.375,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.65625
+        },
+        {
+          "team": "Warriors",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.6071428571428571
+        },
+        {
+          "team": "WebRTC",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.75,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.75
+        },
+        {
+          "team": "Wyvern",
+          "completed_team_cases": 3,
+          "team_confidence": 0.375,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "adaptive_recency_weight": 0.65625
+        }
+      ]
+    },
+    {
+      "month": 20201104,
+      "eligible_cases": 6,
+      "full_outcome_window": false,
+      "completed_inner_months": [
+        20200503,
+        20200608,
+        20200705,
+        20200803
+      ],
+      "global_weights": {
+        "similarity": 0.25,
+        "sequence": 0.25,
+        "popularity": 0.5
+      },
+      "global_recency_weight": 0.25,
+      "global_three_factor_hit_rate": 0.3333333333333333,
+      "time_aware_popularity_recency_weight": 0.75,
+      "time_aware_popularity_hit_rate": 0.3333333333333333,
+      "per_team_configuration_hit_rate": 0.16666666666666666,
+      "adaptive_confidence_hit_rate": 0.3333333333333333,
+      "team_policies": [
+        {
+          "team": "A-Team",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "adaptive_recency_weight": 0.25
+        },
+        {
+          "team": "AADS",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.0,
+            "popularity": 0.75
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.17857142857142858,
+            "popularity": 0.5714285714285714
+          },
+          "adaptive_recency_weight": 0.3214285714285714
+        },
+        {
+          "team": "Arya",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.5,
+          "adaptive_weights": {
+            "similarity": 0.17857142857142858,
+            "sequence": 0.17857142857142858,
+            "popularity": 0.6428571428571428
+          },
+          "adaptive_recency_weight": 0.3214285714285714
+        },
+        {
+          "team": "Avengers",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.17857142857142858,
+            "sequence": 0.17857142857142858,
+            "popularity": 0.6428571428571428
+          },
+          "adaptive_recency_weight": 0.17857142857142858
+        },
+        {
+          "team": "Strikers",
+          "completed_team_cases": 2,
+          "team_confidence": 0.2857142857142857,
+          "per_team_weights": {
+            "similarity": 0.0,
+            "sequence": 0.0,
+            "popularity": 1.0
+          },
+          "per_team_recency_weight": 0.0,
+          "adaptive_weights": {
+            "similarity": 0.17857142857142858,
+            "sequence": 0.17857142857142858,
+            "popularity": 0.6428571428571428
+          },
+          "adaptive_recency_weight": 0.17857142857142858
+        },
+        {
+          "team": "WebRTC",
+          "completed_team_cases": 0,
+          "team_confidence": 0.0,
+          "per_team_weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "per_team_recency_weight": 0.25,
+          "adaptive_weights": {
+            "similarity": 0.25,
+            "sequence": 0.25,
+            "popularity": 0.5
+          },
+          "adaptive_recency_weight": 0.25
+        }
+      ]
+    }
+  ]
+}

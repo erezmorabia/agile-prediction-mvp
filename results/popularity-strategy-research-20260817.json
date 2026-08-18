@@ -1,0 +1,204 @@
+{
+  "study": "popularity baseline strategies",
+  "created_at": "2026-08-17T13:00:54",
+  "data": "data/raw/combined_dataset.xlsx",
+  "protocol": {
+    "top_n": 2,
+    "primary_population": "outer test months with complete three-month outcome windows",
+    "sensitivity_population": "all seven eligible outer test months",
+    "selection": "thresholds and blend weights use prior outer-month outcomes only",
+    "policies": [
+      "switch",
+      "split",
+      "blend"
+    ]
+  },
+  "primary_summary": {
+    "popularity": 0.43571428571428567,
+    "switch": 0.5117460317460318,
+    "split": 0.4445396825396825,
+    "blend": 0.5006349206349207,
+    "switch_popularity_gap": 0.07603174603174617,
+    "split_popularity_gap": 0.008825396825396847,
+    "blend_popularity_gap": 0.06492063492063499
+  },
+  "sensitivity_summary": {
+    "popularity": 0.43669032830523513,
+    "switch": 0.5357192152223208,
+    "split": 0.4305718229320714,
+    "blend": 0.5277827072858129,
+    "switch_popularity_gap": 0.09902888691708567,
+    "split_popularity_gap": -0.0061185053731637185,
+    "blend_popularity_gap": 0.09109237898057776
+  },
+  "per_month": [
+    {
+      "month": 20200503,
+      "full_outcome_window": true,
+      "eligible_cases": 18,
+      "convergence_hhi": 0.04878308002975874,
+      "selected_switch_threshold": 0.1,
+      "selected_blend_weight": 0.5,
+      "metrics": {
+        "popularity": 0.3333333333333333,
+        "split": 0.5555555555555556,
+        "switch:0.06": 0.6111111111111112,
+        "switch:0.10": 0.6111111111111112,
+        "switch:0.14": 0.6111111111111112,
+        "blend:0.25": 0.3333333333333333,
+        "blend:0.50": 0.5555555555555556,
+        "blend:0.75": 0.6111111111111112
+      },
+      "selected": {
+        "popularity": 0.3333333333333333,
+        "switch": 0.6111111111111112,
+        "split": 0.5555555555555556,
+        "blend": 0.5555555555555556
+      }
+    },
+    {
+      "month": 20200608,
+      "full_outcome_window": true,
+      "eligible_cases": 21,
+      "convergence_hhi": 0.046209428354990964,
+      "selected_switch_threshold": 0.06,
+      "selected_blend_weight": 0.75,
+      "metrics": {
+        "popularity": 0.2857142857142857,
+        "split": 0.3333333333333333,
+        "switch:0.06": 0.3333333333333333,
+        "switch:0.10": 0.3333333333333333,
+        "switch:0.14": 0.3333333333333333,
+        "blend:0.25": 0.19047619047619047,
+        "blend:0.50": 0.2857142857142857,
+        "blend:0.75": 0.3333333333333333
+      },
+      "selected": {
+        "popularity": 0.2857142857142857,
+        "switch": 0.3333333333333333,
+        "split": 0.3333333333333333,
+        "blend": 0.3333333333333333
+      }
+    },
+    {
+      "month": 20200705,
+      "full_outcome_window": true,
+      "eligible_cases": 20,
+      "convergence_hhi": 0.042898792169929194,
+      "selected_switch_threshold": 0.06,
+      "selected_blend_weight": 0.75,
+      "metrics": {
+        "popularity": 0.35,
+        "split": 0.45,
+        "switch:0.06": 0.5,
+        "switch:0.10": 0.5,
+        "switch:0.14": 0.5,
+        "blend:0.25": 0.5,
+        "blend:0.50": 0.55,
+        "blend:0.75": 0.5
+      },
+      "selected": {
+        "popularity": 0.35,
+        "switch": 0.5,
+        "split": 0.45,
+        "blend": 0.5
+      }
+    },
+    {
+      "month": 20200803,
+      "full_outcome_window": true,
+      "eligible_cases": 21,
+      "convergence_hhi": 0.04631491589262345,
+      "selected_switch_threshold": 0.06,
+      "selected_blend_weight": 0.75,
+      "metrics": {
+        "popularity": 0.8095238095238095,
+        "split": 0.5238095238095238,
+        "switch:0.06": 0.7142857142857143,
+        "switch:0.10": 0.7142857142857143,
+        "switch:0.14": 0.7142857142857143,
+        "blend:0.25": 0.7619047619047619,
+        "blend:0.50": 0.7142857142857143,
+        "blend:0.75": 0.7142857142857143
+      },
+      "selected": {
+        "popularity": 0.8095238095238095,
+        "switch": 0.7142857142857143,
+        "split": 0.5238095238095238,
+        "blend": 0.7142857142857143
+      }
+    },
+    {
+      "month": 20200906,
+      "full_outcome_window": true,
+      "eligible_cases": 25,
+      "convergence_hhi": 0.04493239588967009,
+      "selected_switch_threshold": 0.06,
+      "selected_blend_weight": 0.75,
+      "metrics": {
+        "popularity": 0.4,
+        "split": 0.36,
+        "switch:0.06": 0.4,
+        "switch:0.10": 0.4,
+        "switch:0.14": 0.4,
+        "blend:0.25": 0.4,
+        "blend:0.50": 0.4,
+        "blend:0.75": 0.4
+      },
+      "selected": {
+        "popularity": 0.4,
+        "switch": 0.4,
+        "split": 0.36,
+        "blend": 0.4
+      }
+    },
+    {
+      "month": 20201005,
+      "full_outcome_window": false,
+      "eligible_cases": 23,
+      "convergence_hhi": 0.04568411386593205,
+      "selected_switch_threshold": 0.06,
+      "selected_blend_weight": 0.75,
+      "metrics": {
+        "popularity": 0.4782608695652174,
+        "split": 0.391304347826087,
+        "switch:0.06": 0.391304347826087,
+        "switch:0.10": 0.391304347826087,
+        "switch:0.14": 0.391304347826087,
+        "blend:0.25": 0.34782608695652173,
+        "blend:0.50": 0.391304347826087,
+        "blend:0.75": 0.391304347826087
+      },
+      "selected": {
+        "popularity": 0.4782608695652174,
+        "switch": 0.391304347826087,
+        "split": 0.391304347826087,
+        "blend": 0.391304347826087
+      }
+    },
+    {
+      "month": 20201104,
+      "full_outcome_window": false,
+      "eligible_cases": 5,
+      "convergence_hhi": 0.044463653229887,
+      "selected_switch_threshold": 0.06,
+      "selected_blend_weight": 0.75,
+      "metrics": {
+        "popularity": 0.4,
+        "split": 0.4,
+        "switch:0.06": 0.8,
+        "switch:0.10": 0.8,
+        "switch:0.14": 0.8,
+        "blend:0.25": 0.4,
+        "blend:0.50": 0.8,
+        "blend:0.75": 0.8
+      },
+      "selected": {
+        "popularity": 0.4,
+        "switch": 0.8,
+        "split": 0.4,
+        "blend": 0.8
+      }
+    }
+  ]
+}
