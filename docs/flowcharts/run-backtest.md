@@ -11,9 +11,7 @@ flowchart TD
     A[Start backtest] --> B{At least four global snapshots?}
     B -->|no| Z[Return an explanatory error]
     B -->|yes| C[For each eligible prediction month]
-    C --> D{Cancellation requested?}
-    D -->|yes| X[Drop in-progress month and return partial completed results]
-    D -->|no| E[Build the fixed, policy-independent evaluable cohort]
+    C --> E[Build the fixed, policy-independent evaluable cohort]
     E --> F[Select global blend policy from completed prior months]
     F --> G[Independently select pure time-aware-popularity recency weight<br/>using the same completed prior months]
     G --> H[For every cohort case, rank exactly two practices under both arms]
@@ -23,7 +21,7 @@ flowchart TD
     K -->|yes| C
     K -->|no| L[Macro-average primary months with complete outcomes]
     L --> M[Also macro-average all months as sensitivity]
-    M --> N[Return per-month rows, both aggregates, and cancellation status]
+    M --> N[Return per-month rows and both aggregates]
 ```
 
 ## Notes
@@ -39,6 +37,3 @@ flowchart TD
   baseline.
 - **Primary versus sensitivity.** Primary results include only months with a complete outcome
   window; sensitivity results include every prediction month and remain separately labelled.
-- **Cancellation.** The API runs the backtest in a worker so the cancel endpoint remains available.
-  The engine checks cancellation at month boundaries and while scoring cases; an unfinished month
-  is not included in the returned results.

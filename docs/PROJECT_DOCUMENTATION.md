@@ -681,7 +681,6 @@ The system exposes a REST API using FastAPI:
 - `GET /api/teams/{team_name}/months` - Get available months for a team
 - `POST /api/recommendations` - Get recommendations for a team (`top_n` pinned to 2)
 - `POST /api/backtest` - Run the backtest of the global monthly adaptive blend (no parameters)
-- `POST /api/backtest/cancel` - Cancel an in-progress backtest
 - `GET /api/stats` - Get system statistics
 - `GET /api/sequences` - Get learned improvement sequences
 - `GET /api/example-data` - Serve the raw Excel dataset file for in-browser preview
@@ -711,7 +710,7 @@ The web interface is built with vanilla HTML/CSS/JavaScript using a Dark Academi
 - Team selection and a `Current Month → Prediction Month` dropdown; each option makes the baseline snapshot and target month explicit
 - Interactive result displays with inline tooltip explanations on each tab
 - A policy audit box showing the selected policy's weights, peer pool, and popularity recency for the current prediction month - no configuration form, since there are no user-adjustable model parameters
-- Primary and sensitivity result sections in the Backtest tab, with a cancel button for long runs
+- Primary and sensitivity result sections in the Backtest tab, with estimated progress while the run is in progress
 - "About" modal that renders project documentation in-browser
 
 ---
@@ -795,7 +794,7 @@ src/
 - Lazy evaluation: Similarity matrices built on-demand, not pre-computed
 
 **Optimization Strategies:**
-- Cancellable backtest: a long backtest run can be cancelled mid-execution
+- Estimated progress: the interface reports progress while a backtest is running
 - Cached policy scoring: `PolicyEngine` caches case components, evaluable cohorts, and per-month hit-rate sweeps so repeated backtests and recommendation calls for the same month are near-instant after the first pass
 - Async operations: FastAPI async endpoints for concurrent request handling
 - Memory efficiency: Process data in chunks where possible
@@ -990,7 +989,7 @@ In its place, one **global policy** is selected automatically for each predictio
 **Accuracy vs. Speed Trade-offs:**
 - A larger peer count in the grid improves candidate coverage but increases per-policy computation
 - Sequence and case-component caching reduces repeated computation across prediction months
-- A long backtest run can be cancelled mid-execution via `POST /api/backtest/cancel`
+- The interface reports estimated progress while a backtest is running
 
 ### 6.7 Practical Validation Readiness
 
@@ -1440,7 +1439,7 @@ The system is ready for deployment and real-world testing:
 - **recommender.py**: Thin wrapper delegating to `PolicyEngine`
 
 **Validation Module** (`src/validation/`):
-- **backtest.py**: Rolling window backtest of the blend, primary/sensitivity aggregation, cancellation
+- **backtest.py**: Rolling window backtest of the blend and primary/sensitivity aggregation
 - **metrics.py**: Accuracy calculations, random baseline computation
 
 **API Module** (`src/api/`):
@@ -1597,7 +1596,7 @@ recommendations = recommendations[:top_n]
 
 **4. POST /api/backtest**
 - **Description**: Run the backtest of the global monthly adaptive blend. No request body - there are no user-adjustable model parameters
-- **Response**: `{ per_month_results, primary, sensitivity, cancelled }` - `primary` covers prediction months with a complete 3-snapshot outcome window, `sensitivity` covers every prediction month; the two are never mixed
+- **Response**: `{ per_month_results, primary, sensitivity }` - `primary` covers prediction months with a complete 3-snapshot outcome window, `sensitivity` covers every prediction month; the two are never mixed
 
 **5. GET /api/stats**
 - **Description**: Get system statistics
@@ -1607,15 +1606,11 @@ recommendations = recommendations[:top_n]
 - **Description**: Get learned improvement sequences
 - **Response**: List of sequence transitions with probabilities
 
-**7. POST /api/backtest/cancel**
-- **Description**: Cancel an in-progress backtest run
-- **Response**: Cancellation status
-
-**8. GET /api/example-data**
+**7. GET /api/example-data**
 - **Description**: Serve the raw Excel dataset file for in-browser preview (Statistics tab modal)
 - **Response**: Excel file download (`combined_dataset.xlsx`)
 
-**9. GET /api/docs**
+**8. GET /api/docs**
 - **Description**: Serve project documentation content as markdown
 - **Response**: Raw markdown string rendered by the About modal in the frontend
 
@@ -1719,7 +1714,6 @@ See **docs/QUICK_START.md** for a 3-step quick start guide.
 - No configuration form - there is nothing to adjust, since the monthly policy is the sole configuration authority
 - Click "Run Backtest Validation" to validate on historical data
 - View primary and sensitivity accuracy metrics, improvement factors, and the time-aware-popularity comparison, plus a per-month table showing each month's selected policy
-- Click "Cancel Backtest" to stop a long-running validation
 
 **3. Sequences Tab:**
 - View learned improvement sequences
@@ -1810,7 +1804,7 @@ Enter month (YYMMDD-style integer): 200105
 
 **Backtest takes too long:**
 - Normal: the first backtest run after startup sweeps all 675 candidate policies per prediction month and can take up to a couple of minutes; subsequent runs reuse `PolicyEngine`'s caches and are much faster
-- Can be cancelled via the "Cancel Backtest" button (or `POST /api/backtest/cancel`)
+- The interface shows estimated progress while the backtest runs
 - Check server logs for progress
 
 ---
@@ -1924,9 +1918,8 @@ agile-prediction-mvp/
 **Validation Module** (`src/validation/`):
 
 **backtest.py** - BacktestEngine class:
-- `run_backtest(cancellation_check=None)`: Runs the rolling window backtest of the blend - no config parameter, no user-adjustable model parameters
+- `run_backtest()`: Runs the rolling window backtest of the blend - no config parameter, no user-adjustable model parameters
 - Validates recommendations against actual improvements, split into primary and sensitivity aggregates
-- Supports cancellation mid-execution, resetting any stale prior cancellation at the start of each run
 
 **API Module** (`src/api/`):
 
@@ -1983,7 +1976,7 @@ agile-prediction-mvp/
 - **Purpose**: Validates the blend using rolling window backtesting, split into primary and sensitivity aggregates
 - **Key Methods**:
   - `run_backtest()`: Runs rolling window backtest
-  - `_aggregate_scope()`: Aggregates one scope (primary/sensitivity), used for both complete and cancelled runs
+  - `_aggregate_scope()`: Aggregates one scope (primary or sensitivity)
 - **Dependencies**: RecommendationEngine (via its `PolicyEngine`), DataProcessor
 
 **Important Algorithms:** see §9.2 (Algorithm Details) for direct code-level snippets of cosine

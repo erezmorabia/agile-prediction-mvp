@@ -169,7 +169,6 @@ class TestAPIService:
             'per_month_results': [],
             'primary': {'months_included': 0, 'overall_accuracy': None},
             'sensitivity': {'months_included': 0, 'overall_accuracy': None},
-            'cancelled': False,
         }
 
         api_service.backtest_engine.run_backtest = Mock(return_value=mock_result)
@@ -189,14 +188,6 @@ class TestAPIService:
 
         signature = inspect.signature(APIService.run_backtest)
         assert list(signature.parameters) == ["self"]
-
-    def test_cancel_backtest(self, api_service):
-        """Test cancel_backtest cancels the backtest engine."""
-        api_service.backtest_engine.cancel = Mock()
-
-        api_service.cancel_backtest()
-
-        api_service.backtest_engine.cancel.assert_called_once()
 
     def test_get_system_stats(self, api_service, mock_recommender, mock_processor):
         """Test get_system_stats returns system statistics."""

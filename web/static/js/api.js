@@ -90,25 +90,6 @@ class APIClient {
     }
 
     /**
-     * Cancel an in-progress backtest run.
-     */
-    async cancelBacktest() {
-        const response = await fetch(`${API_BASE}/api/backtest/cancel`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || `Failed to cancel backtest: ${response.statusText}`);
-        }
-
-        return await response.json();
-    }
-
-    /**
      * Get system statistics
      */
     async getSystemStats() {

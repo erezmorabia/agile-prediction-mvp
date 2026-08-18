@@ -65,9 +65,7 @@ class TestAPIRoutes:
                 'precision_improvement_factor': None, 'recall_improvement_factor': None,
                 'mrr_improvement_factor': None, 'teams_tested': 0, 'avg_improvements_per_case': None,
             },
-            'cancelled': False,
         })
-        service.cancel_backtest = Mock()
         service.get_system_stats = Mock(return_value={
             'num_teams': 10,
             'num_practices': 30,
@@ -160,14 +158,6 @@ class TestAPIRoutes:
         assert 'sensitivity' in data
         mock_service.run_backtest.assert_called_once_with()
 
-    def test_post_backtest_cancel(self, client, mock_service):
-        """Test POST /api/backtest/cancel endpoint."""
-        response = client.post("/api/backtest/cancel")
-        assert response.status_code == 200
-        data = response.json()
-        assert 'status' in data
-        mock_service.cancel_backtest.assert_called_once()
-
     def test_get_system_stats(self, client, mock_service):
         """Test GET /api/stats endpoint."""
         response = client.get("/api/stats")
@@ -187,3 +177,4 @@ class TestAPIRoutes:
         assert client.post("/api/optimize", json={}).status_code == 404
         assert client.post("/api/optimize/cancel").status_code == 404
         assert client.get("/api/optimize/latest").status_code == 404
+        assert client.post("/api/backtest/cancel").status_code == 404

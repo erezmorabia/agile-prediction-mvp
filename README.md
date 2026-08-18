@@ -60,7 +60,7 @@ The checked-in input dataset has 87 teams, 35 practices, 10 recorded months, and
 The application provides:
 
 - a web interface with Statistics, Backtest, Sequences, and Recommendations tabs;
-- a FastAPI API, including `POST /api/recommendations`, `POST /api/backtest`, `POST /api/backtest/cancel`, `GET /api/stats`, and `GET /api/sequences`;
+- a FastAPI API, including `POST /api/recommendations`, `POST /api/backtest`, `GET /api/stats`, and `GET /api/sequences`;
 - an interactive CLI: `python src/main.py data/raw/combined_dataset.xlsx`.
 
 The recommendations request accepts `team`, `month`, and optional `top_n`, which is constrained to `2`. Peer count and all scoring parameters are selected by the monthly policy, not passed by callers.

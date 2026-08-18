@@ -191,7 +191,6 @@ class BacktestResponse(BaseModel):
     per_month_results: list[PerMonthResult]
     primary: BacktestScopeResult
     sensitivity: BacktestScopeResult
-    cancelled: bool = False
 
 
 class MissingValuesDetails(BaseModel):

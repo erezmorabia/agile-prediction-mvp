@@ -169,38 +169,17 @@ class TestBacktestEngine:
                 expected_gap = scope['overall_accuracy'] - scope['random_baseline']
                 assert abs(scope['improvement_gap'] - expected_gap) < 0.01
     
-    def test_run_backtest_accepts_no_model_parameters(self, sample_recommender, sample_processor):
-        """run_backtest() takes only an optional cancellation_check - no config dict,
-        no train_ratio. The monthly policy is the only configuration authority."""
+    def test_run_backtest_accepts_no_parameters(self, sample_recommender, sample_processor):
+        """run_backtest() takes no configuration parameters; the monthly policy is the
+        only configuration authority."""
         import inspect
 
         signature = inspect.signature(BacktestEngine.run_backtest)
-        assert list(signature.parameters) == ["self", "cancellation_check"]
-
-    def test_run_backtest_cancellation(self, sample_recommender, sample_processor):
-        """Test run_backtest handles cancellation."""
-        backtest = BacktestEngine(sample_recommender, sample_processor)
-        months = sample_processor.get_all_months()
-        
-        if len(months) < 4:
-            pytest.skip("Need at least 4 months for backtest")
-        
-        # Create cancellation check that returns True after first iteration
-        call_count = [0]
-        def cancellation_check():
-            call_count[0] += 1
-            return call_count[0] > 1
-        
-        result = backtest.run_backtest(cancellation_check=cancellation_check)
-        
-        # Should return partial results with cancelled flag
-        assert isinstance(result, dict)
-        assert result.get('cancelled', False) is True
-        assert 'per_month_results' in result
+        assert list(signature.parameters) == ["self"]
     
     def test_aggregate_scope_empty_returns_none_fields(self, sample_recommender, sample_processor):
-        """_aggregate_scope([]) - e.g. a cancelled run with zero qualifying months - returns
-        None rate fields (not 0.0), so the caller can render 'not enough completed months'
+        """_aggregate_scope([]) returns None rate fields (not 0.0), so the caller can
+        render 'not enough completed months'
         instead of a misleading 0%. Replaces the old _build_partial_results, which this
         refactor collapsed into one aggregation function used for every scope."""
         backtest = BacktestEngine(sample_recommender, sample_processor)

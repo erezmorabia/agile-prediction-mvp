@@ -12,8 +12,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 
 logger = logging.getLogger(__name__)
 
-# Thread pool executor for running the (potentially long) backtest without blocking the
-# event loop, so a concurrent cancel request can still be processed.
+# Thread pool executor for running the backtest without blocking the event loop.
 _executor = ThreadPoolExecutor(max_workers=1)
 from .models import (
     BacktestResponse,
@@ -49,7 +48,6 @@ def create_routes(service: APIService) -> APIRouter:
             - GET /api/teams/{team_name}/months - Get available months for a team
             - POST /api/recommendations - Get recommendations
             - POST /api/backtest - Run backtest validation
-            - POST /api/backtest/cancel - Cancel an in-progress backtest
             - GET /api/stats - Get system statistics
             - GET /api/sequences - Get improvement sequences
             - GET /api/example-data - Serve the raw Excel dataset
@@ -113,8 +111,7 @@ def create_routes(service: APIService) -> APIRouter:
     @router.post("/api/backtest", response_model=BacktestResponse)
     async def run_backtest():
         """Run the global two-month adaptive blend backtest. No model parameters are
-        accepted - the monthly policy is the only configuration authority. Runs in a
-        thread pool so a concurrent POST /api/backtest/cancel can still be processed."""
+        accepted - the monthly policy is the only configuration authority."""
         try:
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(_executor, service.run_backtest)
@@ -127,17 +124,6 @@ def create_routes(service: APIService) -> APIRouter:
             raise
         except Exception as e:
             logger.error(f"run_backtest: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
-
-    @router.post("/api/backtest/cancel")
-    async def cancel_backtest():
-        """Cancel the current backtest run."""
-        try:
-            service.cancel_backtest()
-            logger.info("Backtest cancellation requested")
-            return {"status": "cancelled", "message": "Backtest cancellation requested"}
-        except Exception as e:
-            logger.error(f"cancel_backtest: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.get("/api/stats", response_model=SystemStats)

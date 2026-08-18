@@ -34,22 +34,15 @@ sequenceDiagram
     end
     Backtest->>Backtest: aggregate complete-window primary results
     Backtest->>Backtest: aggregate all-month sensitivity results
-    Backtest-->>Worker: per-month rows, both aggregates, cancelled flag
+    Backtest-->>Worker: per-month rows and both aggregates
     Worker-->>Route: result
     Route-->>Browser: backtest response
     Browser->>Browser: render primary, sensitivity, and per-month results
-
-    opt user cancels while request is running
-        Browser->>Route: POST /api/backtest/cancel
-        Route->>Backtest: cancel()
-        Backtest-->>Worker: completed-month results + cancelled: true
-    end
 ```
 
 ## Notes
 
-- The route uses a worker thread so the event loop can accept `POST /api/backtest/cancel` while the
-  calculation is running.
+- The route uses a worker thread so the event loop remains responsive while the calculation runs.
 - `evaluable_cases()` establishes the same cohort for all 675 blend candidates and for the
   popularity arm. A policy never controls which cases are counted.
 - The blend policy maximizes mean monthly HR@2 across completed earlier months. The comparison arm

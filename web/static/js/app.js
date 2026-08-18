@@ -261,8 +261,8 @@ function initializeRecommendations() {
                         option.value = month;
                         option.dataset.baselineMonth = baselineMonth || '';
                         option.textContent = baselineMonth
-                            ? `Current: ${formatMonth(baselineMonth)} → Predict: ${formatMonth(month)}`
-                            : `Predict: ${formatMonth(month)}`;
+                            ? `Baseline: ${formatMonth(baselineMonth)} → Recommend for: ${formatMonth(month)}`
+                            : `Recommend for: ${formatMonth(month)}`;
                         monthSelect.appendChild(option);
                     });
                     monthSelect.disabled = false;
@@ -321,7 +321,6 @@ function initializeRecommendations() {
 function initializeBacktest() {
     try {
         const runBacktestBtn = safeGetElementSync('run-backtest-btn', 0);
-        const cancelBacktestBtn = safeGetElementSync('cancel-backtest-btn', 0);
 
         if (!runBacktestBtn) {
             // Retry with a small delay
@@ -340,15 +339,6 @@ function initializeBacktest() {
             console.error('Error attaching event listener to run-backtest-btn:', error);
         }
 
-        if (cancelBacktestBtn) {
-            cancelBacktestBtn.addEventListener('click', async () => {
-                try {
-                    await apiClient.cancelBacktest();
-                } catch (error) {
-                    showError(error.message);
-                }
-            });
-        }
     } catch (error) {
         console.error('Error in initializeBacktest:', error);
     }
@@ -497,11 +487,11 @@ function buildVerdictLine(data) {
 
         if (v.validated_count === v.total_recommendations) {
             const names = validatedRecs.map(r => r.practice).join(' and ');
-            return `<div class="verdict-line verdict-hit">✓ Recommendation validated: ${v.validated_count}/${v.total_recommendations} — ${names} ${v.validated_count === 1 ? 'was' : 'were'} adopted</div>`;
+            return `<div class="verdict-line verdict-hit">✓ Recommendation aligned with a later improvement: ${v.validated_count}/${v.total_recommendations} — ${names} improved in the outcome window</div>`;
         } else if (v.validated_count > 0) {
             const hitNames = validatedRecs.map(r => r.practice).join(' and ');
             const missNames = unvalidatedRecs.map(r => r.practice).join(' and ');
-            return `<div class="verdict-line verdict-partial">~ Partial: ${v.validated_count}/${v.total_recommendations} — ${hitNames} matched; ${missNames} was not adopted</div>`;
+            return `<div class="verdict-line verdict-partial">~ Partial alignment: ${v.validated_count}/${v.total_recommendations} — ${hitNames} matched a later improvement; ${missNames} did not improve in the outcome window</div>`;
         } else {
             const actualNames = (v.actual_improvements || []).map(i => i.practice).join(' and ');
             return `<div class="verdict-line verdict-miss">✗ Missed: 0/${v.total_recommendations}${actualNames ? ` — team actually improved ${actualNames}` : ''}</div>`;
@@ -512,7 +502,7 @@ function buildVerdictLine(data) {
     let monthsText = formatMonth(v.next_month);
     if (v.month_after) monthsText += `, ${formatMonth(v.month_after)}`;
     if (v.month_after_2) monthsText += `, ${formatMonth(v.month_after_2)}`;
-    return `<div class="verdict-line verdict-nodata">— No practice changes in validation window (${monthsText}); accuracy not computed</div>`;
+    return `<div class="verdict-line verdict-nodata">— No practice improvements in the outcome window (${monthsText}); recommendation alignment is not computed</div>`;
 }
 
 /**
@@ -538,7 +528,7 @@ function displayRecommendations(data) {
         resultsDiv.innerHTML = `
             <div class="recommendations-header">
                 <h3>Recommendations for ${data.team}</h3>
-                <p class="month-info">Current snapshot: ${formatMonth(baselineMonthForPrediction(data.team, data.month) || 0)} → prediction: ${formatMonth(data.month)}</p>
+                <p class="month-info">Baseline snapshot: ${formatMonth(baselineMonthForPrediction(data.team, data.month) || 0)} → recommendation month: ${formatMonth(data.month)}</p>
             </div>
             <div class="error-message">${escapeHtml(data.message)}</div>
             ${policyAuditHtml(data.selected_policy)}
@@ -565,7 +555,7 @@ function displayRecommendations(data) {
     let html = `
         <div class="recommendations-header">
             <h3>Top ${data.recommendations.length} Recommendations for ${data.team}</h3>
-            <p class="month-info">Current snapshot: ${formatMonth(baselineMonthForPrediction(data.team, data.month) || 0)} → likely next practices for: ${formatMonth(data.month)}</p>
+            <p class="month-info">Baseline snapshot: ${formatMonth(baselineMonthForPrediction(data.team, data.month) || 0)} → likely next practices for recommendation month: ${formatMonth(data.month)}</p>
             ${verdictLine}
             ${data.no_similar_teams_found ? '<p style="color:#8a8785;font-size:0.9em;margin-top:6px;">No comparable team was found for this baseline — recommendations rely on sequence and popularity evidence only.</p>' : ''}
         </div>
@@ -596,7 +586,7 @@ function displayRecommendations(data) {
         <div class="info-box">
             <strong>Understanding the Output:</strong>
             <ul>
-                <li><strong>Current Level:</strong> Your team's maturity level (0-3 scale: 0=Not implemented, 1=Basic, 2=Intermediate, 3=Mature)</li>
+                <li><strong>Current Level:</strong> Your team's maturity level (0–3 scale: 0 = Not implemented, 1 = Basic, 2 = Intermediate, 3 = Mature)</li>
                 <li><strong>Recommendation Score:</strong> Range 0.0-1.0 (higher = stronger recommendation, more evidence)</li>
                 <li><strong>Score blends three sources</strong> — similarity, sequence, and time-aware popularity — using this month's selected policy shown above.</li>
             </ul>
@@ -604,12 +594,12 @@ function displayRecommendations(data) {
                 <summary><strong>Click to see detailed explanation of how scores are calculated</strong></summary>
                 <div class="explanation-content">
                     <h4>How Recommendation Scores Work</h4>
-                    <p>Every prediction month, the system selects one global policy from earlier prediction months whose outcomes have already closed, then blends three evidence sources using that policy's weights (see the box above for this month's actual weights):</p>
+                    <p>For every recommendation month, the system selects one global policy from earlier prediction months whose outcomes have already closed, then blends three evidence sources using that policy's weights (see the box above for this month's actual weights):</p>
 
                     <div class="explanation-section">
                         <h5>1. Similarity</h5>
                         <ul>
-                            <li>The system compares your team's current state against <strong>all teams at all past months</strong></li>
+                            <li>The system compares your team's baseline profile against <strong>all team snapshots strictly before that baseline</strong></li>
                             <li>Considers a peer's improvements in the <strong>two observed snapshots</strong> after it looked similar to you (fixed window, never varies)</li>
                             <li>Each improvement is weighted by:
                                 <ul>
@@ -645,7 +635,7 @@ function displayRecommendations(data) {
                             <li>Each of the three components is <strong>normalized separately</strong> before combining</li>
                             <li>Then combined with a weighted sum:
                                 <div class="formula">Final Score = similarity_weight × Similarity + sequence_weight × Sequence + popularity_weight × Popularity</div>
-                                <p style="font-size: 0.9em; color: #666; margin-top: 5px;">The weights are selected once per prediction month (not per team) from the mean accuracy of earlier completed months — see the policy box above for this month's actual weights.</p>
+                                <p style="font-size: 0.9em; color: #666; margin-top: 5px;">The weights are selected once per recommendation month (not per team) from the mean alignment rate of earlier completed months — see the policy box above for this month's actual weights.</p>
                             </li>
                             <li>Practices are then ranked by this combined score</li>
                             <li>The <strong>top 2 eligible practices</strong> (not already at max level) are recommended — always exactly two</li>
@@ -683,7 +673,7 @@ function displayRecommendations(data) {
                             <strong>Recommendation Score:</strong>${tip('A weighted blend of similarity, sequence, and time-aware popularity evidence, using this month\'s selected policy. Higher = more evidence from the dataset.')} ${rec.score.toFixed(3)} <span class="score-range">(range: 0.0-1.0, higher = stronger)</span>
                         </div>
                         <div class="rec-detail">
-                            <strong>Current Level:</strong>${tip('Your team\'s maturity on this practice. 0 = not implemented, 1 = basic, 2 = intermediate, 3 = mature. Only practices below level 3 are recommended.')} ${rec.level_display || `Level ${rec.level_num} (${rec.level_description})`}
+                            <strong>Current Level:</strong>${tip('Your team\'s maturity on this practice. 0 = not implemented, 1 = basic, 2 = intermediate, 3 = mature. Only practices below maturity level 3 are eligible for recommendation.')} ${rec.level_display || `Level ${rec.level_num} (${rec.level_description})`}
                         </div>
                         <div class="rec-detail">
                             <strong>Why:</strong>
@@ -693,7 +683,7 @@ function displayRecommendations(data) {
                             }
                             ${rec.similar_teams && rec.similar_teams.length > 0 ? `
                                 <ul class="similar-teams-list" style="margin: 8px 0 0 20px; padding: 0;">
-                                    <li style="margin: 4px 0; list-style: none; font-size: 0.9em; color: #555;">Similar teams that improved this practice${tip('Cosine similarity of practice maturity profiles across all historical months. Higher % = more similar overall agile state.')}</li>
+                                    <li style="margin: 4px 0; list-style: none; font-size: 0.9em; color: #555;">Comparable teams that improved this practice${tip('Cosine similarity of practice maturity profiles at historical snapshots before your baseline. Higher % = a more comparable maturity profile.')}</li>
                                     ${rec.similar_teams.map(st => {
                                         const similarAt = st.similar_at_month || st.month;
                                         const similarAtText = similarAt !== st.month
@@ -711,7 +701,7 @@ function displayRecommendations(data) {
                         </div>
                         ${data.validation ? `
                             <div class="rec-detail validation-status">
-                                <strong>Validation:</strong>${tip('Checked against actual data: did the team improve this practice in the 1–3 months after the recommendation? \'Validated\' means the recommendation aligned with a later improvement.')} ${rec.improved_in_months ?
+                                <strong>Validation:</strong>${tip('Checked against actual data: did the team improve this practice in the outcome window—the recommendation month and the following two recorded snapshots? \'Validated\' means the recommendation aligned with an observed improvement.')} ${rec.improved_in_months ?
                                     (rec.improved_in_months.length === 3 
                                         ? `${validatedText} in month ${formatMonth(rec.improved_in_months[0])}, ${formatMonth(rec.improved_in_months[1])}, AND ${formatMonth(rec.improved_in_months[2])}`
                                         : rec.improved_in_months.length === 2 
@@ -790,14 +780,14 @@ function displayRecommendations(data) {
             // Accuracy was calculated (both improvements and recommendations exist)
             html += `
                 <p class="accuracy-info" style="margin-top: 15px;">
-                    <strong>Recommendation Accuracy:</strong> ${data.validation.validated_count}/${data.validation.total_recommendations} = ${(data.validation.accuracy * 100).toFixed(1)}%
+                    <strong>Recommendation Alignment:</strong> ${data.validation.validated_count}/${data.validation.total_recommendations} = ${(data.validation.accuracy * 100).toFixed(1)}%
                 </p>
             `;
         } else if (data.validation.total_recommendations === 0) {
             // Improvements occurred but no recommendations were generated
             html += `
                 <p class="accuracy-info" style="color: #666; font-style: italic; margin-top: 15px;">
-                    <strong>Recommendation Accuracy:</strong> Not calculated (no recommendations were generated)
+                    <strong>Recommendation Alignment:</strong> Not calculated (no recommendations were generated)
                 </p>
                 <p style="color: #666; font-size: 0.9em; margin-top: 8px;">
                     Note: The system couldn't generate recommendations (all practices may be at max level, or no similar teams/sequences found).
@@ -807,7 +797,7 @@ function displayRecommendations(data) {
             // No improvements occurred (but recommendations were generated)
             html += `
                 <p class="accuracy-info" style="color: #666; font-style: italic; margin-top: 15px;">
-                    <strong>Recommendation Accuracy:</strong> Not calculated (no improvements occurred in validation window)
+                    <strong>Recommendation Alignment:</strong> Not calculated (no improvements occurred in the outcome window)
                 </p>
                 <p style="color: #666; font-size: 0.9em; margin-top: 8px;">
                     Note: This is not a model failure - it just means the team didn't improve anything in the validation window.
@@ -831,7 +821,7 @@ function displayRecommendations(data) {
             { key: 'level_0', name: 'Not implemented', num: 0 },
             { key: 'level_1', name: 'Basic level', num: 1 },
             { key: 'level_2', name: 'Intermediate level', num: 2 },
-            { key: 'level_3', name: 'Advanced level', num: 3 }
+            { key: 'level_3', name: 'Mature level', num: 3 }
         ];
         
         levels.forEach(level => {
@@ -867,11 +857,9 @@ function displayRecommendations(data) {
 async function runBacktest() {
     const resultsDiv = document.getElementById('backtest-results');
     const runBtn = document.getElementById('run-backtest-btn');
-    const cancelBtn = document.getElementById('cancel-backtest-btn');
     resultsDiv.classList.add('hidden');
     startBacktestProgress();
     if (runBtn) runBtn.disabled = true;
-    if (cancelBtn) cancelBtn.classList.remove('hidden');
 
     try {
         console.log('Running backtest validation...');
@@ -889,7 +877,6 @@ async function runBacktest() {
     } finally {
         stopBacktestProgress();
         if (runBtn) runBtn.disabled = false;
-        if (cancelBtn) cancelBtn.classList.add('hidden');
     }
 }
 
@@ -957,7 +944,7 @@ function renderScopeSummary(scope, label) {
             <h4 style="margin-top: 0; text-align: center;">${label} — Blend vs Random Baseline</h4>
             <div style="display: flex; justify-content: space-around; align-items: center; margin: 20px 0;">
                 <div style="text-align: center;">
-                    <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Blend Accuracy</div>
+                    <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Blend Alignment (Hit Rate@2)</div>
                     <div style="font-size: 2.5em; font-weight: bold; color: #f59e0b;">${modelAccuracy.toFixed(1)}%</div>
                 </div>
                 <div style="font-size: 2em; color: #6b6865;">vs</div>
@@ -986,7 +973,7 @@ function renderScopeSummary(scope, label) {
             </h4>
             <div style="display: flex; justify-content: space-around; align-items: center; margin: 20px 0;">
                 <div style="text-align: center;">
-                    <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Blend Accuracy</div>
+                    <div style="font-size: 0.9em; color: #8a8785; margin-bottom: 5px;">Blend Alignment (Hit Rate@2)</div>
                     <div style="font-size: 2.5em; font-weight: bold; color: #f59e0b;">${modelAccuracy.toFixed(1)}%</div>
                 </div>
                 <div style="font-size: 2em; color: #6b6865;">vs</div>
@@ -1041,11 +1028,11 @@ function renderScopeSummary(scope, label) {
                 <div class="metric-description">team/month combinations</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Correct</div>
+                <div class="metric-label">Validated Cases</div>
                 <div class="metric-value">${scope.correct_predictions}</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Overall Accuracy${tip('Macro average: accuracy is computed per month first, then those rates are averaged equally across all months.')}</div>
+                <div class="metric-label">Overall Alignment (Hit Rate@2)${tip('Macro average: the hit rate is computed per month first, then those rates are averaged equally across all months.')}</div>
                 <div class="metric-value highlight">${modelAccuracy.toFixed(1)}%</div>
             </div>
             <div class="metric">
@@ -1066,10 +1053,6 @@ function displayBacktestResults(data) {
         return;
     }
 
-    const cancelNotice = data.cancelled
-        ? `<div class="verdict-line verdict-partial" style="margin-bottom: 16px;">⚠ Backtest was cancelled — results reflect only the months completed before cancellation.</div>`
-        : '';
-
     // Per-month table: every prediction month, tagged Primary or Sensitivity
     let perMonthTable = '';
     if (data.per_month_results && Array.isArray(data.per_month_results) && data.per_month_results.length > 0) {
@@ -1083,8 +1066,8 @@ function displayBacktestResults(data) {
                             <th>Recommendation Month ${tip('The month for which likely next practices are identified. The model uses only data from prior months.')}</th>
                             <th>Scope ${tip('Primary months have a complete 3-snapshot outcome window and feed the primary aggregate. Sensitivity-only months have a truncated window and are reported separately, never mixed into the primary figures.')}</th>
                             <th>Evaluable Cases ${tip('Team/month cases with a usable baseline, at least two non-maxed candidate practices, and at least one observed improvement in the outcome window.')}</th>
-                            <th>Correct</th>
-                            <th>Blend Accuracy</th>
+                            <th>Validated Cases</th>
+                            <th>Blend Alignment (Hit Rate@2)</th>
                             <th>Time-Aware Popularity ${tip('Independently selected pure-popularity comparison arm (0% similarity / 0% sequence) on the same evaluable cases.')}</th>
                             <th>Diff</th>
                             <th>Precision@N</th>
@@ -1132,12 +1115,10 @@ function displayBacktestResults(data) {
     const html = `
         <div class="backtest-results">
             <h3>Backtest Validation Results (Rolling Window)</h3>
-            ${cancelNotice}
-
             <h4 style="margin-top: 30px;">Primary Results <span style="font-size: 0.7em; color: #8a8785;">(months with a complete 3-snapshot outcome window)</span></h4>
             ${renderScopeSummary(data.primary, 'Primary')}
 
-            <h4 style="margin-top: 30px;">Sensitivity Results <span style="font-size: 0.7em; color: #8a8785;">(all prediction months, including truncated outcome windows — kept separate from the primary aggregate)</span></h4>
+            <h4 style="margin-top: 30px;">Sensitivity Results <span style="font-size: 0.7em; color: #8a8785;">(all recommendation months, including truncated outcome windows — kept separate from the primary aggregate)</span></h4>
             ${renderScopeSummary(data.sensitivity, 'Sensitivity')}
 
             <div style="margin-top: 14px; font-size: 0.82em; color: #6b6865; text-align: center;">

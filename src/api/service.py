@@ -445,8 +445,8 @@ class APIService:
         accepted - the monthly policy is the only configuration authority.
 
         Returns:
-            Dictionary matching BacktestResponse: per_month_results, primary,
-            sensitivity, cancelled.
+            Dictionary matching BacktestResponse: per_month_results, primary, and
+            sensitivity.
         """
         result = self.backtest_engine.run_backtest()
 
@@ -455,10 +455,6 @@ class APIService:
 
         result.pop("status", None)
         return result
-
-    def cancel_backtest(self) -> None:
-        """Cancel the current backtest run."""
-        self.backtest_engine.cancel()
 
     def get_system_stats(self) -> dict[str, Any]:
         """

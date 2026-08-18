@@ -28,7 +28,7 @@ class TestTabRendering:
         page.wait_for_selector("#backtest-tab.active", timeout=5_000)
         expect(page.locator("#run-backtest-btn")).to_be_visible()
         expect(page.locator("#find-optimal-btn")).to_have_count(0)
-        expect(page.locator("#cancel-backtest-btn")).to_be_hidden()
+        expect(page.locator("#cancel-backtest-btn")).to_have_count(0)
 
     def test_sequences_tab_loads(self, page: Page):
         """Sequences tab triggers a lazy fetch and renders the sequences section."""

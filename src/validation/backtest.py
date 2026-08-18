@@ -3,7 +3,6 @@ BacktestEngine: Validate the global two-month adaptive blend against historical 
 """
 
 import logging
-from collections.abc import Callable
 
 from scipy.special import comb
 
@@ -13,10 +12,9 @@ from .metrics import MetricsCalculator
 
 logger = logging.getLogger(__name__)
 
-# Returned for a scope (primary/sensitivity) with zero qualifying months - e.g. a
-# cancelled run that stopped before any full-outcome-window month completed. Rate
-# fields are None (not 0.0) so callers can render "not enough completed months"
-# instead of a misleading 0%.
+# Returned for a scope (primary/sensitivity) with zero qualifying months. Rate fields
+# are None (not 0.0) so callers can render "not enough completed months" instead of
+# a misleading 0%.
 _EMPTY_SCOPE = {
     "months_included": 0,
     "total_predictions": 0,
@@ -60,15 +58,6 @@ class BacktestEngine:
         self.recommender = recommender_engine
         self.processor = processor
         self.policy_engine = recommender_engine.policy_engine
-        self._cancelled = False
-
-    def cancel(self) -> None:
-        """Request cancellation of an in-progress run_backtest() call."""
-        self._cancelled = True
-
-    def reset_cancellation(self) -> None:
-        """Clear a prior cancellation request before starting a new run."""
-        self._cancelled = False
 
     @staticmethod
     def _expected_random_mrr(n: int, k: int, top_n: int) -> float:
@@ -114,11 +103,6 @@ class BacktestEngine:
                 return min(1.0, (k_avg / total_practices) * top_n)
         return min(1.0, (k_avg / total_practices) * top_n)
 
-    def _is_cancelled(self, cancellation_check: Callable[[], bool] | None) -> bool:
-        if cancellation_check is not None:
-            return cancellation_check()
-        return self._cancelled
-
     def _empty_month_row(self, month: int) -> dict:
         engine = self.policy_engine
         selected = engine.select_policy(month)
@@ -140,17 +124,12 @@ class BacktestEngine:
             "popularity_arm_recency_weight": popularity_arm.policy.recency_weight,
         }
 
-    def _score_month(self, month: int, total_practices: int, cancellation_check: Callable[[], bool] | None):
-        """Score one prediction month over its fixed evaluable cohort.
-
-        Returns (row, improvements_per_case, expected_mrr_per_case, was_cancelled). When
-        was_cancelled is True the other values are meaningless and the month is dropped
-        entirely (its partial scoring is not included in the results).
-        """
+    def _score_month(self, month: int, total_practices: int):
+        """Score one prediction month over its fixed evaluable cohort."""
         engine = self.policy_engine
         cases = engine.evaluable_cases(month)
         if not cases:
-            return self._empty_month_row(month), [], [], False
+            return self._empty_month_row(month), [], []
 
         selected = engine.select_policy(month)
         popularity_arm = engine.select_popularity_arm(month)
@@ -164,10 +143,7 @@ class BacktestEngine:
         improvements_per_case = []
         expected_mrr_per_case = []
 
-        for case_count, case in enumerate(cases, start=1):
-            if case_count % 10 == 0 and self._is_cancelled(cancellation_check):
-                return None, [], [], True
-
+        for case in cases:
             actual = case.actual_improved
             improvements_per_case.append(len(actual))
             expected_mrr_per_case.append(self._expected_random_mrr(total_practices, len(actual), TOP_N))
@@ -204,7 +180,7 @@ class BacktestEngine:
             "selected_policy": policy_summary(selected),
             "popularity_arm_recency_weight": popularity_arm.policy.recency_weight,
         }
-        return row, improvements_per_case, expected_mrr_per_case, False
+        return row, improvements_per_case, expected_mrr_per_case
 
     def _aggregate_scope(
         self,
@@ -295,7 +271,7 @@ class BacktestEngine:
             "avg_improvements_per_case": k_avg,
         }
 
-    def run_backtest(self, cancellation_check: Callable[[], bool] | None = None) -> dict:
+    def run_backtest(self) -> dict:
         """
         Run the global two-month adaptive blend backtest over every prediction month.
 
@@ -307,11 +283,6 @@ class BacktestEngine:
         configuration authority (see docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_
         REQUIREMENTS-refined.md).
 
-        Args:
-            cancellation_check: Optional callable returning True to abort the run early.
-                Falls back to this engine's own cancel()/`_cancelled` flag when omitted,
-                so routes.py can drive cancellation without threading a callback through.
-
         Returns:
             dict: {
                 "status": "success",
@@ -319,39 +290,24 @@ class BacktestEngine:
                     with "full_outcome_window" and "selected_policy"
                 "primary": {...},       # aggregate over full-outcome-window months only
                 "sensitivity": {...},   # aggregate over every prediction month
-                "cancelled": bool,
             }
-            or {"error": ..., "cancelled": False} if fewer than 4 months of data exist.
+            or {"error": ...} if fewer than 4 months of data exist.
 
             "primary"/"sensitivity" each have the shape of _EMPTY_SCOPE's keys, with
-            rate fields None (not 0.0) when zero months qualify - e.g. a cancelled run
-            that stopped before any full-outcome-window month completed.
+            rate fields None (not 0.0) when zero months qualify.
         """
-        # A prior cancel() call must not silently cancel this fresh run.
-        self.reset_cancellation()
-
         engine = self.policy_engine
         months = engine.prediction_months()
         if not months:
-            return {"error": "Need at least 4 time periods (start from month 4)", "cancelled": False}
+            return {"error": "Need at least 4 time periods (start from month 4)"}
 
         total_practices = len(self.recommender.practices)
         per_month_results = []
         raw_improvements_by_month: dict = {}
         raw_expected_mrr_by_month: dict = {}
-        cancelled = False
 
         for month in months:
-            if self._is_cancelled(cancellation_check):
-                cancelled = True
-                break
-
-            row, improvements, expected_mrr, was_cancelled = self._score_month(
-                month, total_practices, cancellation_check
-            )
-            if was_cancelled:
-                cancelled = True
-                break
+            row, improvements, expected_mrr = self._score_month(month, total_practices)
 
             per_month_results.append(row)
             raw_improvements_by_month[month] = improvements
@@ -369,5 +325,4 @@ class BacktestEngine:
             "sensitivity": self._aggregate_scope(
                 sensitivity_rows, raw_improvements_by_month, raw_expected_mrr_by_month, total_practices
             ),
-            "cancelled": cancelled,
         }

@@ -112,7 +112,7 @@ make test-file FILE=test_temporal_boundaries.py
 | Skill | Topic | Load when... |
 |---|---|---|
 | `/uc-01-get-recommendations` | Team + month → exactly two practice recommendations from that month's selected policy, with explanation | Changing recommendation request/response flow or UI rendering |
-| `/uc-02-run-backtest-validation` | Rolling window validation of the global two-month adaptive blend, primary/sensitivity split | Changing backtest trigger, display, or cancellation |
+| `/uc-02-run-backtest-validation` | Rolling window validation of the global two-month adaptive blend, primary/sensitivity split | Changing backtest trigger or display |
 | `/uc-04-explore-improvement-sequences` | View learned practice transition patterns | Changing the Sequences tab or sequence data display |
 | `/uc-05-view-system-statistics` | System stats overview tab | Changing Statistics tab or the stats data model |
 

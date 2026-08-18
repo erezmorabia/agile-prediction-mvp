@@ -37,10 +37,10 @@
         </header>
 
         <nav class="tabs">
-            <button class="tab-btn active" data-tab="stats">Statistics<span class="tooltip-icon tooltip-below" data-tooltip="Shows dataset-level facts: team count, practice count, observation totals, and any missing data in the training set." role="img" aria-label="More information">ⓘ</span></button>
+            <button class="tab-btn active" data-tab="stats">Statistics<span class="tooltip-icon tooltip-below" data-tooltip="Shows dataset-level facts: team count, practice count, observation totals, and any missing data in the historical dataset." role="img" aria-label="More information">ⓘ</span></button>
             <button class="tab-btn" data-tab="backtest">Backtest Validation<span class="tooltip-icon tooltip-below" data-tooltip="Runs a rolling-window test against historical data to measure how often recommendations align with real past improvements." role="img" aria-label="More information">ⓘ</span></button>
             <button class="tab-btn" data-tab="sequences">Practice Transitions<span class="tooltip-icon tooltip-below" data-tooltip="Displays observed practice-to-practice transitions between consecutive improvement-bearing steps across the dataset. Same-step improvements are not treated as ordered transitions." role="img" aria-label="More information">ⓘ</span></button>
-            <button class="tab-btn tooltip-right" data-tab="recommendations">Recommendations<span class="tooltip-icon tooltip-below tooltip-right" data-tooltip="Identifies likely next agile practices for your team, based on similar teams and learned improvement sequences." role="img" aria-label="More information">ⓘ</span></button>
+            <button class="tab-btn tooltip-right" data-tab="recommendations">Recommendations<span class="tooltip-icon tooltip-below tooltip-right" data-tooltip="Identifies likely next agile practices for your team using comparable-team evidence, observed practice transitions, and time-aware popularity." role="img" aria-label="More information">ⓘ</span></button>
         </nav>
 
         <!-- Statistics Tab -->
@@ -60,10 +60,10 @@
         <div id="backtest-tab" class="tab-content">
             <div class="section">
                 <h2>Run Backtest Validation (Rolling Window)</h2>
-                <p class="demo-step">Here's the scientific proof</p>
+                <p class="demo-step">Here's the historical validation</p>
                 <p>Validate recommendations against historical data using a rolling window approach</p>
-                <div class="info-box" style="margin-bottom: 20px;">
-                    <strong>Rolling Window Approach:</strong>
+                <details class="info-box rolling-window-details" style="margin-bottom: 20px;">
+                    <summary>Rolling Window Approach <span>How the backtest avoids using future data</span></summary>
                     <ul>
                         <li>For each prediction month:
                             <ul>
@@ -75,17 +75,17 @@
                         <li>Shows accuracy per month and overall average</li>
                         <li><strong>Note:</strong> Validation checks up to 3 observed snapshots ahead to account for adoption timelines</li>
                         <li>Each recommendation blends three evidence sources — <strong>similarity</strong> (what comparable teams improved), the <strong>Practice Transition Model</strong> (observed transitions between consecutive improvement-bearing steps), and <strong>time-aware popularity</strong> (organization-wide improvement trends) — combined with weights chosen automatically per month. There are no user-adjustable model parameters.</li>
+                        <li><strong>Global policy options:</strong> The system evaluates 675 candidate policies: 3 peer counts × 3 similarity thresholds × 15 similarity/sequence/popularity weight combinations × 5 popularity recency weights. It selects one policy for the month; before any prior outcome window has closed, it uses the default bootstrap policy.</li>
                     </ul>
-                </div>
+                </details>
 
                 <div style="margin-bottom: 20px; font-size: 0.82em; color: #6b6865;">
                     Strict temporal isolation enforced — recommendations never use future data
                     <span class="tooltip-icon" data-tooltip-html="For each recommendation at baseline month B:&lt;ul&gt;&lt;li&gt;Similar teams found from months &amp;lt; B only&lt;/li&gt;&lt;li&gt;Practice transition patterns learned from months &amp;lt; B only&lt;/li&gt;&lt;li&gt;The month's policy is selected only from earlier prediction months whose outcomes have already closed&lt;/li&gt;&lt;li&gt;No peeking at future improvements&lt;/li&gt;&lt;/ul&gt;Validated by rolling-window backtest (time-series cross-validation)." role="img" aria-label="More information">ⓘ</span>
                 </div>
 
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <div style="margin-top: 20px;">
                     <button id="run-backtest-btn" class="btn btn-primary">Run Backtest Validation</button>
-                    <button id="cancel-backtest-btn" class="btn btn-error hidden">Cancel Backtest</button>
                 </div>
             </div>
 
@@ -118,11 +118,11 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="month-select">Current Month → Prediction Month:<span class="tooltip-icon" data-tooltip="Choose the team's current snapshot. The application shows the next recorded month it will predict, using only history available through the current snapshot." role="img" aria-label="More information">ⓘ</span></label>
+                    <label for="month-select">Baseline Snapshot → Recommendation Month:<span class="tooltip-icon" data-tooltip="Choose the team's latest recorded snapshot before the recommendation month. The application uses only history available through that baseline." role="img" aria-label="More information">ⓘ</span></label>
                     <select id="month-select" disabled>
                         <option value="">Select a team first</option>
                     </select>
-                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">Each option shows the current snapshot first, followed by the month being predicted. Three earlier snapshots are required for the full sequence-history window.</small>
+                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">Each option shows the baseline snapshot first, followed by its recommendation month. The Practice Transition Model uses the two preceding observed snapshots as its fixed sequence-history window.</small>
                 </div>
 
                 <button id="get-recommendations-btn" class="btn btn-primary" disabled>Get Recommendations</button>
