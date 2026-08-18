@@ -1,5 +1,5 @@
 """
-BacktestEngine: Validate recommendations against historical data.
+BacktestEngine: Validate the global two-month adaptive blend against historical data.
 """
 
 import logging
@@ -7,29 +7,68 @@ from collections.abc import Callable
 
 from scipy.special import comb
 
+from src.ml.policy import TOP_N, policy_summary
+
 from .metrics import MetricsCalculator
 
 logger = logging.getLogger(__name__)
 
+# Returned for a scope (primary/sensitivity) with zero qualifying months - e.g. a
+# cancelled run that stopped before any full-outcome-window month completed. Rate
+# fields are None (not 0.0) so callers can render "not enough completed months"
+# instead of a misleading 0%.
+_EMPTY_SCOPE = {
+    "months_included": 0,
+    "total_predictions": 0,
+    "correct_predictions": 0,
+    "overall_accuracy": None,
+    "random_baseline": None,
+    "improvement_gap": None,
+    "improvement_factor": None,
+    "time_aware_popularity_accuracy": None,
+    "blend_minus_popularity": None,
+    "overall_precision": None,
+    "overall_recall": None,
+    "overall_mrr": None,
+    "random_precision": None,
+    "random_recall": None,
+    "random_mrr": None,
+    "precision_gap": None,
+    "recall_gap": None,
+    "mrr_gap": None,
+    "precision_improvement_factor": None,
+    "recall_improvement_factor": None,
+    "mrr_improvement_factor": None,
+    "teams_tested": 0,
+    "avg_improvements_per_case": None,
+}
+
 
 class BacktestEngine:
-    """Run backtest validation using historical data."""
+    """Run backtest validation of the global two-month adaptive blend using historical data."""
 
     def __init__(self, recommender_engine, processor):
         """
         Initialize BacktestEngine.
 
         Args:
-            recommender_engine: RecommendationEngine instance
+            recommender_engine: RecommendationEngine instance (its `.policy_engine`
+                supplies the cohort, the monthly policy selection, and the scoring -
+                the same PolicyEngine the live flow and the CLI use).
             processor: DataProcessor instance
         """
-        # The same RecommendationEngine used for live predictions - the backtest
-        # replays history through this exact model, not a separate copy.
         self.recommender = recommender_engine
-
-        # Gives access to every team's actual history, used to check whether
-        # a prediction turned out to be correct.
         self.processor = processor
+        self.policy_engine = recommender_engine.policy_engine
+        self._cancelled = False
+
+    def cancel(self) -> None:
+        """Request cancellation of an in-progress run_backtest() call."""
+        self._cancelled = True
+
+    def reset_cancellation(self) -> None:
+        """Clear a prior cancellation request before starting a new run."""
+        self._cancelled = False
 
     @staticmethod
     def _expected_random_mrr(n: int, k: int, top_n: int) -> float:
@@ -41,14 +80,6 @@ class BacktestEngine:
         P(R=r) = C(n-r, k-1) / C(n, k). Unlike precision/recall's random baselines, this is
         not linear in k, so it must be computed per case (using that case's actual k) rather
         than from an average k_avg.
-
-        Args:
-            n (int): Total number of practices.
-            k (int): Number of practices actually improved in this case.
-            top_n (int): Number of recommendations drawn.
-
-        Returns:
-            float: Expected MRR under uniform random selection (0-1).
         """
         if n <= 0 or k <= 0 or top_n <= 0:
             return 0.0
@@ -57,8 +88,6 @@ class BacktestEngine:
             if denom == 0:
                 return 0.0
             expected = 0.0
-            # Walk through every possible rank the first correct pick could land at,
-            # adding up its probability-weighted contribution to the expected score
             for r in range(1, min(top_n, n) + 1):
                 numer = comb(n - r, k - 1, exact=True)
                 expected += (numer / denom) / r
@@ -74,14 +103,6 @@ class BacktestEngine:
         P(at least one correct) = 1 - C(n-k_avg, top_n) / C(n, top_n), where n = total
         practices, k_avg = average number of practices improved per case, top_n =
         number of recommendations drawn.
-
-        Args:
-            k_avg (float): Average number of practices improved per case.
-            total_practices (int): Total number of practices (n).
-            top_n (int): Number of recommendations drawn.
-
-        Returns:
-            float: Random-baseline probability (0-1).
         """
         if total_practices <= 0:
             return 0.0
@@ -93,435 +114,171 @@ class BacktestEngine:
                 return min(1.0, (k_avg / total_practices) * top_n)
         return min(1.0, (k_avg / total_practices) * top_n)
 
-    def run_backtest(
-        self, train_ratio: float = None, config: dict = None, cancellation_check: Callable[[], bool] | None = None
+    def _is_cancelled(self, cancellation_check: Callable[[], bool] | None) -> bool:
+        if cancellation_check is not None:
+            return cancellation_check()
+        return self._cancelled
+
+    def _empty_month_row(self, month: int) -> dict:
+        engine = self.policy_engine
+        selected = engine.select_policy(month)
+        popularity_arm = engine.select_popularity_arm(month)
+        return {
+            "month": month,
+            "full_outcome_window": engine.full_outcome_window(month),
+            "evaluable_cases": 0,
+            "predictions": 0,
+            "correct": 0,
+            "accuracy": 0.0,
+            "time_aware_popularity_accuracy": 0.0,
+            "blend_minus_popularity": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "mrr": 0.0,
+            "teams_tested": 0,
+            "selected_policy": policy_summary(selected),
+            "popularity_arm_recency_weight": popularity_arm.policy.recency_weight,
+        }
+
+    def _score_month(self, month: int, total_practices: int, cancellation_check: Callable[[], bool] | None):
+        """Score one prediction month over its fixed evaluable cohort.
+
+        Returns (row, improvements_per_case, expected_mrr_per_case, was_cancelled). When
+        was_cancelled is True the other values are meaningless and the month is dropped
+        entirely (its partial scoring is not included in the results).
+        """
+        engine = self.policy_engine
+        cases = engine.evaluable_cases(month)
+        if not cases:
+            return self._empty_month_row(month), [], [], False
+
+        selected = engine.select_policy(month)
+        popularity_arm = engine.select_popularity_arm(month)
+
+        predictions = 0
+        correct = 0
+        popularity_correct = 0
+        precision_sum = 0.0
+        recall_sum = 0.0
+        mrr_sum = 0.0
+        improvements_per_case = []
+        expected_mrr_per_case = []
+
+        for case_count, case in enumerate(cases, start=1):
+            if case_count % 10 == 0 and self._is_cancelled(cancellation_check):
+                return None, [], [], True
+
+            actual = case.actual_improved
+            improvements_per_case.append(len(actual))
+            expected_mrr_per_case.append(self._expected_random_mrr(total_practices, len(actual), TOP_N))
+
+            ordered = list(engine.top_practices(case.components, selected.policy))
+            recommended = set(ordered)
+            predictions += 1
+            if recommended & actual:
+                correct += 1
+
+            popularity_recommended = set(engine.top_practices(case.components, popularity_arm.policy))
+            if popularity_recommended & actual:
+                popularity_correct += 1
+
+            precision_sum += MetricsCalculator.calculate_hit_rate(ordered, actual)
+            recall_sum += len(recommended & actual) / len(actual)
+            mrr_sum += MetricsCalculator.calculate_mrr(ordered, actual)
+
+        accuracy = correct / predictions
+        popularity_accuracy = popularity_correct / predictions
+        row = {
+            "month": month,
+            "full_outcome_window": engine.full_outcome_window(month),
+            "evaluable_cases": len(cases),
+            "predictions": predictions,
+            "correct": correct,
+            "accuracy": accuracy,
+            "time_aware_popularity_accuracy": popularity_accuracy,
+            "blend_minus_popularity": accuracy - popularity_accuracy,
+            "precision": precision_sum / predictions,
+            "recall": recall_sum / predictions,
+            "mrr": mrr_sum / predictions,
+            "teams_tested": predictions,
+            "selected_policy": policy_summary(selected),
+            "popularity_arm_recency_weight": popularity_arm.policy.recency_weight,
+        }
+        return row, improvements_per_case, expected_mrr_per_case, False
+
+    def _aggregate_scope(
+        self,
+        rows: list,
+        raw_improvements_by_month: dict,
+        raw_expected_mrr_by_month: dict,
+        total_practices: int,
     ) -> dict:
+        """Macro-average (per-month mean) aggregate over one scope (primary or
+        sensitivity). Random baselines mirror the same aggregation as their headline
+        counterparts so the two are directly comparable - see the module-level note in
+        the original implementation and docs/known-issues/04-accuracy-vs-baseline-
+        aggregation-mismatch.md.
         """
-        Run rolling window backtest validation on historical data.
+        if not rows:
+            return dict(_EMPTY_SCOPE)
 
-        Uses a time-series cross-validation approach where for each test month starting
-        from month 4, the model is trained only on data from previous months, then
-        predictions are validated against actual improvements that occurred.
+        months = [r["month"] for r in rows]
+        total_predictions = sum(r["predictions"] for r in rows)
+        correct_predictions = sum(r["correct"] for r in rows)
+        overall_accuracy = sum(r["accuracy"] for r in rows) / len(rows)
+        overall_popularity = sum(r["time_aware_popularity_accuracy"] for r in rows) / len(rows)
+        overall_precision = sum(r["precision"] for r in rows) / len(rows)
+        overall_recall = sum(r["recall"] for r in rows) / len(rows)
+        overall_mrr = sum(r["mrr"] for r in rows) / len(rows)
 
-        Validation Window:
-        The backtest checks for improvements in a 3-month window (test_month, test_month+1,
-        test_month+2) to account for adoption timelines. This aligns with the recommendation
-        logic which looks up to 3 months ahead. A prediction is considered correct if the
-        recommended practice improved in any of these 3 months.
+        pooled_improvements = [k for m in months for k in raw_improvements_by_month.get(m, [])]
+        pooled_expected_mrr = [v for m in months for v in raw_expected_mrr_by_month.get(m, [])]
 
-        Rolling Window Process:
-        For each month starting from month 4 (index 3):
-        1. Train: Use all months before the test month (sliding window)
-        2. Predict: Generate recommendations for each team using their previous month as baseline
-        3. Validate: Check if recommended practices actually improved in test_month, test_month+1, or test_month+2
-        4. Calculate: Accuracy = (correct predictions) / (total predictions)
-
-        Teams with no improvements in the validation window are excluded from accuracy
-        calculation, as this is not a model failure but rather indicates no improvements occurred.
-
-        Random Baseline:
-        Calculates the probability of getting at least one correct recommendation by random
-        selection. Computed per test month (using that month's own average number of
-        improvements per case), then macro-averaged across months — the same aggregation
-        overall_accuracy uses — so the two headline figures are directly comparable. See
-        docs/known-issues/04-accuracy-vs-baseline-aggregation-mismatch.md.
-
-        Args:
-            train_ratio (float, optional): Ignored parameter kept for API compatibility.
-                The rolling window approach uses all available past months, not a fixed ratio.
-            config (dict, optional): Configuration dictionary with recommendation parameters:
-                - top_n (int): Number of recommendations to generate. Defaults to 2.
-                - k_similar (int): Number of similar teams to consider. Defaults to 19.
-                - similarity_weight (float): Weight for similarity vs sequences (0.0-1.0). Defaults to 0.7.
-                - similar_teams_lookahead_months (int): Months to look ahead for improvements. Defaults to 3.
-                - recent_improvements_months (int): Months to check back for recent improvements. Defaults to 3.
-                - min_similarity_threshold (float): Minimum similarity threshold (0.0-1.0). Defaults to 0.75.
-            cancellation_check (Callable[[], bool], optional): Function that returns True if
-                cancellation was requested. Called periodically during execution. If True,
-                returns partial results with 'cancelled': True.
-
-        Returns:
-            dict: Backtest results dictionary containing:
-                - status (str): 'success'
-                - per_month_results (list): List of dicts with keys:
-                    - month (int): Test month
-                    - train_months (list): Months used for training
-                    - predictions (int): Number of predictions made
-                    - correct (int): Number of correct predictions
-                    - accuracy (float): Accuracy for this month (0.0-1.0)
-                    - teams_tested (int): Number of teams tested
-                - total_predictions (int): Total predictions across all months
-                - correct_predictions (int): Total correct predictions
-                - overall_accuracy (float): Average accuracy across all months (0.0-1.0)
-                - random_baseline (float): Probability of correct prediction by random selection
-                - improvement_gap (float): overall_accuracy - random_baseline
-                - improvement_factor (float): overall_accuracy / random_baseline
-                - overall_popularity_baseline (float): Accuracy of a naive heuristic that always
-                    recommends the top-N globally most-improved practices (learned from the same
-                    months < prev_month the real model uses), excluding practices the team has
-                    already maxed out
-                - popularity_gap (float): overall_accuracy - overall_popularity_baseline
-                - popularity_improvement_factor (float): overall_accuracy / overall_popularity_baseline
-                - teams_tested (int): Number of unique teams tested
-                - avg_improvements_per_case (float): Average number of practices improved per case
-                - cancelled (bool): True if backtest was cancelled mid-execution
-
-        Raises:
-            ValueError: If less than 4 months of data available (need at least 4 for rolling window)
-
-        Example:
-            >>> results = backtest.run_backtest(config={'top_n': 2, 'k_similar': 19})
-            >>> print(f"Accuracy: {results['overall_accuracy']:.1%}")
-            >>> print(f"Improvement over random: {results['improvement_factor']:.1f}x")
-            Accuracy: 45.2%
-            Improvement over random: 1.9x
-
-        Note:
-            - Requires at least 4 months of data (start from month 4)
-            - Sequences are learned up to each test month (sliding window, prevents data leakage)
-            - Only teams with improvements in the validation window are counted
-            - Cancellation checks occur at start of each month and every 10 teams
-        """
-        months = sorted(self.processor.get_all_months())
-        teams = self.processor.get_all_teams()
-
-        if len(months) < 4:
-            return {"error": "Need at least 4 time periods (start from month 4)", "cancelled": False}
-
-        # Extract configuration with defaults (optimized values from optimization results)
-        if config is None:
-            config = {}
-        top_n = config.get("top_n", 2)
-        k_similar = config.get("k_similar", 19)
-        similarity_weight = config.get("similarity_weight", 0.7)
-        similar_teams_lookahead_months = config.get("similar_teams_lookahead_months", 3)
-        recent_improvements_months = config.get("recent_improvements_months", 3)
-        min_similarity_threshold = config.get("min_similarity_threshold", 0.75)
-
-        total_practices = len(self.recommender.practices)  # Total practices (30 after filtering)
-
-        # Rolling window: start from month 4 (index 3, 0-based)
-        per_month_results = []
-        total_predictions = 0
-        total_correct = 0
-        all_teams_tested = set()  # Track all teams that made predictions
-
-        # Track improvements per case for random baseline calculation
-        improvements_per_case = []  # List of number of practices improved per case (pooled, all months)
-        expected_mrr_per_case = []  # Exact per-case E[MRR] under random selection (for MRR baseline)
-        month_improvements_per_case = {}  # test_month -> list of improvements-per-case, for per-month baseline
-
-        logger.debug(
-            "Starting backtest with %d months, cancellation_check=%s",
-            len(months), "provided" if cancellation_check else "None",
-        )
-
-        # Step through each month eligible to be tested, one at a time - starting
-        # once there's enough prior history for a fair prediction
-        for test_month_idx in range(3, len(months)):  # Start from month 4 (index 3)
-            # Check for cancellation at start of each month iteration
-            if cancellation_check:
-                is_cancelled = cancellation_check()
-                if is_cancelled:
-                    logger.debug("Cancellation detected at month %d/%d", test_month_idx + 1, len(months))
-                    # Return partial results
-                    return self._build_partial_results(
-                        per_month_results,
-                        total_predictions,
-                        total_correct,
-                        improvements_per_case,
-                        all_teams_tested,
-                        top_n,
-                        expected_mrr_per_case,
-                        month_improvements_per_case,
-                    )
-
-            test_month = months[test_month_idx]
-            train_months = months[:test_month_idx]  # All months before test month
-
-            if not train_months:
-                continue
-
-            # Check for cancellation before potentially long-running sequence learning
-            if cancellation_check and cancellation_check():
-                logger.debug("Cancellation detected before sequence learning for month %d/%d", test_month_idx + 1, len(months))
-                return self._build_partial_results(
-                    per_month_results,
-                    total_predictions,
-                    total_correct,
-                    improvements_per_case,
-                    all_teams_tested,
-                    top_n,
-                    expected_mrr_per_case,
-                    month_improvements_per_case,
-                )
-
-            # Learn sequences up to test_month (using sliding window)
-            # This ensures sequences are only learned from months < test_month
-            # The sequences will be cached and reused if needed
-            self.recommender.sequence_mapper.learn_sequences_up_to_month(test_month)
-
-            # Run backtest for this month
-            month_predictions = 0
-            month_correct = 0
-            month_popularity_correct = 0
-            month_precision_sum = 0.0
-            month_recall_sum = 0.0
-            month_mrr_sum = 0.0
-            teams_tested_this_month = set()
-            improvements_per_case_this_month = []  # For this month's own random baseline
-
-            team_count = 0  # Track team count for cancellation checks
-            # Check every team's prediction for this one month, one team at a time
-            for team in teams:
-                # Check for cancellation every 10 teams (starting from team 1)
-                team_count += 1
-                if cancellation_check and team_count % 10 == 0:
-                    is_cancelled = cancellation_check()
-                    if is_cancelled:
-                        logger.debug(
-                            "Cancellation detected at team %d/%d in month %d",
-                            team_count, len(teams), test_month_idx + 1,
-                        )
-                        # Return partial results
-                        return self._build_partial_results(
-                            per_month_results,
-                            total_predictions,
-                            total_correct,
-                            improvements_per_case,
-                            all_teams_tested,
-                            top_n,
-                            expected_mrr_per_case,
-                            month_improvements_per_case,
-                        )
-                try:
-                    history = self.processor.get_team_history(team)
-                    team_months = sorted([m for m in months if m in history])
-
-                    if test_month not in history:
-                        continue
-
-                    test_idx = team_months.index(test_month)
-                    if test_idx <= 0:
-                        continue  # Need at least one previous month
-
-                    prev_month = team_months[test_idx - 1]
-
-                    # What did team actually improve in test_month, test_month + 1, AND test_month + 2?
-                    # Check improvements in all 3 months to account for adoption timelines
-                    # This aligns with recommendation logic which looks up to 3 months ahead
-                    prev_vector = history[prev_month]
-                    test_vector = history[test_month]
-
-                    # Check observed improvements in test_month (the first validation point).
-                    actual_improved_month1 = set()
-                    # Compare this team's score on each practice, before vs. in the test month
-                    for j, (p, t) in enumerate(zip(prev_vector, test_vector)):
-                        if t > p:
-                            actual_improved_month1.add(self.recommender.practices[j])
-
-                    # Check improvements in test_month + 1 (month after that) if it exists
-                    actual_improved_month2 = set()
-                    if test_idx + 1 < len(team_months):
-                        next_month = team_months[test_idx + 1]
-                        next_vector = history[next_month]
-                        # Same comparison, one month further out
-                        for j, (p, n) in enumerate(zip(prev_vector, next_vector)):
-                            if n > p:
-                                actual_improved_month2.add(self.recommender.practices[j])
-
-                    # Check improvements in test_month + 2 (third month ahead) if it exists
-                    actual_improved_month3 = set()
-                    if test_idx + 2 < len(team_months):
-                        month_after_2 = team_months[test_idx + 2]
-                        month_after_2_vector = history[month_after_2]
-                        # Same comparison again, two months further out
-                        for j, (p, m2) in enumerate(zip(prev_vector, month_after_2_vector)):
-                            if m2 > p:
-                                actual_improved_month3.add(self.recommender.practices[j])
-
-                    # Combine improvements from all 3 months
-                    actual_improved = actual_improved_month1 | actual_improved_month2 | actual_improved_month3
-
-                    # Skip teams with no improvements in any of the 3 validation months
-                    # This ensures we only count predictions for teams that actually improved something.
-                    # Teams with no improvements shouldn't be counted as "failures" since no prediction
-                    # could succeed when no improvements occurred - this isn't a model failure.
-                    if not actual_improved:
-                        continue  # Skip if no improvements in any of the 3 months
-
-                    # Track number of improvements for random baseline calculation
-                    improvements_per_case.append(len(actual_improved))
-                    improvements_per_case_this_month.append(len(actual_improved))
-                    expected_mrr_per_case.append(
-                        self._expected_random_mrr(total_practices, len(actual_improved), top_n)
-                    )
-
-                    # What did we recommend?
-                    # Note: allow_first_three_months=True because in backtest, we may use
-                    # month 2 to predict month 3, which is valid for validation purposes
-                    try:
-                        recommendations = self.recommender.recommend(
-                            team,
-                            prev_month,
-                            top_n=top_n,
-                            k_similar=k_similar,
-                            allow_first_three_months=True,
-                            similarity_weight=similarity_weight,
-                            similar_teams_lookahead_months=similar_teams_lookahead_months,
-                            recent_improvements_months=recent_improvements_months,
-                            min_similarity_threshold=min_similarity_threshold,
-                        )
-                        recommended = set([r[0] for r in recommendations])
-
-                        month_predictions += 1
-                        total_predictions += 1
-                        teams_tested_this_month.add(team)
-                        all_teams_tested.add(team)
-
-                        # Check for hits
-                        if recommended & actual_improved:  # Intersection
-                            month_correct += 1
-                            total_correct += 1
-
-                        # [Popularity] Popularity baseline: always recommend the top-N globally most-improved
-                        # practices (learned only from months < prev_month, same cutoff the real
-                        # model just used above), excluding practices this team has already maxed
-                        # out. This is a tougher comparison than random selection - a simple
-                        # heuristic that the model should be able to beat.
-                        practice_popularity = self.recommender.sequence_mapper.get_practice_popularity()
-                        maxed_out = {
-                            self.recommender.practices[j] for j, level in enumerate(prev_vector) if level >= 1.0
-                        }
-                        popularity_ranked = sorted(practice_popularity, key=practice_popularity.get, reverse=True)
-                        popularity_recommended = [p for p in popularity_ranked if p not in maxed_out][:top_n]
-                        if set(popularity_recommended) & actual_improved:
-                            month_popularity_correct += 1
-
-                        # Rank-aware supplementary metrics: precision@N, recall@N, MRR
-                        ordered_practices = [r[0] for r in recommendations]
-                        month_precision_sum += MetricsCalculator.calculate_hit_rate(ordered_practices, actual_improved)
-                        month_recall_sum += len(recommended & actual_improved) / len(actual_improved)
-                        month_mrr_sum += MetricsCalculator.calculate_mrr(ordered_practices, actual_improved)
-                    except ValueError:
-                        # Skip if month validation fails (e.g., month in first 3 months)
-                        # This can happen if prev_month is in the first 3 months
-                        continue
-                    except Exception:
-                        # Log other errors but continue
-                        continue
-                except:
-                    continue
-
-            # Calculate accuracy and rank-aware metrics for this month
-            month_accuracy = month_correct / month_predictions if month_predictions > 0 else 0
-            month_popularity_accuracy = month_popularity_correct / month_predictions if month_predictions > 0 else 0
-            month_precision = month_precision_sum / month_predictions if month_predictions > 0 else 0
-            month_recall = month_recall_sum / month_predictions if month_predictions > 0 else 0
-            month_mrr = month_mrr_sum / month_predictions if month_predictions > 0 else 0
-
-            per_month_results.append(
-                {
-                    "month": test_month,
-                    "train_months": train_months,
-                    "predictions": month_predictions,
-                    "correct": month_correct,
-                    "accuracy": month_accuracy,
-                    "popularity_accuracy": month_popularity_accuracy,
-                    "precision": month_precision,
-                    "recall": month_recall,
-                    "mrr": month_mrr,
-                    "teams_tested": len(teams_tested_this_month),
-                }
-            )
-            month_improvements_per_case[test_month] = improvements_per_case_this_month
-
-        # Calculate overall accuracy and rank-aware metrics (average of per-month values)
-        if per_month_results:
-            overall_accuracy = sum(r["accuracy"] for r in per_month_results) / len(per_month_results)
-            overall_popularity_baseline = sum(r["popularity_accuracy"] for r in per_month_results) / len(
-                per_month_results
-            )
-            overall_precision = sum(r["precision"] for r in per_month_results) / len(per_month_results)
-            overall_recall = sum(r["recall"] for r in per_month_results) / len(per_month_results)
-            overall_mrr = sum(r["mrr"] for r in per_month_results) / len(per_month_results)
-        else:
-            overall_accuracy = 0
-            overall_popularity_baseline = 0
-            overall_precision = 0
-            overall_recall = 0
-            overall_mrr = 0
-
-        # Calculate correct random baseline
-        # P(at least one correct) = 1 - C(n-k_avg, top_n) / C(n, top_n)
-        # Where n = total practices, k_avg = average improvements per case, top_n = recommendations
         random_baseline = 0.0
-        improvement_gap = 0.0
         random_precision = 0.0
         random_recall = 0.0
         random_mrr = 0.0
+        improvement_gap = 0.0
         precision_gap = 0.0
         recall_gap = 0.0
         mrr_gap = 0.0
+        k_avg = 0.0
 
-        if improvements_per_case and total_practices > 0:
-            k_avg = sum(improvements_per_case) / len(improvements_per_case)
+        if pooled_improvements and total_practices > 0:
+            k_avg = sum(pooled_improvements) / len(pooled_improvements)
 
-            # random_baseline is macro-averaged per month (each month's own k_avg feeds that
-            # month's baseline probability, via _baseline_from_k_avg), matching how
-            # overall_accuracy is aggregated — so the headline accuracy/baseline figures are
-            # built the same way and can be validly compared/ratioed. See
-            # docs/known-issues/04-accuracy-vs-baseline-aggregation-mismatch.md.
-            per_month_baselines = [
-                self._baseline_from_k_avg(sum(cases) / len(cases) if cases else 0.0, total_practices, top_n)
-                for cases in month_improvements_per_case.values()
-            ]
+            per_month_baselines = []
+            for m in months:
+                case_list = raw_improvements_by_month.get(m, [])
+                month_k_avg = sum(case_list) / len(case_list) if case_list else 0.0
+                per_month_baselines.append(self._baseline_from_k_avg(month_k_avg, total_practices, TOP_N))
             random_baseline = sum(per_month_baselines) / len(per_month_baselines) if per_month_baselines else 0.0
 
             improvement_gap = overall_accuracy - random_baseline
-
-            # Precision@N (random) = k_avg / n; Recall@N (random) = top_n / n.
-            # Both are exact regardless of aggregation, since dividing hypergeometric expected
-            # hits by a constant (N or k) is linear.
             random_precision = min(1.0, k_avg / total_practices)
-            random_recall = min(1.0, top_n / total_practices)
-
-            # MRR (random) is not linear in k, so it's the average of the exact per-case
-            # expectation (via the negative hypergeometric rank distribution), not derived
-            # from k_avg.
-            if expected_mrr_per_case:
-                random_mrr = sum(expected_mrr_per_case) / len(expected_mrr_per_case)
+            random_recall = min(1.0, TOP_N / total_practices)
+            if pooled_expected_mrr:
+                random_mrr = sum(pooled_expected_mrr) / len(pooled_expected_mrr)
 
             precision_gap = overall_precision - random_precision
             recall_gap = overall_recall - random_recall
             mrr_gap = overall_mrr - random_mrr
 
-        # Calculate improvement factor (for backward compatibility)
-        improvement_factor = overall_accuracy / random_baseline if random_baseline > 0 else 0
-        precision_improvement_factor = overall_precision / random_precision if random_precision > 0 else 0
-        recall_improvement_factor = overall_recall / random_recall if random_recall > 0 else 0
-        mrr_improvement_factor = overall_mrr / random_mrr if random_mrr > 0 else 0
-
-        # [Popularity] Popularity baseline comparison: how much the model beats a naive heuristic
-        # ("always recommend whatever improves most often organization-wide"), not just
-        # random chance
-        popularity_gap = overall_accuracy - overall_popularity_baseline
-        popularity_improvement_factor = (
-            overall_accuracy / overall_popularity_baseline if overall_popularity_baseline > 0 else 0
-        )
+        improvement_factor = overall_accuracy / random_baseline if random_baseline > 0 else 0.0
+        precision_improvement_factor = overall_precision / random_precision if random_precision > 0 else 0.0
+        recall_improvement_factor = overall_recall / random_recall if random_recall > 0 else 0.0
+        mrr_improvement_factor = overall_mrr / random_mrr if random_mrr > 0 else 0.0
 
         return {
-            "status": "success",
-            "per_month_results": per_month_results,
+            "months_included": len(rows),
             "total_predictions": total_predictions,
-            "correct_predictions": total_correct,
+            "correct_predictions": correct_predictions,
             "overall_accuracy": overall_accuracy,
             "random_baseline": random_baseline,
             "improvement_gap": improvement_gap,
             "improvement_factor": improvement_factor,
-            "overall_popularity_baseline": overall_popularity_baseline,
-            "popularity_gap": popularity_gap,
-            "popularity_improvement_factor": popularity_improvement_factor,
+            "time_aware_popularity_accuracy": overall_popularity,
+            "blend_minus_popularity": overall_accuracy - overall_popularity,
             "overall_precision": overall_precision,
             "overall_recall": overall_recall,
             "overall_mrr": overall_mrr,
@@ -534,190 +291,83 @@ class BacktestEngine:
             "precision_improvement_factor": precision_improvement_factor,
             "recall_improvement_factor": recall_improvement_factor,
             "mrr_improvement_factor": mrr_improvement_factor,
-            "teams_tested": len(all_teams_tested),
-            "avg_improvements_per_case": sum(improvements_per_case) / len(improvements_per_case)
-            if improvements_per_case
-            else 0,
-            "cancelled": False,
+            "teams_tested": total_predictions,
+            "avg_improvements_per_case": k_avg,
         }
 
-    def _build_partial_results(
-        self,
-        per_month_results: list,
-        total_predictions: int,
-        total_correct: int,
-        improvements_per_case: list,
-        all_teams_tested: set,
-        top_n: int,
-        expected_mrr_per_case: list | None = None,
-        month_improvements_per_case: dict | None = None,
-    ) -> dict:
+    def run_backtest(self, cancellation_check: Callable[[], bool] | None = None) -> dict:
         """
-        Build partial results dictionary when backtest is cancelled mid-execution.
+        Run the global two-month adaptive blend backtest over every prediction month.
 
-        Calculates statistics from completed months only, including overall accuracy,
-        random baseline, and improvement metrics. Used when cancellation_check returns
-        True during backtest execution.
+        For each prediction month: build the fixed evaluable cohort first (independent
+        of any policy), select that month's global blend policy and its independently
+        selected time-aware-popularity comparison arm from strictly earlier prediction
+        months whose full outcome window has already closed, then score every case
+        under both. No model parameters are accepted - the monthly policy is the only
+        configuration authority (see docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_
+        REQUIREMENTS-refined.md).
 
         Args:
-            per_month_results (list): List of result dictionaries for months completed
-                so far. Each dict contains 'month', 'predictions', 'correct', 'accuracy', etc.
-            total_predictions (int): Total number of predictions made before cancellation.
-            total_correct (int): Total number of correct predictions before cancellation.
-            improvements_per_case (list): List of integers representing number of improvements
-                per case (team/month combination) tested so far. Used for the precision/recall
-                random baselines, which are linear in k_avg regardless of pooling.
-            all_teams_tested (set): Set of team names that were tested before cancellation.
-            top_n (int): Number of recommendations generated per prediction. Used for
-                random baseline probability calculation.
-            expected_mrr_per_case (list, optional): Per-case exact expected MRR under random
-                selection, tested so far. Used for the MRR random baseline.
-            month_improvements_per_case (dict, optional): test_month -> list of improvements-per-case
-                for completed months, used to compute the per-month random baseline that gets
-                macro-averaged (matching overall_accuracy's aggregation).
+            cancellation_check: Optional callable returning True to abort the run early.
+                Falls back to this engine's own cancel()/`_cancelled` flag when omitted,
+                so routes.py can drive cancellation without threading a callback through.
 
         Returns:
-            dict: Partial backtest results dictionary with same structure as run_backtest()
-                return value, but with 'cancelled': True. Contains:
-                - All fields from run_backtest() return value
-                - cancelled (bool): Always True
-                - Statistics calculated only from completed months
+            dict: {
+                "status": "success",
+                "per_month_results": [...],  # every prediction month, each tagged
+                    with "full_outcome_window" and "selected_policy"
+                "primary": {...},       # aggregate over full-outcome-window months only
+                "sensitivity": {...},   # aggregate over every prediction month
+                "cancelled": bool,
+            }
+            or {"error": ..., "cancelled": False} if fewer than 4 months of data exist.
 
-        Note:
-            - Random baseline is recalculated using only the partial data
-            - Overall accuracy is average of completed months only
-            - Results are valid but incomplete (represent subset of full backtest)
+            "primary"/"sensitivity" each have the shape of _EMPTY_SCOPE's keys, with
+            rate fields None (not 0.0) when zero months qualify - e.g. a cancelled run
+            that stopped before any full-outcome-window month completed.
         """
-        logger.info(
-            "Backtest cancelled — returning partial results (%d months completed, %d/%d correct)",
-            len(per_month_results), total_correct, total_predictions,
-        )
-        expected_mrr_per_case = expected_mrr_per_case or []
-        month_improvements_per_case = month_improvements_per_case or {}
+        # A prior cancel() call must not silently cancel this fresh run.
+        self.reset_cancellation()
 
-        # Calculate overall accuracy and rank-aware metrics from completed months only
-        if per_month_results:
-            overall_accuracy = sum(r["accuracy"] for r in per_month_results) / len(per_month_results)
-            overall_popularity_baseline = sum(r.get("popularity_accuracy", 0) for r in per_month_results) / len(
-                per_month_results
+        engine = self.policy_engine
+        months = engine.prediction_months()
+        if not months:
+            return {"error": "Need at least 4 time periods (start from month 4)", "cancelled": False}
+
+        total_practices = len(self.recommender.practices)
+        per_month_results = []
+        raw_improvements_by_month: dict = {}
+        raw_expected_mrr_by_month: dict = {}
+        cancelled = False
+
+        for month in months:
+            if self._is_cancelled(cancellation_check):
+                cancelled = True
+                break
+
+            row, improvements, expected_mrr, was_cancelled = self._score_month(
+                month, total_practices, cancellation_check
             )
-            overall_precision = sum(r.get("precision", 0) for r in per_month_results) / len(per_month_results)
-            overall_recall = sum(r.get("recall", 0) for r in per_month_results) / len(per_month_results)
-            overall_mrr = sum(r.get("mrr", 0) for r in per_month_results) / len(per_month_results)
-        else:
-            overall_accuracy = 0
-            overall_popularity_baseline = 0
-            overall_precision = 0
-            overall_recall = 0
-            overall_mrr = 0
+            if was_cancelled:
+                cancelled = True
+                break
 
-        # Calculate random baseline from partial data
-        total_practices = len(self.recommender.practices)  # Total practices
-        random_baseline = 0.0
-        improvement_gap = 0.0
-        random_precision = 0.0
-        random_recall = 0.0
-        random_mrr = 0.0
-        precision_gap = 0.0
-        recall_gap = 0.0
-        mrr_gap = 0.0
+            per_month_results.append(row)
+            raw_improvements_by_month[month] = improvements
+            raw_expected_mrr_by_month[month] = expected_mrr
 
-        if improvements_per_case and total_practices > 0:
-            k_avg = sum(improvements_per_case) / len(improvements_per_case)
-
-            # random_baseline is macro-averaged per month, matching overall_accuracy's
-            # aggregation (see docs/known-issues/04-accuracy-vs-baseline-aggregation-mismatch.md).
-            # Uses the pooled k_avg instead, if no per-month breakdown was supplied.
-            if month_improvements_per_case:
-                per_month_baselines = [
-                    self._baseline_from_k_avg(sum(cases) / len(cases) if cases else 0.0, total_practices, top_n)
-                    for cases in month_improvements_per_case.values()
-                ]
-                random_baseline = sum(per_month_baselines) / len(per_month_baselines) if per_month_baselines else 0.0
-            else:
-                random_baseline = self._baseline_from_k_avg(k_avg, total_practices, top_n)
-
-            improvement_gap = overall_accuracy - random_baseline
-
-            random_precision = min(1.0, k_avg / total_practices)
-            random_recall = min(1.0, top_n / total_practices)
-            if expected_mrr_per_case:
-                random_mrr = sum(expected_mrr_per_case) / len(expected_mrr_per_case)
-
-            precision_gap = overall_precision - random_precision
-            recall_gap = overall_recall - random_recall
-            mrr_gap = overall_mrr - random_mrr
-
-        # Calculate improvement factor
-        improvement_factor = overall_accuracy / random_baseline if random_baseline > 0 else 0
-        precision_improvement_factor = overall_precision / random_precision if random_precision > 0 else 0
-        recall_improvement_factor = overall_recall / random_recall if random_recall > 0 else 0
-        mrr_improvement_factor = overall_mrr / random_mrr if random_mrr > 0 else 0
-
-        popularity_gap = overall_accuracy - overall_popularity_baseline
-        popularity_improvement_factor = (
-            overall_accuracy / overall_popularity_baseline if overall_popularity_baseline > 0 else 0
-        )
+        primary_rows = [r for r in per_month_results if r["full_outcome_window"]]
+        sensitivity_rows = per_month_results
 
         return {
             "status": "success",
             "per_month_results": per_month_results,
-            "total_predictions": total_predictions,
-            "correct_predictions": total_correct,
-            "overall_accuracy": overall_accuracy,
-            "random_baseline": random_baseline,
-            "improvement_gap": improvement_gap,
-            "improvement_factor": improvement_factor,
-            "overall_popularity_baseline": overall_popularity_baseline,
-            "popularity_gap": popularity_gap,
-            "popularity_improvement_factor": popularity_improvement_factor,
-            "overall_precision": overall_precision,
-            "overall_recall": overall_recall,
-            "overall_mrr": overall_mrr,
-            "random_precision": random_precision,
-            "random_recall": random_recall,
-            "random_mrr": random_mrr,
-            "precision_gap": precision_gap,
-            "recall_gap": recall_gap,
-            "mrr_gap": mrr_gap,
-            "precision_improvement_factor": precision_improvement_factor,
-            "recall_improvement_factor": recall_improvement_factor,
-            "mrr_improvement_factor": mrr_improvement_factor,
-            "teams_tested": len(all_teams_tested),
-            "avg_improvements_per_case": sum(improvements_per_case) / len(improvements_per_case)
-            if improvements_per_case
-            else 0,
-            "cancelled": True,
+            "primary": self._aggregate_scope(
+                primary_rows, raw_improvements_by_month, raw_expected_mrr_by_month, total_practices
+            ),
+            "sensitivity": self._aggregate_scope(
+                sensitivity_rows, raw_improvements_by_month, raw_expected_mrr_by_month, total_practices
+            ),
+            "cancelled": cancelled,
         }
-
-    def get_accuracy_summary(self, backtest_results: dict) -> str:
-        """
-        Get human-readable accuracy summary.
-
-        Args:
-            backtest_results (dict): Results from run_backtest()
-
-        Returns:
-            str: Formatted summary
-        """
-        if "error" in backtest_results:
-            return f"Error: {backtest_results['error']}"
-
-        accuracy = backtest_results["overall_accuracy"]
-        baseline = backtest_results["random_baseline"]
-        improvement = accuracy / baseline if baseline > 0 else 0
-
-        summary = f"""
-BACKTEST RESULTS
-================
-Total Predictions: {backtest_results["total_predictions"]}
-Correct Predictions: {backtest_results["correct_predictions"]}
-Overall Accuracy: {accuracy:.1%}
-Random Baseline: {baseline:.1%}
-Improvement Over Baseline: {improvement:.1f}x
-
-Teams Tested: {backtest_results["teams_tested"]}
-Train Period: {len(backtest_results["train_months"])} months
-Test Period: {len(backtest_results["test_months"])} months
-"""
-        return summary

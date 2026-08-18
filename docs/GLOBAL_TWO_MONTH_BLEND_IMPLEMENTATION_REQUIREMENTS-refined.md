@@ -93,6 +93,17 @@ Both popularity inputs must be normalized across eligible practices. Compute tim
 
 Select `recency_weight` only from: 0%, 25%, 50%, 75%, or 100%.
 
+**Implementation note (deviation from "both popularity inputs must be normalized across eligible
+practices" above):** the shipped implementation normalizes historical and recent popularity in
+different orders relative to masking against the target team's candidate practices - historical
+popularity is masked to candidates *then* normalized, while recent popularity is normalized
+organization-wide *then* masked to candidates. This is deliberate: it reproduces
+`scripts/research_popularity_strategies.py` / `scripts/research_three_factor_blend.py` byte-for-
+byte, which is what the pinned reproduction numbers in
+`results/fully-nested-global-fixed-two-month-20260818.json` were generated from. Normalizing both
+inputs identically (mask-then-normalize for both) would change every downstream score and was not
+adopted, to keep the shipped numbers traceable to the research that validated this protocol.
+
 ## Final Recommendation Score
 
 For each candidate practice, calculate:

@@ -1,5 +1,11 @@
 """
 Extended tests for RecommendationEngine class.
+
+RecommendationEngine is now a thin wrapper delegating to PolicyEngine (src/ml/policy.py):
+recommend(team, prediction_month) takes no tuning parameters - the month's globally
+selected policy is the only configuration authority. See tests/test_policy.py and
+tests/test_blend_reproduction.py for PolicyEngine's own unit and reproduction tests;
+these tests only check that the wrapper delegates correctly.
 """
 
 import pytest
@@ -8,348 +14,125 @@ from src.ml.recommender import RecommendationEngine
 
 class TestRecommendationEngineExtended:
     """Extended tests for RecommendationEngine functionality."""
-    
+
+    def _first_predictable(self, recommender, sample_processor):
+        """Find a (team, prediction_month) pair valid under the new contract, or skip."""
+        engine = recommender.policy_engine
+        for month in engine.prediction_months():
+            for team in sample_processor.get_all_teams():
+                if engine.baseline_month_for(team, month) is not None:
+                    return team, month
+        pytest.skip("Sample fixture has no valid prediction month (needs >= 4 total months)")
+
     def test_recommend_basic(self, sample_recommender, sample_processor):
-        """Test recommend returns recommendations."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        months = sample_processor.get_all_months()
-        
-        if len(teams) == 0 or len(months) < 2:
-            pytest.skip("Need at least 1 team and 2 months")
-        
-        team = teams[0]
-        history = sample_processor.get_team_history(team)
-        team_months = sorted(history.keys())
-        
-        if len(team_months) < 2:
-            pytest.skip(f"Team {team} needs at least 2 months")
-        
-        current_month = team_months[-2]  # Use second-to-last month
-        
-        recommendations = recommender.recommend(team, current_month, top_n=3)
-        
-        assert isinstance(recommendations, list)
-        assert len(recommendations) <= 3
-        
-        # Check format: (practice_name, score, current_level)
-        for rec in recommendations:
-            assert len(rec) == 3
-            practice_name, score, current_level = rec
-            assert isinstance(practice_name, str)
-            assert isinstance(score, float)
-            assert isinstance(current_level, float)
+        """Test recommend returns a RecommendationResult with 0 or 2 practices."""
+        team, month = self._first_predictable(sample_recommender, sample_processor)
+        result = sample_recommender.recommend(team, month)
+
+        assert result.team == team
+        assert result.prediction_month == month
+        assert isinstance(result.practices, tuple)
+        assert len(result.practices) in (0, 2)
+
+        for practice in result.practices:
+            assert isinstance(practice, str)
+            score = result.scores[practice]
+            level = result.current_levels[practice]
             assert 0.0 <= score <= 1.0
-            assert 0.0 <= current_level <= 1.0
-    
-    def test_recommend_top_n_parameter(self, sample_recommender, sample_processor):
-        """Test recommend respects top_n parameter."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        months = sample_processor.get_all_months()
-        
-        if len(teams) == 0 or len(months) < 2:
-            pytest.skip("Need at least 1 team and 2 months")
-        
-        team = teams[0]
-        history = sample_processor.get_team_history(team)
-        team_months = sorted(history.keys())
-        
-        if len(team_months) < 2:
-            pytest.skip(f"Team {team} needs at least 2 months")
-        
-        current_month = team_months[-2]
-        
-        # Test with different top_n values
-        for top_n in [1, 2, 5]:
-            recommendations = recommender.recommend(team, current_month, top_n=top_n)
-            assert len(recommendations) <= top_n
-    
-    def test_recommend_k_similar_parameter(self, sample_recommender, sample_processor):
-        """Test recommend respects k_similar parameter."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        months = sample_processor.get_all_months()
-        
-        if len(teams) == 0 or len(months) < 2:
-            pytest.skip("Need at least 1 team and 2 months")
-        
-        team = teams[0]
-        history = sample_processor.get_team_history(team)
-        team_months = sorted(history.keys())
-        
-        if len(team_months) < 2:
-            pytest.skip(f"Team {team} needs at least 2 months")
-        
-        current_month = team_months[-2]
-        
-        # Test with different k_similar values
-        for k_similar in [5, 10, 19]:
-            recommendations = recommender.recommend(
-                team, current_month, top_n=3, k_similar=k_similar
-            )
-            assert isinstance(recommendations, list)
-    
-    def test_recommend_similarity_weight_parameter(self, sample_recommender, sample_processor):
-        """Test recommend respects similarity_weight parameter."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        months = sample_processor.get_all_months()
-        
-        if len(teams) == 0 or len(months) < 2:
-            pytest.skip("Need at least 1 team and 2 months")
-        
-        team = teams[0]
-        history = sample_processor.get_team_history(team)
-        team_months = sorted(history.keys())
-        
-        if len(team_months) < 2:
-            pytest.skip(f"Team {team} needs at least 2 months")
-        
-        current_month = team_months[-2]
-        
-        # Test with different similarity weights
-        for weight in [0.0, 0.5, 1.0]:
-            recommendations = recommender.recommend(
-                team, current_month, top_n=3, similarity_weight=weight
-            )
-            assert isinstance(recommendations, list)
-    
+            assert 0.0 <= level <= 1.0
+
+    def test_recommend_always_returns_at_most_two(self, sample_recommender, sample_processor):
+        """The primary flow always returns exactly two recommendations, or zero when the
+        team has fewer than two non-maxed candidate practices - never a tunable count."""
+        team, month = self._first_predictable(sample_recommender, sample_processor)
+        result = sample_recommender.recommend(team, month)
+
+        assert len(result.practices) == 0 or len(result.practices) == 2
+        assert result.insufficient_practices == (len(result.practices) == 0)
+
+    def test_recommend_takes_no_tuning_parameters(self, sample_recommender):
+        """recommend() no longer accepts top_n/k_similar/similarity_weight/etc - the
+        monthly policy is the sole configuration authority."""
+        import inspect
+
+        signature = inspect.signature(RecommendationEngine.recommend)
+        assert list(signature.parameters) == ["self", "target_team", "prediction_month"]
+
     def test_recommend_excludes_maxed_practices(self, sample_recommender, sample_processor):
         """Test recommend excludes practices already at maximum level."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        months = sample_processor.get_all_months()
-        
-        if len(teams) == 0 or len(months) < 2:
-            pytest.skip("Need at least 1 team and 2 months")
-        
-        team = teams[0]
-        history = sample_processor.get_team_history(team)
-        team_months = sorted(history.keys())
-        
-        if len(team_months) < 2:
-            pytest.skip(f"Team {team} needs at least 2 months")
-        
-        current_month = team_months[-2]
-        recommendations = recommender.recommend(team, current_month, top_n=10)
-        
-        # Check that no recommendations have current_level >= 1.0
-        for practice_name, score, current_level in recommendations:
-            assert current_level < 1.0
-    
+        team, month = self._first_predictable(sample_recommender, sample_processor)
+        result = sample_recommender.recommend(team, month)
+
+        for practice in result.practices:
+            assert result.current_levels[practice] < 1.0
+
     def test_recommend_sorted_by_score(self, sample_recommender, sample_processor):
         """Test recommend returns recommendations sorted by score (descending)."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        months = sample_processor.get_all_months()
-        
-        if len(teams) == 0 or len(months) < 2:
-            pytest.skip("Need at least 1 team and 2 months")
-        
-        team = teams[0]
-        history = sample_processor.get_team_history(team)
-        team_months = sorted(history.keys())
-        
-        if len(team_months) < 2:
-            pytest.skip(f"Team {team} needs at least 2 months")
-        
-        current_month = team_months[-2]
-        recommendations = recommender.recommend(team, current_month, top_n=5)
-        
-        if len(recommendations) > 1:
-            # Check that scores are in descending order
-            scores = [rec[1] for rec in recommendations]
-            assert scores == sorted(scores, reverse=True)
-    
-    def test_recommend_team_not_found(self, sample_recommender):
-        """Test recommend raises error for unknown team."""
-        recommender = sample_recommender
-        
-        with pytest.raises(ValueError):
-            recommender.recommend("UnknownTeam", 202001, top_n=3)
-    
-    def test_recommend_month_not_found(self, sample_recommender, sample_processor):
-        """Test recommend raises error when team has no data for month."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        
-        if len(teams) == 0:
-            pytest.skip("No teams available")
-        
-        team = teams[0]
-        invalid_month = 99999999
-        
-        with pytest.raises(ValueError):
-            recommender.recommend(team, invalid_month, top_n=3)
-    
-    def test_recommend_first_month_restriction(self, sample_recommender, sample_processor):
-        """Test recommend restricts first month (without allow_first_three_months)."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        months = sample_processor.get_all_months()
-        
-        if len(teams) == 0 or len(months) < 2:
-            pytest.skip("Need at least 1 team and 2 months")
-        
-        team = teams[0]
-        history = sample_processor.get_team_history(team)
-        team_months = sorted(history.keys())
-        
-        if len(team_months) < 2:
-            pytest.skip(f"Team {team} needs at least 2 months")
-        
-        # Get first month globally
-        all_months = sorted(sample_processor.get_all_months())
-        first_month = all_months[0]
-        
-        # If team's first month is the global first month, should raise error
-        if team_months[0] == first_month:
-            with pytest.raises(ValueError, match="at least 2 months"):
-                recommender.recommend(team, first_month, top_n=3, allow_first_three_months=False)
-    
-    def test_recommend_allow_first_three_months(self, sample_recommender, sample_processor):
-        """Test recommend allows first month when allow_first_three_months=True."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        months = sample_processor.get_all_months()
-        
-        if len(teams) == 0 or len(months) < 2:
-            pytest.skip("Need at least 1 team and 2 months")
-        
-        team = teams[0]
-        history = sample_processor.get_team_history(team)
-        team_months = sorted(history.keys())
-        
-        if len(team_months) < 2:
-            pytest.skip(f"Team {team} needs at least 2 months")
-        
-        # Use second month: has prior history (month 1) and is not the global first month
-        current_month = team_months[1]
+        team, month = self._first_predictable(sample_recommender, sample_processor)
+        result = sample_recommender.recommend(team, month)
 
-        # Should work with allow_first_three_months=True
-        recommendations = recommender.recommend(
-            team, current_month, top_n=3, allow_first_three_months=True
-        )
-        assert isinstance(recommendations, list)
-    
+        scores = [result.scores[p] for p in result.practices]
+        assert scores == sorted(scores, reverse=True)
+
+    def test_recommend_team_not_found(self, sample_recommender, sample_processor):
+        """An unrecognized team name raises ValueError (matches the old recommend()'s
+        behavior) - APIService and the CLI both already check team existence before
+        ever calling recommend(), so this is a caller-contract violation, not a
+        graceful "insufficient practices" outcome."""
+        engine = sample_recommender.policy_engine
+        month = engine.prediction_months()[0] if engine.prediction_months() else None
+        if month is None:
+            pytest.skip("Sample fixture has no valid prediction month")
+
+        with pytest.raises(ValueError):
+            sample_recommender.recommend("UnknownTeam", month)
+
+    def test_recommend_first_month_has_no_baseline(self, sample_recommender, sample_processor):
+        """The dataset's very first month has no prior snapshot for any team, so it can
+        never be recommendable. `prediction_month` here must be a real global month -
+        PolicyEngine.recommend() assumes valid input, matching every current caller
+        (APIService/CLI/BacktestEngine), which already validate against
+        PolicyEngine.prediction_months() before calling."""
+        first_month = sample_processor.get_all_months()[0]
+        team = sample_processor.get_all_teams()[0]
+
+        result = sample_recommender.recommend(team, first_month)
+        assert result.insufficient_practices is True
+        assert result.practices == ()
+
     def test_get_recommendation_explanation_basic(self, sample_recommender, sample_processor):
         """Test get_recommendation_explanation returns explanation."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        months = sample_processor.get_all_months()
-        
-        if len(teams) == 0 or len(months) < 2:
-            pytest.skip("Need at least 1 team and 2 months")
-        
-        team = teams[0]
-        history = sample_processor.get_team_history(team)
-        team_months = sorted(history.keys())
-        
-        if len(team_months) < 2:
-            pytest.skip(f"Team {team} needs at least 2 months")
-        
-        current_month = team_months[-2]
-        
-        # Get a recommendation first
-        recommendations = recommender.recommend(team, current_month, top_n=1)
-        
-        if len(recommendations) == 0:
-            pytest.skip("No recommendations available")
-        
-        practice = recommendations[0][0]
-        
-        explanation = recommender.get_recommendation_explanation(team, current_month, practice)
-        
+        team, month = self._first_predictable(sample_recommender, sample_processor)
+        result = sample_recommender.recommend(team, month)
+
+        if not result.practices:
+            pytest.skip("No recommendations available for this team/month")
+
+        practice = result.practices[0]
+        explanation = sample_recommender.get_recommendation_explanation(team, month, practice)
+
         assert isinstance(explanation, dict)
         assert 'practice' in explanation
         assert 'similar_teams_improved' in explanation
         assert 'total_similar_teams_checked' in explanation
         assert 'similar_teams_list' in explanation
         assert 'has_sequence_boost' in explanation
-        
+        assert 'no_similar_teams_found' in explanation
+
         assert explanation['practice'] == practice
         assert isinstance(explanation['similar_teams_improved'], int)
         assert isinstance(explanation['total_similar_teams_checked'], int)
         assert isinstance(explanation['similar_teams_list'], list)
         assert isinstance(explanation['has_sequence_boost'], bool)
-    
+        assert isinstance(explanation['no_similar_teams_found'], bool)
+
     def test_get_recommendation_explanation_team_not_found(self, sample_recommender):
         """Test get_recommendation_explanation raises error for unknown team."""
-        recommender = sample_recommender
-        
         with pytest.raises(ValueError):
-            recommender.get_recommendation_explanation("UnknownTeam", 202001, "Practice1")
-    
-    def test_get_recommendation_explanation_month_not_found(self, sample_recommender, sample_processor):
-        """Test get_recommendation_explanation raises error when team has no data for month."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        
-        if len(teams) == 0:
-            pytest.skip("No teams available")
-        
-        team = teams[0]
-        invalid_month = 99999999
-        
-        with pytest.raises(ValueError):
-            recommender.get_recommendation_explanation(team, invalid_month, "Practice1")
-    
-    def test_recommend_no_similar_teams(self, sample_recommender, sample_processor):
-        """Test recommend handles case when no similar teams found."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        months = sample_processor.get_all_months()
-        
-        if len(teams) == 0 or len(months) < 2:
-            pytest.skip("Need at least 1 team and 2 months")
-        
-        team = teams[0]
-        history = sample_processor.get_team_history(team)
-        team_months = sorted(history.keys())
-        
-        if len(team_months) < 2:
-            pytest.skip(f"Team {team} needs at least 2 months")
-        
-        current_month = team_months[-2]
-        
-        # Use very high similarity threshold to potentially find no teams
-        try:
-            recommendations = recommender.recommend(
-                team, current_month, top_n=3, min_similarity_threshold=0.99
-            )
-            # Should either return empty list or raise ValueError
-            assert isinstance(recommendations, list)
-        except ValueError as e:
-            # ValueError is acceptable if no similar teams found
-            assert "No similar teams" in str(e) or "similar teams" in str(e).lower()
-    
-    def test_recommend_min_similarity_threshold(self, sample_recommender, sample_processor):
-        """Test recommend respects min_similarity_threshold parameter."""
-        recommender = sample_recommender
-        teams = sample_processor.get_all_teams()
-        months = sample_processor.get_all_months()
-        
-        if len(teams) == 0 or len(months) < 2:
-            pytest.skip("Need at least 1 team and 2 months")
-        
-        team = teams[0]
-        history = sample_processor.get_team_history(team)
-        team_months = sorted(history.keys())
-        
-        if len(team_months) < 2:
-            pytest.skip(f"Team {team} needs at least 2 months")
-        
-        current_month = team_months[-2]
-        
-        # Test with different thresholds
-        for threshold in [0.0, 0.5, 0.75]:
-            try:
-                recommendations = recommender.recommend(
-                    team, current_month, top_n=3, min_similarity_threshold=threshold
-                )
-                assert isinstance(recommendations, list)
-            except ValueError:
-                # ValueError is acceptable if threshold too high
-                pass
+            sample_recommender.get_recommendation_explanation("UnknownTeam", 202001, "Practice1")
 
+    def test_get_recommendation_explanation_month_not_found(self, sample_recommender, sample_processor):
+        """Test get_recommendation_explanation raises error when team has no baseline for month."""
+        team = sample_processor.get_all_teams()[0]
+        with pytest.raises(ValueError):
+            sample_recommender.get_recommendation_explanation(team, 99999999, "Practice1")

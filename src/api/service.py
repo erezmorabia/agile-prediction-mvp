@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 from src.data import DataProcessor
 from src.data.practice_definitions import PracticeDefinitionsLoader
 from src.ml import RecommendationEngine
+from src.ml.policy import policy_summary
 from src.validation import BacktestEngine
-from src.validation.optimizer import OptimizationEngine
 
 
 class APIService:
@@ -32,9 +32,6 @@ class APIService:
 
         # Wraps the same recommender/processor pair for the backtest endpoint.
         self.backtest_engine = BacktestEngine(recommender, processor)
-
-        # Wraps backtest_engine for the parameter-search endpoint.
-        self.optimizer_engine = OptimizationEngine(self.backtest_engine)
 
         # Locate the practice definitions file - optional, and tolerant of a
         # legacy misspelled filename still present in some data exports.
@@ -96,20 +93,16 @@ class APIService:
     def get_teams_with_improvements(self) -> list[dict[str, Any]]:
         """
         Get teams and months to predict where improvements occurred.
-        Only shows months 3+ as month to predict (we need months 1-2 as history).
+        Only shows valid prediction months (global index 3+) as month to predict.
 
         Returns:
-            List of team/month combinations with improvements (month to predict is month 3+)
+            List of team/month combinations with improvements (month to predict is a
+            valid prediction month per PolicyEngine.prediction_months())
         """
         teams_with_improvements = []
         all_teams = self.processor.get_all_teams()
 
-        # Get first two months to filter out (month to predict starts from month 3)
-        all_available_months = sorted(self.processor.get_all_months())
-        if len(all_available_months) >= 3:
-            first_two_months = set(all_available_months[:2])  # Filter out months 1-2
-        else:
-            first_two_months = set()
+        valid_prediction_months = set(self.recommender.policy_engine.prediction_months())
 
         # Check every team, one at a time, for month-to-month improvements.
         for team in all_teams:
@@ -121,8 +114,8 @@ class APIService:
                 prev_month = months[i - 1]
                 month_to_predict = months[i]
 
-                # Only show months 3+ as month to predict (filter out months 1-2)
-                if month_to_predict in first_two_months:
+                # Only show valid prediction months
+                if month_to_predict not in valid_prediction_months:
                     continue
 
                 prev_vector = history[prev_month]
@@ -152,54 +145,42 @@ class APIService:
         """
         Get available months to predict for a team.
         Only includes months where:
-        1. The month is month 3 or later (globally)
-        2. The team has a previous month in their history (to use as baseline)
+        1. The month is a valid global prediction month (PolicyEngine.prediction_months())
+        2. The team has a usable baseline snapshot before it
 
         Args:
             team_name: Name of the team
 
         Returns:
             List of months (sorted) or None if team not found
-            Only includes months that can be predicted (month 3+ globally AND team has previous month)
         """
         if team_name not in self.processor.get_all_teams():
             return None
 
+        engine = self.recommender.policy_engine
         history = self.processor.get_team_history(team_name)
-        all_months = sorted(history.keys())
+        valid_prediction_months = set(engine.prediction_months())
 
-        # Filter to show only months 3+ globally (month to predict starts from month 3)
-        # We need to filter out months 1-2, so only months 3+ are shown
-        all_available_months = sorted(self.processor.get_all_months())
-        if len(all_available_months) >= 3:
-            first_two_months = set(all_available_months[:2])  # Filter out months 1-2 globally
-            months_3plus = [m for m in all_months if m not in first_two_months]
-        else:
-            months_3plus = []
+        return [
+            month
+            for month in sorted(history.keys())
+            if month in valid_prediction_months and engine.baseline_month_for(team_name, month) is not None
+        ]
 
-        # Further filter: only include months where the team has a previous month in their history
-        # This handles cases where a team's first month of data is month 4 or later
-        months_to_predict = []
-        # Keep only the months where this team already has a prior month to predict from.
-        for month in months_3plus:
-            month_idx = all_months.index(month)
-            if month_idx > 0:  # Team has a previous month in their history
-                months_to_predict.append(month)
-
-        return months_to_predict
-
-    def get_recommendations(self, team_name: str, month: int, top_n: int = 2, k_similar: int = 19) -> dict[str, Any]:
+    def get_recommendations(self, team_name: str, month: int) -> dict[str, Any]:
         """
-        Get recommendations for a team for a specific month to predict.
+        Get recommendations for a team for a specific month to predict, using that
+        month's globally selected policy (similarity / sequence / time-aware popularity
+        blend). Always returns exactly two recommendations, unless the team has fewer
+        than two non-maxed candidate practices left to improve.
 
         Args:
             team_name: Name of the team
-            month: Month to predict (yyyymmdd format) - must be month 4 or later
-            top_n: Number of recommendations to return
-            k_similar: Number of similar teams to consider
+            month: Month to predict (yyyymmdd format) - must be a valid prediction month
 
         Returns:
-            Dictionary with recommendations and validation info
+            Dictionary with recommendations, validation info, and the selected policy's
+            audit record.
         """
         # Validate team and month
         if team_name not in self.processor.get_all_teams():
@@ -209,30 +190,32 @@ class APIService:
         if month not in history:
             return {"error": f"No data for team on month {month}"}
 
-        # Validate that month to predict is month 3 or later
-        all_available_months = sorted(self.processor.get_all_months())
-        if len(all_available_months) >= 3:
-            first_two_months = set(all_available_months[:2])
-            if month in first_two_months:
-                return {
-                    "error": "Month to predict must be month 3 or later. We need at least 2 months of history to make predictions.",
-                    "details": f"Month {month} is in the first 2 months.",
-                }
+        engine = self.recommender.policy_engine
+        if month not in engine.prediction_months():
+            return {
+                "error": "Month to predict must be a valid prediction month. We need at least 3 months of history to make predictions.",
+                "details": f"Month {month} is not a valid prediction month.",
+            }
 
+        result = self.recommender.recommend(team_name, month)
+        selected_policy_info = policy_summary(result.selected_policy)
+
+        if result.insufficient_practices:
+            baseline_for_profile = result.baseline_month if result.baseline_month is not None else month
+            return {
+                "team": team_name,
+                "month": month,
+                "recommendations": [],
+                "validation": None,
+                "practice_profile": self._get_practice_profile(team_name, baseline_for_profile),
+                "selected_policy": selected_policy_info,
+                "no_similar_teams_found": False,
+                "message": f"Team '{team_name}' has fewer than two practices left to improve.",
+            }
+
+        prev_month = result.baseline_month
         months = sorted(history.keys())
         month_to_predict_idx = months.index(month)
-
-        # Find previous month to use as baseline
-        if month_to_predict_idx == 0:
-            return {"error": f"Cannot predict month {month} - no previous month available"}
-
-        prev_month = months[month_to_predict_idx - 1]  # Use previous month as baseline
-
-        # Get recommendations using previous month as baseline
-        min_similarity_threshold = 0.75  # matches recommend()'s default; not exposed as an API param
-        recommendations = self.recommender.recommend(
-            team_name, prev_month, top_n=top_n, k_similar=k_similar, min_similarity_threshold=min_similarity_threshold
-        )
 
         # Check for actual improvements in the predicted month and next 2 months
         month_to_predict = month
@@ -335,14 +318,14 @@ class APIService:
 
         # Calculate validation summary AFTER processing all practices
         # This ensures validation_summary is always created, even when no improvements occurred
-        recommended_practices = [r[0] for r in recommendations]
+        recommended_practices = list(result.practices)
         validated_count = sum(1 for imp in actual_improvements if imp["practice"] in recommended_practices)
 
         # Calculate accuracy only if there were actual improvements
         # If no improvements occurred, set accuracy to None - this isn't a model failure,
         # it just means the team didn't improve anything in the validation window
-        if actual_improvements and recommendations:
-            accuracy = validated_count / len(recommendations)
+        if actual_improvements and recommended_practices:
+            accuracy = validated_count / len(recommended_practices)
         else:
             accuracy = None  # No accuracy when no improvements occurred
 
@@ -352,7 +335,7 @@ class APIService:
             "month_after_2": month_after_2 if month_to_predict_idx + 2 < len(months) else None,
             "actual_improvements": actual_improvements,
             "validated_count": validated_count,
-            "total_recommendations": len(recommendations),
+            "total_recommendations": len(recommended_practices),
             "accuracy": accuracy,
             "team_improved_anything": len(actual_improvements) > 0,
         }
@@ -360,7 +343,9 @@ class APIService:
         # Format recommendations
         formatted_recs = []
         # Build one detailed, API-shaped entry per recommendation.
-        for practice, score, current_level in recommendations:
+        for practice in result.practices:
+            score = result.scores[practice]
+            current_level = result.current_levels[practice]
             # Convert normalized level back to original 0-3 scale
             original_level = current_level * 3
             # Determine level number (0, 1, 2, or 3)
@@ -381,52 +366,40 @@ class APIService:
             level_display = f"Level {level_num} ({level_description})"
 
             # Get explanation with similar teams details
-            similar_teams_list = []
-            why = "Recommended based on improvement sequences"
-            try:
-                explanation = self.recommender.get_recommendation_explanation(
-                    team_name,
-                    prev_month,
-                    practice,
-                    k_similar=k_similar,
-                    min_similarity_threshold=min_similarity_threshold,
-                )
-                similar_count = explanation.get("similar_teams_improved", 0)
-                total_checked = explanation.get("total_similar_teams_checked", 0)
-                has_sequence_boost = explanation.get("has_sequence_boost", False)
-                similar_teams_list = explanation.get("similar_teams_list", [])
+            explanation = self.recommender.get_recommendation_explanation(team_name, month, practice)
+            similar_count = explanation.get("similar_teams_improved", 0)
+            has_sequence_boost = explanation.get("has_sequence_boost", False)
+            no_peers_for_practice = explanation.get("no_similar_teams_found", False)
+            similar_teams_list = explanation.get("similar_teams_list", [])
 
-                # Determine why based on both similarity and sequence contribution
-                if similar_count > 0 and has_sequence_boost:
-                    # Both contributed
-                    why = f"{similar_count} similar team(s) improved this practice + sequence patterns"
-                elif similar_count > 0:
-                    # Only similarity contributed
-                    why = f"{similar_count} similar team(s) improved this practice"
-                elif has_sequence_boost:
-                    # Only sequences contributed
-                    why = "Recommended based on improvement sequences"
-                else:
-                    # Neither contributed (fallback - shouldn't happen often)
-                    why = "Recommended based on improvement sequences"
-            except:
-                pass
+            # Determine why based on similarity, sequence, and popularity contribution
+            if similar_count > 0 and has_sequence_boost:
+                why = f"{similar_count} similar team(s) improved this practice + sequence patterns"
+            elif similar_count > 0:
+                why = f"{similar_count} similar team(s) improved this practice"
+            elif has_sequence_boost:
+                why = "Recommended based on improvement sequences"
+            elif no_peers_for_practice:
+                why = "No comparable team was found; recommended based on organization-wide popularity and improvement sequences"
+            else:
+                why = "Recommended based on organization-wide popularity"
 
             # Check if validated and which month(s) it improved in
             validated = False
             improved_in_months = None
-            if month_to_predict:
-                # Look for this recommended practice among what actually improved.
-                for imp in actual_improvements:
-                    if imp["practice"] == practice:
-                        validated = True
-                        improved_in_months = imp.get("improved_in", [])
-                        break
+            # Look for this recommended practice among what actually improved.
+            for imp in actual_improvements:
+                if imp["practice"] == practice:
+                    validated = True
+                    improved_in_months = imp.get("improved_in", [])
+                    break
 
             # Format similar teams list
             formatted_similar_teams = []
             # Reformat each similar team's info into the API response shape.
             for st in similar_teams_list:
+                if st.get("month") is None:
+                    continue
                 formatted_similar_teams.append(
                     {
                         "team": st["team"],
@@ -461,157 +434,31 @@ class APIService:
             "recommendations": formatted_recs,
             "validation": validation_summary if validation_summary else None,
             "practice_profile": practice_profile,
+            "selected_policy": selected_policy_info,
+            "no_similar_teams_found": result.no_similar_teams_found,
+            "message": None,
         }
 
-    def run_backtest(self, train_ratio: float = None, config: dict[str, Any] | None = None) -> dict[str, Any]:
+    def run_backtest(self) -> dict[str, Any]:
         """
-        Run rolling window backtest validation.
-
-        Args:
-            train_ratio: Ignored (kept for API compatibility)
-            config: Optional configuration dict with fine-tuning parameters
+        Run the global two-month adaptive blend backtest. No model parameters are
+        accepted - the monthly policy is the only configuration authority.
 
         Returns:
-            Dictionary with backtest results including per-month accuracy
-            Matches BacktestResponse model structure
+            Dictionary matching BacktestResponse: per_month_results, primary,
+            sensitivity, cancelled.
         """
-        # Convert config dict to format expected by backtest engine
-        config_dict = None
-        if config:
-            config_dict = {
-                "top_n": config.get("top_n", 2),
-                "k_similar": config.get("k_similar", 19),
-                "similarity_weight": config.get("similarity_weight", 0.7),
-                "similar_teams_lookahead_months": config.get("similar_teams_lookahead_months", 3),
-                "recent_improvements_months": config.get("recent_improvements_months", 3),
-                "min_similarity_threshold": config.get("min_similarity_threshold", 0.75),
-            }
+        result = self.backtest_engine.run_backtest()
 
-        result = self.backtest_engine.run_backtest(train_ratio=train_ratio, config=config_dict)
+        if "error" in result:
+            return result
 
-        # Remove 'status' field if present (not in BacktestResponse model)
-        if "status" in result:
-            del result["status"]
-
-        # Ensure per_month_results is properly formatted
-        if "per_month_results" in result:
-            # Ensure each result has all required fields
-            formatted_per_month = []
-            # Rebuild each month's result dict with every field explicitly typed.
-            for r in result["per_month_results"]:
-                formatted_per_month.append(
-                    {
-                        "month": int(r["month"]),
-                        "train_months": [int(m) for m in r["train_months"]],
-                        "predictions": int(r["predictions"]),
-                        "correct": int(r["correct"]),
-                        "accuracy": float(r["accuracy"]),
-                        "precision": float(r.get("precision", 0.0)),
-                        "recall": float(r.get("recall", 0.0)),
-                        "mrr": float(r.get("mrr", 0.0)),
-                        "popularity_accuracy": float(r.get("popularity_accuracy", 0.0)),
-                        "teams_tested": int(r["teams_tested"]),
-                    }
-                )
-            result["per_month_results"] = formatted_per_month
-
-        # Improvement factor is already calculated in backtest engine
-        if "improvement_factor" not in result and "overall_accuracy" in result and "random_baseline" in result:
-            baseline = result["random_baseline"]
-            accuracy = result["overall_accuracy"]
-            result["improvement_factor"] = accuracy / baseline if baseline > 0 else 0.0
-
-        # Ensure all required fields are present and properly typed
-        if "total_predictions" in result:
-            result["total_predictions"] = int(result["total_predictions"])
-        if "correct_predictions" in result:
-            result["correct_predictions"] = int(result["correct_predictions"])
-        if "overall_accuracy" in result:
-            result["overall_accuracy"] = float(result["overall_accuracy"])
-        if "random_baseline" in result:
-            result["random_baseline"] = float(result["random_baseline"])
-        if "improvement_gap" in result:
-            result["improvement_gap"] = float(result["improvement_gap"])
-        elif "overall_accuracy" in result and "random_baseline" in result:
-            result["improvement_gap"] = float(result["overall_accuracy"] - result["random_baseline"])
-        if "improvement_factor" in result:
-            result["improvement_factor"] = float(result["improvement_factor"])
-        if "teams_tested" in result:
-            result["teams_tested"] = int(result["teams_tested"])
-        if "avg_improvements_per_case" in result:
-            result["avg_improvements_per_case"] = float(result["avg_improvements_per_case"])
-        else:
-            result["avg_improvements_per_case"] = 0.0
-
-        # Rank-aware supplementary metrics (precision@N, recall@N, MRR) and their baselines
-        # Make sure each of these fields is present and a float, defaulting to 0.0.
-        for field in (
-            "overall_precision",
-            "overall_recall",
-            "overall_mrr",
-            "random_precision",
-            "random_recall",
-            "random_mrr",
-            "precision_gap",
-            "recall_gap",
-            "mrr_gap",
-            "precision_improvement_factor",
-            "recall_improvement_factor",
-            "mrr_improvement_factor",
-        ):
-            result[field] = float(result.get(field, 0.0))
-
-        # [Popularity] Popularity baseline (always recommend the top-N globally most-improved practices)
-        # Same "ensure present and typed" treatment as above, for these 3 fields.
-        for field in ("overall_popularity_baseline", "popularity_gap", "popularity_improvement_factor"):
-            result[field] = float(result.get(field, 0.0))
-
+        result.pop("status", None)
         return result
 
-    def find_optimal_config(
-        self,
-        min_accuracy: float = 0.40,
-        top_n_range: list[int] | None = None,
-        similarity_weight_range: list[float] | None = None,
-        k_similar_range: list[int] | None = None,
-        similar_teams_lookahead_months_range: list[int] | None = None,
-        recent_improvements_months_range: list[int] | None = None,
-        min_similarity_threshold_range: list[float] | None = None,
-        fixed_params: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """
-        Find optimal configuration by testing parameter combinations.
-
-        Args:
-            min_accuracy: Minimum accuracy threshold (default: 0.40)
-            top_n_range: Optional list of top_n values to test
-            similarity_weight_range: Optional list of similarity_weight values to test
-            k_similar_range: Optional list of k_similar values to test
-            similar_teams_lookahead_months_range: Optional list of lookahead months to test
-            recent_improvements_months_range: Optional list of recent months to test
-            min_similarity_threshold_range: Optional list of min_similarity values to test
-            fixed_params: Fixed parameter values (overrides ranges)
-
-        Returns:
-            Dictionary with optimal configuration and results
-        """
-        result = self.optimizer_engine.find_optimal_config(
-            min_accuracy=min_accuracy,
-            top_n_range=top_n_range,
-            similarity_weight_range=similarity_weight_range,
-            k_similar_range=k_similar_range,
-            similar_teams_lookahead_months_range=similar_teams_lookahead_months_range,
-            recent_improvements_months_range=recent_improvements_months_range,
-            min_similarity_threshold_range=min_similarity_threshold_range,
-            fixed_params=fixed_params,
-        )
-
-        return result
-
-    def cancel_optimization(self):
-        """Cancel the current optimization."""
-        self.optimizer_engine.cancel()
-        logger.debug("Cancellation flag set on optimizer")
+    def cancel_backtest(self) -> None:
+        """Cancel the current backtest run."""
+        self.backtest_engine.cancel()
 
     def get_system_stats(self) -> dict[str, Any]:
         """
@@ -695,6 +542,10 @@ class APIService:
             Dictionary with sequences, stats, and metadata
         """
         sequence_mapper = self.recommender.sequence_mapper
+        # Re-learn from the full history: the policy engine's monthly selection leaves
+        # the shared mapper's state gated to whatever month it last scored, but this tab
+        # always shows all-history transitions regardless of that.
+        sequence_mapper.learn_sequences()
 
         # Get all sequences
         sequences = sequence_mapper.get_all_sequences(min_count=1)

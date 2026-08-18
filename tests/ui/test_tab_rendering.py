@@ -22,11 +22,13 @@ class TestTabRendering:
         expect(page.locator("#stats-results")).to_contain_text("teams")
 
     def test_backtest_tab_renders(self, page: Page):
-        """Backtest tab shows the config panel and Run Backtest button."""
+        """Backtest tab shows the Run Backtest button and no configuration/optimizer
+        controls - the monthly policy is the only configuration authority."""
         page.click('button[data-tab="backtest"]')
         page.wait_for_selector("#backtest-tab.active", timeout=5_000)
         expect(page.locator("#run-backtest-btn")).to_be_visible()
-        expect(page.locator("#find-optimal-btn")).to_be_visible()
+        expect(page.locator("#find-optimal-btn")).to_have_count(0)
+        expect(page.locator("#cancel-backtest-btn")).to_be_hidden()
 
     def test_sequences_tab_loads(self, page: Page):
         """Sequences tab triggers a lazy fetch and renders the sequences section."""

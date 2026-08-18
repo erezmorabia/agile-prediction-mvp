@@ -10,7 +10,7 @@
 
 ## Abstract
 
-This project addresses the critical challenge of large-scale agile transformation in organizations by developing a system that recommends likely next agile practices from organizational history. Its core innovation is empirically learning organizational improvement behavior to identify likely next practices: it derives team-specific guidance from observed peer-team maturity histories and observed practice-transition behavior within the organization. Collaborative filtering and the Practice Transition Model operationalize this empirical approach across 87 teams, 35 practices, and 10 months of historical data. Validation through backtesting demonstrates that recommendations align with later improvements in 50.3% of evaluated cases, representing a 2.14x improvement over the random baseline (23.5%). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
+This project addresses the critical challenge of large-scale agile transformation in organizations by developing a system that recommends likely next agile practices from organizational history. Its core innovation is empirically learning organizational improvement behavior to identify likely next practices: it derives team-specific guidance from observed peer-team maturity histories, observed practice-transition behavior, and organization-wide practice-improvement trends within the organization. Collaborative filtering, the Practice Transition Model, and time-aware popularity are blended under one policy selected automatically for each prediction month — never tuned on the month it predicts — across 87 teams, 35 practices, and 10 months of historical data. Walk-forward backtesting on the five prediction months with a complete outcome window shows this blend aligning with later improvements in 58.0% of evaluated cases, 2.2x the random baseline (26.0%), and 2.3 percentage points ahead of an equally walk-forward-selected time-aware-popularity comparison arm (55.7%) on the same cases; across all seven prediction months (including two with a truncated outcome window) the figures are 50.9% vs. 47.5%. This result is exploratory, not a claim of proven superiority over popularity alone (see §6.3 and §6.5, and `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md`). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
 
 ---
 
@@ -36,35 +36,40 @@ The project’s core innovation is not a new machine learning algorithm. It is t
 - Ensures recommendations follow logical improvement pathways
 - Prevents recommending practices teams aren't ready for
 
-**3. Hybrid Scoring**
-- Combines similarity-based recommendations (60%) with sequence patterns (40%)
-- Normalizes scores separately before combining
-- Filters out practices already at maximum maturity
-- Returns top-ranked recommendations tailored to each team's current state
+**3. Time-Aware Popularity**
+- Tracks organization-wide practice-improvement frequency, restricted to practices a team hasn't already mastered
+- Blends all-time popularity with the single most recent organization-wide transition
 
-**4. Validation Methodology**
-- Uses historical backtesting: train on past months, test on future months
+**4. Global Monthly Adaptive Blend**
+- Blends similarity, sequence, and time-aware popularity evidence with weights selected once per prediction month, not per team and not fixed in advance
+- The month-specific policy (peer count, similarity threshold, the three factor weights, and the popularity recency weight) is chosen from a fixed grid of 675 combinations by maximizing accuracy on strictly earlier prediction months whose outcomes have already closed
+- Normalizes each component separately before combining
+- Filters out practices already at maximum maturity
+- Always returns exactly two recommendations tailored to each team's current state
+
+**5. Validation Methodology**
+- Uses historical backtesting: for each prediction month, replay the policy that would have been selected at that point in time, then validate against actual improvements
 - Rolling window approach: validates recommendations against actual improvements
-- Accounts for adoption timelines (validates across 3-month window)
-- Compares results against random baseline for meaningful evaluation
+- Accounts for adoption timelines (validates across a 3-snapshot window)
+- Compares results against a random baseline and an independently-selected time-aware-popularity comparison arm, split into primary (complete outcome window) and sensitivity (all months) results
 
 ### Successful Results
 
 The system demonstrates strong performance and practical value:
 
-**Recommendation Accuracy:**
-- **50.3% alignment** between recommended practices and later team improvements
-- **2.14x improvement** over random baseline (23.5%)
-- **26.8 percentage point improvement gap** demonstrates significant value
-- **142 validation cases** across multiple teams and months
+**Recommendation Accuracy (primary: five prediction months with a complete outcome window):**
+- **58.0% alignment** between recommended practices and later team improvements
+- **2.2x improvement** over random baseline (26.0%)
+- **2.3 percentage points ahead** of an independently, walk-forward-selected time-aware-popularity comparison arm on the same cases (55.7%)
+- **121 evaluable cases** across multiple teams and months
 
-**How to interpret these results:** All accuracy and improvement figures are aggregate backtest results across the organization (macro-averaged across tested months). They describe how the model performed on historical validation cases and do not guarantee an improvement, recommendation match, or maturity outcome for any individual team or month.
+**How to interpret these results:** All accuracy and improvement figures are aggregate backtest results across the organization (macro-averaged across tested months), and the comparison against time-aware popularity is exploratory, not a proven claim of superiority — three of the five primary months still fall back to a bootstrap policy (100% popularity) because no prior month had a completed outcome window yet, so the blend and the popularity arm tie exactly in those months. They describe how the model performed on historical validation cases and do not guarantee an improvement, recommendation match, or maturity outcome for any individual team or month. See §6.3 for the full per-month breakdown and the sensitivity results across all seven prediction months.
 
 **System Capabilities:**
 - Processes the project dataset efficiently (87 teams × 35 practices × 10 months, approximately 30,000 practice-level maturity values)
 - Working web interface for easy use by non-technical users (see §7.3 for what's still needed for full production deployment)
 - Real-time recommendations based on current organizational data
-- Parameter optimization framework for continuous improvement
+- Global monthly policy selection replaces manual parameter tuning: each prediction month automatically re-selects its own blend from prior completed outcomes
 
 **Practical Readiness:**
 - System is ready for pilot deployment and testing with selected teams (not yet a hardened production deployment — see §7.3)
@@ -277,12 +282,11 @@ The collaborative filtering algorithm finds similar teams and uses their improve
 - Use cosine similarity to measure similarity
 
 **Step 2: Find K Most Similar Teams**
-- Select K teams (default: 19) with highest similarity scores
-- Filter by minimum similarity threshold (default: 0.75)
+- Select K teams with highest similarity scores; K (5, 10, or 19) and the minimum similarity threshold (0.0, 0.5, or 0.75) are chosen by the global monthly policy (§6.5), not fixed defaults
 - Deduplicate to ensure K different teams (not same team at different months)
 
 **Step 3: Extract Improvement Patterns**
-- For each similar team, check which practices showed subsequent observed improvement within a 1–3-month window
+- For each similar team, check which practices showed subsequent observed improvement within a fixed 2-observed-snapshot window after it looked similar to the target team
 - Only use improvements that occurred before or at the target month (prevent data leakage)
 - Weight improvements by similarity score
 
@@ -322,7 +326,7 @@ The sequence learning algorithm learns transition patterns from historical data:
 - Cache transition patterns for efficiency
 
 **Step 3: Apply Sequence Boost**
-- Check if target team recently improved any practices (last 1-3 months)
+- Check if target team recently improved any practices, in its own fixed 2 preceding observed snapshots (never tunable)
 - For each recently improved practice, boost practices that typically follow it
 - Weight boost by transition probability
 
@@ -335,32 +339,38 @@ Where:
 - Sum is over all recently improved practices
 - transition_probability is learned from historical data
 
-### 3.5 Hybrid Recommendation Scoring
+### 3.5 Global Two-Month Adaptive Blend Scoring
 
-The hybrid scoring combines similarity and sequence signals:
+The blend combines similarity, sequence, and time-aware popularity signals under one policy
+selected per prediction month (§6.5), not per team and not fixed in advance:
 
-**Step 1: Normalize Scores Separately**
-- Normalize similarity scores: sim_norm = sim_score / max(sim_scores)
-- Normalize sequence scores: seq_norm = seq_score / max(seq_scores)
+**Step 1: Normalize Each Component**
+- Similarity and sequence: normalize over all evidence, then restrict to candidate practices
+  (practices not already at maximum maturity for the target team)
+- Historical popularity: restrict to candidate practices, then normalize
+- Recent popularity (the single most recent organization-wide transition): normalize
+  organization-wide, then restrict to candidate practices
 
-**Step 2: Combine with Weights**
+**Step 2: Combine with the Month's Selected Weights**
 ```
-final_score = (similarity_weight × sim_norm) + ((1 - similarity_weight) × seq_norm)
+popularity   = recency_weight × recent_popularity_norm + (1 - recency_weight) × historical_popularity_norm
+final_score  = similarity_weight × sim_norm + sequence_weight × seq_norm + popularity_weight × popularity
 ```
 
-Default: similarity_weight = 0.7 (70% similarity, 30% sequence)
+`similarity_weight`, `sequence_weight`, and `popularity_weight` are one of 15 combinations of
+0%/25%/50%/75%/100% summing to exactly 100%; `recency_weight` is one of 0%/25%/50%/75%/100%. Both
+are chosen once per prediction month by the global policy selection described in §6.5 — there is
+no fixed default and no per-team or per-request override.
 
-**Step 3: Final Normalization**
-- Normalize final combined scores: normalized_score = final_score / max(final_scores)
-- This ensures all recommendation scores are in [0, 1] range for consistency
-
-**Step 4: Filter and Rank**
-- Filter out practices already at maximum maturity (current_level >= 1.0)
-- Sort by normalized score (descending), with ties broken deterministically by practice name
+**Step 3: Filter and Rank**
+- Filter out practices already at maximum maturity (current_level >= 1.0) — done before scoring,
+  as part of building the candidate set, not as a post-hoc filter on the final scores
+- Sort by score (descending), with ties broken deterministically by practice name
   (rather than by dict/set iteration order, which in Python depends on the process's hash seed
   and is not reproducible run-to-run) — this ensures the same inputs always produce the same
   ranked recommendations
-- Return top N recommendations (default: 2)
+- Return the top 2 recommendations — the primary flow always returns exactly two; a request for
+  any other count is rejected rather than silently honored
 
 ### 3.6 Validation Methodology (Backtesting)
 
@@ -382,18 +392,21 @@ The validation methodology follows the original proposal's approach:
 - Formula: P(at least one correct) = 1 - C(n-k_avg, top_n) / C(n, top_n)
 - Where n = total practices, k_avg = average improvements per case, top_n = recommendations
 
-**Popularity Baseline (supplementary):**
-- A random baseline alone invites the reasonable question of whether the model beats *any*
-  systematic heuristic, not just chance. As a stronger comparison, a "popularity baseline" always
-  recommends the top-N practices that improve most often across the whole organization —
-  learned from the same months < test_month the real model uses, so it's exposed to no more data
-  — excluding practices the target team has already maxed out
+**Time-Aware Popularity Comparison Arm (supplementary):**
+- A random baseline alone invites the reasonable question of whether the blend beats *any*
+  systematic heuristic, not just chance. As a stronger comparison, the backtest also selects a
+  pure time-aware-popularity policy each month — 0% similarity, 0% sequence, 100% popularity,
+  with only the popularity recency weight chosen — under exactly the same walk-forward rule as
+  the blend itself (§6.5), evaluated on exactly the same evaluable cases
 - This is a naive, personalization-free heuristic: it ignores the target team's specific state
-  and recent history entirely, always returning the same organization-wide "popular" practices
-  (subject only to the per-team maxed-out filter)
+  and recent improvement history entirely, always returning the organization-wide practices that
+  are improving most (subject only to the per-team maxed-out filter)
+- Because it is selected under the same monthly rule as the blend (rather than being a single
+  fixed heuristic), it replaces the earlier static popularity baseline used in early research —
+  see §6.5 and `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md`
 - Formula: accuracy = correct_predictions_popularity / total_predictions, computed per month
   (same per-month-averaging convention as the primary Accuracy metric) and compared against the
-  model's actual accuracy via the same gap/improvement-factor framing used for the random
+  blend's actual accuracy via the same gap/improvement-factor framing used for the random
   baseline
 
 **Improvement Metrics:**
@@ -419,22 +432,23 @@ baseline:
   k, so it can't be derived from k_avg like the other two).
 
 These are supplementary diagnostics computed by `BacktestEngine` (backed by
-`MetricsCalculator.calculate_hit_rate` and `calculate_mrr`) and shown in the Backtest tab; they do
-not change the headline 50.3% accuracy / 23.5% random baseline figures reported elsewhere in this
-document.
+`MetricsCalculator.calculate_hit_rate` and `calculate_mrr`) and shown in the Backtest tab, split
+into primary and sensitivity results (§6.5); they do not change the headline 58.0% primary
+accuracy / 26.0% random baseline figures reported elsewhere in this document.
 
 **Why Hit Rate@N Remains the Headline Metric**
 
 It would be reasonable to assume a stricter, rank-aware metric was left out of the headline
-because it looked worse. The opposite is true. On the same backtest run, Precision@N, Recall@N,
-and MRR each beat their own random baseline by a *larger* factor than Hit Rate@N does:
+because it looked worse. The opposite is true. On the same primary backtest scope, Precision@N,
+Recall@N, and MRR each beat their own random baseline by a factor at least comparable to Hit
+Rate@N's:
 
 | Metric | Improvement Factor vs. Random |
 |---|---|
-| Hit Rate@N (headline) | 2.14x |
-| Precision@N | 2.31x |
-| Recall@N | 2.93x |
-| MRR | 2.23x |
+| Hit Rate@N (headline) | 2.23x |
+| Precision@N | 2.57x |
+| Recall@N | 2.64x |
+| MRR | 2.36x |
 
 So Hit Rate@N is not the flattering choice among the four — if anything it is the most
 conservative. It is reported as the headline for a domain-specific reason, not a statistical one:
@@ -462,6 +476,14 @@ picking one thing to try, was worth acting on.
 ### 3.7 Worked Examples
 
 This section provides detailed examples showing how the recommendation system works with actual data, demonstrating both similarity-based and sequence-based recommendations.
+
+**Note on the weight used below:** these worked examples illustrate the score-combination
+*mechanism* using a fixed illustrative similarity weight of 0.7, matching the shipped system's
+behavior before the global monthly adaptive blend (§3.5) was introduced. In the current system
+the similarity/sequence/popularity weights are not fixed at 0.7/0.3 — they are re-selected for
+every prediction month from the 675-policy grid described in §6.5. The arithmetic below (weighted
+sum → normalize → filter maxed-out practices → rank) is otherwise unchanged; only the weight
+values and the addition of a third (popularity) term differ in production.
 
 #### Example 1: Similarity-Based Recommendation
 
@@ -599,7 +621,8 @@ The system is built using a modular architecture with clear separation of concer
 │              │ │   Engine     │ │  Processor  │
 │ Similarity   │ │              │ │            │
 │ Sequences    │ │ Backtest     │ │ Loader     │
-│ Recommender  │ │ Optimizer    │ │ Validator  │
+│ PolicyEngine │ │              │ │ Validator  │
+│ Recommender  │ │              │ │            │
 └──────────────┘ └──────────────┘ └────────────┘
 ```
 
@@ -613,12 +636,12 @@ The system is built using a modular architecture with clear separation of concer
 
 **ML Module** (`src/ml/`):
 - **SimilarityEngine**: Calculates cosine similarity between teams, finds K most similar teams
-- **SequenceMapper**: Learns the practice transition matrix from historical data
-- **RecommendationEngine**: Combines similarity and sequence signals, generates recommendations
+- **SequenceMapper**: Learns the practice transition matrix and organization-wide popularity counts from historical data
+- **PolicyEngine**: Owns the global monthly policy grid, cohort building, and blend scoring
+- **RecommendationEngine**: Thin wrapper delegating to `PolicyEngine`, kept for a stable constructor shape
 
 **Validation Module** (`src/validation/`):
-- **BacktestEngine**: Runs rolling window backtest validation
-- **OptimizationEngine**: Tests parameter combinations to find optimal configuration
+- **BacktestEngine**: Runs the rolling window backtest of the blend, split into primary and sensitivity aggregates
 - **Metrics**: Calculates accuracy, improvement factors, random baselines
 
 **API Module** (`src/api/`):
@@ -656,14 +679,17 @@ The system exposes a REST API using FastAPI:
 - `GET /api/teams` - Get all teams with metadata
 - `GET /api/teams/with-improvements` - Get teams/months where improvements occurred
 - `GET /api/teams/{team_name}/months` - Get available months for a team
-- `POST /api/recommendations` - Get recommendations for a team
-- `POST /api/backtest` - Run backtest validation
+- `POST /api/recommendations` - Get recommendations for a team (`top_n` pinned to 2)
+- `POST /api/backtest` - Run the backtest of the global monthly adaptive blend (no parameters)
+- `POST /api/backtest/cancel` - Cancel an in-progress backtest
 - `GET /api/stats` - Get system statistics
 - `GET /api/sequences` - Get learned improvement sequences
-- `POST /api/optimize` - Find optimal configuration
-- `POST /api/optimize/cancel` - Cancel optimization
 - `GET /api/example-data` - Serve the raw Excel dataset file for in-browser preview
 - `GET /api/docs` - Serve project documentation content
+
+There is no static all-history parameter optimizer or `/api/optimize*` family of endpoints - the
+global monthly policy (§6.5) is the sole configuration authority for the primary flow and its
+backtest.
 
 **Request/Response Format:**
 - JSON format for all requests and responses
@@ -684,9 +710,8 @@ The web interface is built with vanilla HTML/CSS/JavaScript using a Dark Academi
 **Key Features:**
 - Team and month selection dropdowns
 - Interactive result displays with inline tooltip explanations on each tab
-- Configuration sliders for parameter tuning
-- Pagination for large result sets
-- File upload for optimization results
+- A policy audit box showing the selected policy's weights, peer pool, and popularity recency for the current prediction month - no configuration form, since there are no user-adjustable model parameters
+- Primary and sensitivity result sections in the Backtest tab, with a cancel button for long runs
 - "About" modal that renders project documentation in-browser
 
 ---
@@ -750,7 +775,7 @@ The codebase consists of approximately 5,600 lines across 23 Python files, organ
 src/
 ├── data/           # Data loading, processing, validation (~600 lines)
 ├── ml/             # Machine learning algorithms (~1,200 lines)
-├── validation/     # Backtesting and optimization (~800 lines)
+├── validation/     # Backtest validation of the blend (~700 lines)
 ├── api/            # Web API layer (~600 lines)
 ├── interface/      # CLI interface (~400 lines)
 └── web_main.py     # Web server entry point (~200 lines)
@@ -771,8 +796,8 @@ src/
 - Lazy evaluation: Similarity matrices built on-demand, not pre-computed
 
 **Optimization Strategies:**
-- Early stopping: Optimization can be cancelled mid-execution
-- Pagination: Large result sets paginated for display
+- Cancellable backtest: a long backtest run can be cancelled mid-execution
+- Cached policy scoring: `PolicyEngine` caches case components, evaluable cohorts, and per-month hit-rate sweeps so repeated backtests and recommendation calls for the same month are near-instant after the first pass
 - Async operations: FastAPI async endpoints for concurrent request handling
 - Memory efficiency: Process data in chunks where possible
 
@@ -849,62 +874,71 @@ primary Accuracy metrics (see §3.6 for definitions and baseline formulas).
 
 ### 6.3 Backtest Results
 
-**Overall Performance:**
-- **Accuracy (Hit Rate@N)**: 50.3%
+The backtest reports two scopes, never mixed together: **primary** covers the five prediction
+months whose 3-snapshot outcome window has fully closed against the dataset's end; **sensitivity**
+covers all seven prediction months, including the two with a truncated outcome window.
+
+**Primary Performance (5 months, 121 evaluable cases):**
+- **Accuracy (Hit Rate@N)**: 58.0%
+- **Random Baseline**: 26.0%
+- **Improvement Factor**: 2.2x better than random
+- **Time-Aware Popularity Comparison**: 55.7% (blend +2.3 percentage points)
+
+**Sensitivity Performance (all 7 months, 151 evaluable cases):**
+- **Accuracy (Hit Rate@N)**: 50.9%
 - **Random Baseline**: 23.5%
-- **Improvement Factor**: 2.14x better than random
-- **Improvement Gap**: 26.8 percentage points
+- **Improvement Factor**: 2.2x better than random
+- **Time-Aware Popularity Comparison**: 47.5% (blend +3.4 percentage points)
 
-**Validation Details:**
-- **Total Recommendations Evaluated**: 142 cases
-- **Validated Recommendations**: 66 cases
-- **Teams Tested**: 43 teams across validation months
-- **Validation Window**: 3 months (immediate + 2 months ahead)
-- **Training Period**: Rolling window (all months before test month)
+**Per-Month Results (primary and sensitivity):**
 
-**Per-Month Results:**
-Results vary by month, with accuracy typically ranging from 40-55%, consistently outperforming the random baseline by approximately 2x.
+| Month | Evaluable Cases | Blend Accuracy | Time-Aware Popularity | Scope |
+|---|---:|---:|---:|---|
+| 2020-05-03 | 21 | 28.6% | 28.6% | Primary (bootstrap policy) |
+| 2020-06-08 | 22 | 63.6% | 63.6% | Primary (bootstrap policy) |
+| 2020-07-05 | 27 | 66.7% | 66.7% | Primary (bootstrap policy) |
+| 2020-08-03 | 24 | 79.2% | 75.0% | Primary |
+| 2020-09-06 | 27 | 51.9% | 44.4% | Primary |
+| 2020-10-05 | 24 | 33.3% | 20.8% | Sensitivity only (truncated window) |
+| 2020-11-04 | 6 | 33.3% | 33.3% | Sensitivity only (truncated window) |
 
-**Supplementary Rank-Aware Metrics (same run):**
+Three of the five primary months use the **bootstrap policy** (100% popularity, 50/50 recency)
+because no earlier prediction month yet had a completed 3-snapshot outcome window - in those
+months the blend and the time-aware-popularity comparison arm are identical by construction. Only
+2020-08-03 and 2020-09-06 exercise a genuinely mixed policy, and both show the blend ahead.
+
+**Supplementary Rank-Aware Metrics (primary scope):**
 
 | Metric | Value | Random Baseline | Improvement Factor |
 |---|---|---|---|
-| Precision@N | 29.6% | 12.8% | 2.31x |
-| Recall@N | 19.5% | 6.7% | 2.93x |
-| MRR | 0.40 | 0.18 | 2.23x |
+| Precision@N | 35.6% | 13.9% | 2.57x |
+| Recall@N | 17.6% | 6.7% | 2.64x |
+| MRR | 0.46 | 0.19 | 2.36x |
 
 Each stricter, rank-aware metric shows an improvement factor over its own random baseline that
-*meets or exceeds* Hit Rate@N's 2.14x — see §3.6 for why Hit Rate@N is still reported as the
+meets or exceeds Hit Rate@N's 2.23x — see §3.6 for why Hit Rate@N is still reported as the
 headline metric despite this.
 
-**Popularity Baseline Comparison (same run):**
+**How to read the time-aware-popularity comparison:**
 
-Random selection is not the only baseline worth comparing against — a reasonable question is
-whether the model beats an even simpler heuristic that already knows *something* about
-organizational patterns, rather than nothing at all. The popularity baseline (§3.6) always
-recommends whichever practices improve most often organization-wide, ignoring the target team's
-specific state entirely:
+This is an exploratory result, not a claim of proven superiority over popularity alone — the
+comparison arm is itself selected under the same monthly walk-forward rule as the blend
+(restricted to 0% similarity / 0% sequence), not a single fixed heuristic, and three of five
+primary months tie exactly because both arms fall back to the same bootstrap policy. The
+remaining +2.3 percentage-point primary margin is an aggregate organizational backtest result (a
+macro-average across the tested months), not a guarantee of improvement for every individual team
+or month.
 
-| | Accuracy (Hit Rate@N) |
-|---|---|
-| Model | 50.3% |
-| Popularity Baseline | 43.6% |
-| Random Baseline | 23.5% |
-
-- **Model vs. Popularity Baseline**: +6.7 percentage points, 1.15x
-- **Model vs. Random Baseline**: +26.8 percentage points, 2.14x
-
-The +6.7 percentage-point result is an aggregate organizational backtest result (a macro-average across the tested months), not a guarantee of improvement for every individual team. A team's result can be higher or lower depending on its history, maturity profile, and the practices it improves during the validation period.
-
-This is an important, honest caveat: most of the model's advantage over random selection is
-attributable to practices simply improving at very different rates organization-wide — a signal
-even a naive, non-personalized heuristic captures. The model's specific value-add — from
-personalizing to each team's own state via collaborative filtering and sequence learning — is
-the smaller remaining margin over the popularity baseline (1.15x, 6.7 percentage points), not the
-larger margin over random (2.14x). Both comparisons are reported because they answer different
-questions: random baseline establishes the problem isn't trivial to solve by chance; popularity
-baseline establishes how much value the model's personalization specifically adds on top of a
-"know the organization's general trends" heuristic.
+This is an important, honest framing: most of the blend's advantage over pure random selection is
+attributable to organization-wide improvement trends that even a naive, non-personalized
+popularity heuristic captures. The blend's specific value-add — from personalizing to each team's
+own state via collaborative filtering and sequence evidence, on top of time-aware popularity — is
+the smaller remaining margin shown above, not the larger margin over random chance. Both
+comparisons are reported because they answer different questions: random baseline establishes the
+problem isn't trivial to solve by chance; the time-aware-popularity arm establishes how much value
+personalization specifically adds on top of a properly time-aware "know the organization's
+current trends" heuristic. See `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md`
+for the full protocol and its caveats.
 
 ### 6.4 Validation Methodology Results
 
@@ -916,46 +950,38 @@ The validation methodology follows the original proposal:
 
 Results demonstrate that the system identifies likely next practices with meaningful accuracy, validating the approach proposed in the original project proposal.
 
-### 6.5 Parameter Optimization Results
+### 6.5 Global Monthly Policy Selection
 
-The system includes parameter optimization capabilities:
+There is no static, all-history parameter optimizer. An earlier version of the system had one
+(`OptimizationEngine`, a grid search over fixed default parameters selected once from *all*
+historical months), but `docs/POPULARITY_BASELINE_INVESTIGATION.md` found that its headline
+figures were selected on the same data they were measured on: a legitimate walk-forward search
+over the same parameter space actually landed at 40.8-42.6% accuracy, below a plain organization-
+wide popularity baseline (44.5%). That optimizer, its three `/api/optimize*` endpoints, its web
+controls, and its CLI menu options were removed entirely, not hidden.
 
-**Optimized Default Parameters:**
-- `top_n`: 2 (number of recommendations)
-- `k_similar`: 19 (number of similar teams to consider)
-- `similarity_weight`: 0.7 (70% similarity, 30% sequence)
-- `similar_teams_lookahead_months`: 3 (months to look ahead for improvements)
-- `recent_improvements_months`: 3 (months to check back for recent improvements)
-- `min_similarity_threshold`: 0.75 (minimum similarity to consider)
+In its place, one **global policy** is selected automatically for each prediction month:
 
-Note: `RecommendationEngine.recommend()`'s `similarity_weight` default was `0.6` until an
-earlier version of the function was found to have a variable-shadowing bug — the
-`similarity_weight` argument was silently overwritten inside the similarity-scoring loop before
-reaching the blend formula, so the parameter had no effect on scoring regardless of its value,
-and every value the optimizer tried produced the same result, making its choice of "optimal"
-arbitrary. With the bug fixed, a fresh grid search found `0.7` performs at least as well as
-`0.6` on every backtest month (strictly better in one of seven, tied in the rest) and on every
-supplementary metric, so the code default was updated to `0.7` to match.
+**The 675-Combination Grid:**
+- Peer count: 5, 10, or 19 similar teams
+- Minimum similarity threshold: 0.0, 0.5, or 0.75
+- Similarity / sequence / popularity weight triple: 15 combinations of 0%/25%/50%/75%/100% summing to exactly 100%
+- Popularity recency weight: 0%, 25%, 50%, 75%, or 100%
+- 3 × 3 × 15 × 5 = 675 candidate policies
 
-**Optimization Process:**
-- Tests combinations of parameters across defined ranges
-- Evaluates each combination using backtest validation
-- Selects configuration with highest accuracy
-- Can test hundreds of combinations (typically 540+)
+**Selection Rule:**
+- For a target prediction month, only earlier prediction months whose full 3-snapshot outcome window has already closed are used as evidence - never the target month's own outcome, and never any later month's
+- The policy maximizing mean Hit Rate@N across those completed months is selected; ties are broken deterministically (prefer more popularity-heavy, then lower recency, then lower similarity weight, then lower sequence weight, then lower peer count, then lower similarity threshold)
+- When no prior prediction month yet has a completed outcome window, the **bootstrap policy** applies: 100% popularity, 50% recent / 50% historical recency weighting
+- The same selected policy is replayed identically by the web interface, the CLI, and the backtest for a given prediction month - there is no per-team or per-request override
 
-**Results:**
-- Optimal configuration achieves ~50.3% accuracy
-- Improvement factor of ~2.14x over random baseline
-- Random baseline: ~23.5% (per-month average improvements per case, macro-averaged across months to match how accuracy is aggregated)
-- Parameters can be tuned for specific organizational contexts
-- Latest optimization tested 180 combinations, with 169 valid combinations
+**Component windows are fixed, never part of the grid:** both the similarity look-ahead (how far past a peer's similar-looking snapshot to check for improvements) and the sequence recency window (how far back to check the target team's own recent improvements) are fixed at exactly 2 observed snapshots. See §6.3 for the resulting per-month policy and accuracy figures.
 
 ### 6.6 Performance Analysis
 
 **Computational Performance:**
-- **Recommendation Generation**: < 1 second per team
-- **Backtest Validation**: 1-2 minutes for full dataset
-- **Parameter Optimization**: 30-60 minutes for full search space (can be cancelled)
+- **Recommendation Generation**: well under 1 second per team once a month's policy and cached case components are warm
+- **Backtest Validation**: on the order of tens of seconds for the full dataset (dominated by the first-time sweep of all 675 policies per prediction month; subsequent requests reuse `PolicyEngine`'s caches)
 
 **Scalability:**
 - Handles 87 teams × 35 practices × 10 months efficiently
@@ -963,9 +989,9 @@ supplementary metric, so the code default was updated to `0.7` to match.
 - Can scale to larger datasets with same architecture
 
 **Accuracy vs. Speed Trade-offs:**
-- Higher `k_similar` improves accuracy but increases computation time
-- Sequence caching reduces repeated computation
-- Optimization can be stopped early if acceptable configuration found
+- A larger peer count in the grid improves candidate coverage but increases per-policy computation
+- Sequence and case-component caching reduces repeated computation across prediction months
+- A long backtest run can be cancelled mid-execution via `POST /api/backtest/cancel`
 
 ### 6.7 Practical Validation Readiness
 
@@ -1145,7 +1171,7 @@ The implemented system successfully addresses all objectives stated in the origi
 **3. Validation:**
 - Uses historical backtesting methodology as proposed
 - Compares recommendations against actual improvements
-- Demonstrates 50.3% aggregate backtest accuracy with 2.14x improvement over the random baseline (23.5%); this is not a per-team guarantee
+- Demonstrates 58.0% primary aggregate backtest accuracy with a 2.2x improvement over the random baseline (26.0%), and a 2.3 percentage-point edge over an independently walk-forward-selected time-aware-popularity comparison arm (55.7%); this is exploratory and not a per-team guarantee (§6.3)
 
 **4. Practical Deployment:**
 - System is a functional prototype, ready for pilot testing with selected teams (see §7.3 for the gap to a hardened production deployment)
@@ -1232,11 +1258,10 @@ empirically validated result of this specific tool.
 ### 7.5 Comparison with Baseline
 
 **Random Baseline:**
-- Random practice selection achieves ~23.5% accuracy (per-month average improvements per case and number of recommendations, macro-averaged across months to match accuracy's own aggregation)
-- System achieves 50.3% accuracy, representing 2.14x improvement
-- Improvement gap of 26.8 percentage points demonstrates significant value
+- Random practice selection achieves ~26.0% primary accuracy (per-month average improvements per case and number of recommendations, macro-averaged across months to match accuracy's own aggregation)
+- System achieves 58.0% primary accuracy, representing a 2.2x improvement over random, and a 2.3 percentage-point edge over an independently selected time-aware-popularity comparison arm (55.7%)
 
-These are aggregate organizational backtest results, not guaranteed outcomes for each team or month. Individual results can differ based on a team's history, maturity profile, and subsequent improvements.
+These are aggregate organizational backtest results, not guaranteed outcomes for each team or month, and the comparison against time-aware popularity remains exploratory (§6.3). Individual results can differ based on a team's history, maturity profile, and subsequent improvements.
 
 **Manual Analysis Baseline:**
 - Manual analysis can serve 1-2 teams per coach per month
@@ -1271,13 +1296,13 @@ The project uses a moderate-sized organizational dataset: 87 teams × 35 practic
 
 This project successfully implements an empirical organizational-learning approach for identifying likely large-scale agile implementation pathways, achieving the following:
 
-Its core contribution is deriving team-specific recommendations from observed organizational behavior: peer-team maturity histories and practice-transition patterns. The collaborative filtering, Practice Transition Model, and hybrid scoring mechanism are established implementation techniques used to operationalize that contribution, rather than the novelty claim itself.
+Its core contribution is deriving team-specific recommendations from observed organizational behavior: peer-team maturity histories, practice-transition patterns, and organization-wide popularity trends, blended under a policy selected automatically per prediction month. The collaborative filtering, Practice Transition Model, time-aware popularity, and global monthly blend mechanism are established implementation techniques used to operationalize that contribution, rather than the novelty claim itself.
 
 **Technical Achievements:**
 - Implemented collaborative filtering algorithm for finding similar teams
 - Implemented the Practice Transition Model for identifying improvement patterns
-- Created hybrid recommendation system combining both approaches
-- Achieved 50.3% aggregate recommendation alignment, 2.14x better than the random baseline (23.5%); individual team outcomes may differ
+- Implemented time-aware popularity and a global monthly policy selection mechanism, replacing a static all-history parameter optimizer that walk-forward analysis showed to be unreliable (§6.5)
+- Achieved 58.0% primary aggregate recommendation alignment, 2.2x better than the random baseline (26.0%), and 2.3 percentage points ahead of an independently selected time-aware-popularity comparison arm (55.7%); individual team outcomes may differ, and this remains an exploratory result (§6.3)
 
 **Practical Achievements:**
 - Built a functional web interface, ready for pilot use (see §7.3 for the gap to production hardening)
@@ -1386,10 +1411,14 @@ The system is ready for deployment and real-world testing:
 │ │Similarity│ │ │ Backtest  │ │ │ Loader   │ │
 │ │ Engine   │ │ │ Engine    │ │ │ Processor│ │
 │ └──────────┘ │ └──────────┘ │ │ Validator │ │
-│ ┌──────────┐ │ ┌──────────┐ │ └─────────┘ │
-│ │Sequence  │ │ │Optimizer  │ │             │
-│ │ Mapper   │ │ │ Engine    │ │             │
-│ └──────────┘ │ └──────────┘ │             │
+│ ┌──────────┐ │               │ └─────────┘ │
+│ │Sequence  │ │               │             │
+│ │ Mapper   │ │               │             │
+│ └──────────┘ │               │             │
+│ ┌──────────┐ │               │             │
+│ │Policy    │ │               │             │
+│ │ Engine   │ │               │             │
+│ └──────────┘ │               │             │
 │ ┌──────────┐ │               │             │
 │ │Recommender│ │               │             │
 │ │ Engine   │ │               │             │
@@ -1407,12 +1436,12 @@ The system is ready for deployment and real-world testing:
 
 **ML Module** (`src/ml/`):
 - **similarity.py**: Cosine similarity calculations, finds K similar teams
-- **sequences.py**: Practice transition learning, transition-matrix construction
-- **recommender.py**: Combines similarity and sequence, generates recommendations
+- **sequences.py**: Practice transition learning, transition-matrix construction, popularity counts
+- **policy.py**: Global monthly policy grid, cohort building, and blend scoring (`PolicyEngine`)
+- **recommender.py**: Thin wrapper delegating to `PolicyEngine`
 
 **Validation Module** (`src/validation/`):
-- **backtest.py**: Rolling window backtest validation
-- **optimizer.py**: Parameter optimization, combination testing
+- **backtest.py**: Rolling window backtest of the blend, primary/sensitivity aggregation, cancellation
 - **metrics.py**: Accuracy calculations, random baseline computation
 
 **API Module** (`src/api/`):
@@ -1531,17 +1560,16 @@ recommendations = recommendations[:top_n]
 ```
 
 **3. POST /api/recommendations**
-- **Description**: Get recommendations for a team
+- **Description**: Get recommendations for a team, using that prediction month's globally selected policy. `top_n` is pinned to 2 - any other value is rejected with a validation error rather than silently honored, and there is no `k_similar` (peer count is chosen by the policy, not the caller)
 - **Request Body**:
 ```json
 {
   "team": "AADS",
   "month": 200105,
-  "top_n": 2,
-  "k_similar": 19
+  "top_n": 2
 }
 ```
-- **Response**: Recommendation response with practices and explanations
+- **Response**: Recommendation response with practices, explanations, and the selected policy's audit record
 - **Example Response**:
 ```json
 {
@@ -1555,24 +1583,26 @@ recommendations = recommendations[:top_n]
       "why": "5 similar team(s) improved this practice"
     }
   ],
-  "validation": {...}
+  "validation": {...},
+  "selected_policy": {
+    "is_bootstrap": false,
+    "peer_count": 19,
+    "min_similarity": 0.0,
+    "similarity_weight": 0.25,
+    "sequence_weight": 0.0,
+    "popularity_weight": 0.75,
+    "popularity_recency_weight": 1.0,
+    "completed_prior_months": [200103, 200104],
+    "mean_prior_hit_rate": 0.52
+  },
+  "no_similar_teams_found": false,
+  "message": null
 }
 ```
 
 **4. POST /api/backtest**
-- **Description**: Run backtest validation
-- **Request Body**:
-```json
-{
-  "train_ratio": null,
-  "config": {
-    "top_n": 2,
-    "k_similar": 19,
-    "similarity_weight": 0.7
-  }
-}
-```
-- **Response**: Backtest results with accuracy metrics
+- **Description**: Run the backtest of the global monthly adaptive blend. No request body - there are no user-adjustable model parameters
+- **Response**: `{ per_month_results, primary, sensitivity, cancelled }` - `primary` covers prediction months with a complete 3-snapshot outcome window, `sensitivity` covers every prediction month; the two are never mixed
 
 **5. GET /api/stats**
 - **Description**: Get system statistics
@@ -1582,27 +1612,20 @@ recommendations = recommendations[:top_n]
 - **Description**: Get learned improvement sequences
 - **Response**: List of sequence transitions with probabilities
 
-**7. POST /api/optimize**
-- **Description**: Find optimal configuration
-- **Request Body**: Parameter ranges and constraints
-- **Response**: Optimal configuration and all tested configurations
-
-**8. POST /api/optimize/cancel**
-- **Description**: Cancel current optimization
+**7. POST /api/backtest/cancel**
+- **Description**: Cancel an in-progress backtest run
 - **Response**: Cancellation status
 
-**9. GET /api/optimize/latest**
-- **Description**: Get the latest optimization results from saved file
-- **Response**: Latest optimization results (same format as POST /api/optimize response)
-- **Error**: 404 if no optimization results found
-
-**10. GET /api/example-data**
+**8. GET /api/example-data**
 - **Description**: Serve the raw Excel dataset file for in-browser preview (Statistics tab modal)
 - **Response**: Excel file download (`combined_dataset.xlsx`)
 
-**11. GET /api/docs**
+**9. GET /api/docs**
 - **Description**: Serve project documentation content as markdown
 - **Response**: Raw markdown string rendered by the About modal in the frontend
+
+There is no static all-history parameter optimizer and no `/api/optimize*` family of endpoints -
+see §6.5.
 
 **Error Handling:**
 - **400 Bad Request**: Invalid request parameters
@@ -1641,44 +1664,19 @@ Strikers  | 200101  | 3     | 2   | 3   | 3          | ...
 
 ### 9.5 Configuration Parameters
 
-**Tunable Parameters:**
+There are no user-adjustable or per-request model parameters. `top_n` is pinned to 2. Every other
+knob below is chosen automatically by the global monthly policy selection (§6.5) - never by the
+caller, and never fixed at a single default:
 
-**top_n** (default: 2)
-- **Description**: Number of recommendations to return
-- **Range**: 1-10 (typically 2-5)
-- **Impact**: Higher values provide more options but may reduce precision
+**Peer count** - one of 5, 10, or 19 similar teams, chosen per prediction month
+**Minimum similarity threshold** - one of 0.0, 0.5, or 0.75, chosen per prediction month
+**Similarity / sequence / popularity weights** - one of 15 combinations of 0%/25%/50%/75%/100% summing to 100%, chosen per prediction month
+**Popularity recency weight** - one of 0%, 25%, 50%, 75%, or 100%, chosen per prediction month
+**Similarity look-ahead window and sequence recency window** - both fixed at exactly 2 observed snapshots; never part of the grid, never tunable
 
-**k_similar** (default: 19)
-- **Description**: Number of similar teams to consider
-- **Range**: 5-20 (typically 15-20, with 19 being optimal)
-- **Impact**: Higher values use more data but increase computation time
-
-**similarity_weight** (default: 0.7)
-- **Description**: Weight for similarity scores vs. sequence scores
-- **Range**: 0.0-1.0
-- **Impact**: 0.7 means 70% similarity, 30% sequence
-
-**similar_teams_lookahead_months** (default: 3)
-- **Description**: Months to look ahead for similar teams' improvements
-- **Range**: 1-6 (typically 1-3)
-- **Impact**: Higher values capture delayed improvements but may include noise
-
-**recent_improvements_months** (default: 3)
-- **Description**: Months to check back for recent improvements
-- **Range**: 1-6 (typically 1-3)
-- **Impact**: Higher values consider longer history but may include outdated patterns
-
-**min_similarity_threshold** (default: 0.75)
-- **Description**: Minimum similarity score to consider a team similar
-- **Range**: 0.0-1.0 (typically 0.5-0.9)
-- **Impact**: Higher values ensure more similar teams but may reduce available data
-
-**Parameter Optimization:**
-- System includes optimization engine to find best parameter combinations
-- Tests parameter combinations using backtest validation (typically 180 combinations with current ranges)
-- Default ranges: top_n [2,3,4,5], similarity_weight [0.6,0.7,0.8], k_similar [5,10,15,19,20], lookahead [3], recent [3], min_similarity [0.0,0.5,0.75]
-- Selects configuration with highest accuracy
-- Results can be saved and loaded for reuse
+The selected policy for a given prediction month is reported in the `selected_policy` field of
+both the recommendations response and the backtest's per-month results (§9.3), so the actual
+values in effect are always visible even though they cannot be configured directly.
 
 ---
 
@@ -1689,11 +1687,10 @@ Strikers  | 200101  | 3     | 2   | 3   | 3          | ...
 The Agile Practice Recommendation System is a web-based application that identifies likely next agile practices for teams based on organizational history. The system analyzes patterns from similar teams and improvement sequences to provide personalized recommendations.
 
 **Key Features:**
-- **Personalized Recommendations**: Get practice recommendations tailored to each team's current state
-- **Validation**: Run backtest validation to see how often recommendations align with later improvements
+- **Personalized Recommendations**: Get practice recommendations tailored to each team's current state, always exactly two, using that month's globally selected policy
+- **Validation**: Run backtest validation to see how often recommendations align with later improvements, split into primary and sensitivity results
 - **Statistics**: View system statistics and practice definitions
 - **Sequences**: Explore learned improvement patterns
-- **Optimization**: Find optimal parameter configurations
 
 ### 10.2 Installation Guide
 
@@ -1724,11 +1721,10 @@ See **docs/QUICK_START.md** for a 3-step quick start guide.
 - Explore practice improvement frequencies
 
 **2. Backtest Validation Tab:**
-- Configure parameters using sliders
+- No configuration form - there is nothing to adjust, since the monthly policy is the sole configuration authority
 - Click "Run Backtest Validation" to validate on historical data
-- View accuracy metrics and improvement factors
-- Click "Find Optimal Configuration" to test parameter combinations
-- Upload previously saved optimization results
+- View primary and sensitivity accuracy metrics, improvement factors, and the time-aware-popularity comparison, plus a per-month table showing each month's selected policy
+- Click "Cancel Backtest" to stop a long-running validation
 
 **3. Sequences Tab:**
 - View learned improvement sequences
@@ -1818,8 +1814,8 @@ Enter month (yyyymmdd): 200105
 - Check that team has improvements in validation window
 
 **Backtest takes too long:**
-- Normal: Backtest can take 1-2 minutes
-- Optimization can take 30-60 minutes (can be cancelled)
+- Normal: the first backtest run after startup sweeps all 675 candidate policies per prediction month and can take up to a couple of minutes; subsequent runs reuse `PolicyEngine`'s caches and are much faster
+- Can be cancelled via the "Cancel Backtest" button (or `POST /api/backtest/cancel`)
 - Check server logs for progress
 
 ---
@@ -1841,12 +1837,12 @@ agile-prediction-mvp/
 │   ├── ml/
 │   │   ├── __init__.py
 │   │   ├── similarity.py      # Cosine similarity engine
-│   │   ├── sequences.py        # Practice Transition Model
-│   │   └── recommender.py     # Hybrid recommendation engine
+│   │   ├── sequences.py        # Practice Transition Model + popularity counts
+│   │   ├── policy.py           # Global monthly policy grid, cohorts, blend scoring
+│   │   └── recommender.py     # Thin wrapper delegating to PolicyEngine
 │   ├── validation/
 │   │   ├── __init__.py
-│   │   ├── backtest.py         # Backtest validation engine
-│   │   ├── optimizer.py        # Parameter optimization
+│   │   ├── backtest.py         # Backtest validation of the blend
 │   │   └── metrics.py          # Accuracy metrics
 │   ├── api/
 │   │   ├── __init__.py
@@ -1914,30 +1910,28 @@ agile-prediction-mvp/
 - Uses cosine similarity from scikit-learn
 
 **sequences.py** - SequenceMapper class:
-- `learn_sequences()`: Learns transition matrix from all historical data
-- `learn_sequences_up_to_month(max_month)`: Learns up to specific month (for backtesting)
+- `learn_sequences()`: Learns transition matrix and popularity counts from all historical data
+- `learn_sequences_up_to_month(max_month)`: Learns up to specific month (for backtesting/policy scoring)
 - `get_typical_next_practices(practice, top_n)`: Returns practices that typically follow
+- `get_practice_popularity()`: Returns organization-wide improvement counts, most-improved first
 - Uses caching to avoid recomputation
 
+**policy.py** - PolicyEngine class:
+- `recommend(team, prediction_month)`: Selects the month's policy and scores the team's candidates, always returning exactly two recommendations
+- `select_policy(prediction_month)` / `select_popularity_arm(prediction_month)`: Global monthly policy selection over the 675-combination grid
+- `evaluable_cases(prediction_month)`: Builds the fixed backtest cohort, independent of any policy
+- `explain_practice(team, prediction_month, practice)`: Explains why a practice was (or would be) recommended
+
 **recommender.py** - RecommendationEngine class:
-- `recommend(team, month, ...)`: Generates recommendations for a team
-- Combines similarity and sequence scores
-- Filters and ranks recommendations
-- `get_recommendation_explanation(...)`: Explains why a practice was recommended
+- Thin wrapper constructing and delegating to a `PolicyEngine`; kept so existing constructor call sites don't need to change
+- `recommend(team, prediction_month)` / `get_recommendation_explanation(...)`: delegate directly
 
 **Validation Module** (`src/validation/`):
 
 **backtest.py** - BacktestEngine class:
-- `run_backtest(config)`: Runs rolling window backtest
-- Validates recommendations against actual improvements
-- Calculates accuracy metrics and random baseline
-- Supports cancellation mid-execution
-
-**optimizer.py** - OptimizationEngine class:
-- `generate_parameter_combinations(...)`: Generates all parameter combinations
-- `find_optimal_config(...)`: Tests combinations, finds optimal configuration
-- Saves results to JSON file
-- Supports cancellation
+- `run_backtest(cancellation_check=None)`: Runs the rolling window backtest of the blend - no config parameter, no user-adjustable model parameters
+- Validates recommendations against actual improvements, split into primary and sensitivity aggregates
+- Supports cancellation mid-execution, resetting any stale prior cancellation at the start of each run
 
 **API Module** (`src/api/`):
 
@@ -1961,12 +1955,20 @@ agile-prediction-mvp/
 
 **Main Classes:**
 
-**RecommendationEngine** (`src/ml/recommender.py`):
-- **Purpose**: Generates practice recommendations
+**PolicyEngine** (`src/ml/policy.py`):
+- **Purpose**: Owns the global monthly policy grid, cohort building, and blend scoring
 - **Key Methods**:
-  - `recommend()`: Main recommendation generation
-  - `get_recommendation_explanation()`: Provides explanations
+  - `recommend()`: Main recommendation generation, using the prediction month's selected policy
+  - `select_policy()` / `select_popularity_arm()`: Global monthly policy selection
+  - `evaluable_cases()`: Fixed backtest cohort, independent of any policy
+  - `explain_practice()`: Provides explanations
 - **Dependencies**: SimilarityEngine, SequenceMapper, DataProcessor
+
+**RecommendationEngine** (`src/ml/recommender.py`):
+- **Purpose**: Thin wrapper delegating to `PolicyEngine`, kept for a stable constructor shape
+- **Key Methods**:
+  - `recommend()`, `get_recommendation_explanation()`: delegate directly to `PolicyEngine`
+- **Dependencies**: `PolicyEngine`
 
 **SimilarityEngine** (`src/ml/similarity.py`):
 - **Purpose**: Finds similar teams using cosine similarity
@@ -1975,19 +1977,20 @@ agile-prediction-mvp/
 - **Dependencies**: DataProcessor
 
 **SequenceMapper** (`src/ml/sequences.py`):
-- **Purpose**: Learns empirical practice transition patterns
+- **Purpose**: Learns empirical practice transition patterns and organization-wide popularity counts
 - **Key Methods**:
   - `learn_sequences()`: Learns from all data
   - `learn_sequences_up_to_month()`: Learns up to specific month
   - `get_typical_next_practices()`: Returns next practices
+  - `get_practice_popularity()`: Returns organization-wide improvement counts
 - **Dependencies**: DataProcessor
 
 **BacktestEngine** (`src/validation/backtest.py`):
-- **Purpose**: Validates recommendations using backtesting
+- **Purpose**: Validates the blend using rolling window backtesting, split into primary and sensitivity aggregates
 - **Key Methods**:
   - `run_backtest()`: Runs rolling window backtest
-  - `_build_partial_results()`: Builds partial results if cancelled
-- **Dependencies**: RecommendationEngine, DataProcessor
+  - `_aggregate_scope()`: Aggregates one scope (primary/sensitivity), used for both complete and cancelled runs
+- **Dependencies**: RecommendationEngine (via its `PolicyEngine`), DataProcessor
 
 **Important Algorithms:** see §9.2 (Algorithm Details) for direct code-level snippets of cosine
 similarity, transition matrix construction, and hybrid scoring, and §3.3-3.5 for the full
@@ -2011,25 +2014,24 @@ similarity_engine = SimilarityEngine(processor)
 sequence_mapper = SequenceMapper(processor, loader.practices)
 recommender = RecommendationEngine(similarity_engine, sequence_mapper, loader.practices)
 
-# Get recommendations
-recommendations = recommender.recommend("AADS", 200105, top_n=2)
-for practice, score, level in recommendations:
-    print(f"{practice}: {score:.2f} (current: {level:.2f})")
+# Get recommendations - always exactly two, using that month's selected policy
+result = recommender.recommend("AADS", 200105)
+for practice in result.practices:
+    print(f"{practice}: {result.scores[practice]:.2f} (current: {result.current_levels[practice]:.2f})")
+print(f"Selected policy: {result.selected_policy}")
 ```
 
 **Running Backtest:**
 ```python
 from src.validation import BacktestEngine
 
+# No config - there are no user-adjustable model parameters
 backtest_engine = BacktestEngine(recommender, processor)
-results = backtest_engine.run_backtest(config={
-    'top_n': 2,
-    'k_similar': 19,
-    'similarity_weight': 0.7
-})
+results = backtest_engine.run_backtest()
 
-print(f"Accuracy: {results['overall_accuracy']:.1%}")
-print(f"Improvement Factor: {results['improvement_factor']:.1f}x")
+print(f"Primary accuracy: {results['primary']['overall_accuracy']:.1%}")
+print(f"Primary improvement factor: {results['primary']['improvement_factor']:.1f}x")
+print(f"Sensitivity accuracy: {results['sensitivity']['overall_accuracy']:.1%}")
 ```
 
 **Using API:**

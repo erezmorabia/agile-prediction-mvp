@@ -28,7 +28,7 @@ See **[PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md)** for the full a
 ### What to Expect:
 - **Web Interface:** Modern, interactive UI at http://localhost:8000
 - **Recommendations:** Get personalized practice recommendations for teams
-- **Validation:** Run backtest validation with accuracy metrics (~50.3% accuracy, 2.14x better than random)
+- **Validation:** Run backtest validation with accuracy metrics (~58.0% primary accuracy, 2.2x better than random, 2.3pp ahead of a time-aware-popularity comparison arm)
 - **Statistics:** View system statistics and practice definitions
 - **Sequences:** Explore learned improvement patterns
 
@@ -75,7 +75,7 @@ This MVP’s core innovation is an empirical approach to learning organizational
 
 | Metric | Baseline | With System | Impact |
 |--------|----------|-------------|--------|
-| **Decision Accuracy** | ~23.5% (random) | 50.3% | **2.14x better** |
+| **Decision Accuracy** | ~26.0% (random) | 58.0% | **2.2x better** |
 | **Manual Analysis Time** *(practitioner estimate, not measured — [see basis](docs/PROJECT_DOCUMENTATION.md))* | 4-8 hours/month | 0 hours | **100% automated** |
 | **Teams Served** | 1-2 | 70+ simultaneously | **Scale 35-70x** |
 | **Decision Confidence** | Intuition | Data-driven | **Proven model** |
@@ -116,7 +116,7 @@ This system automates and optimizes that guidance.
 - **Personalized** - Each team gets unique recommendations  
 - **Intelligent Sequencing** - Knows what's next in the improvement path  
 - **Evidence-Based** - Built on 655 data points across 87 teams  
-- **Validated** - 50.3% aggregate historical backtest accuracy (2.14x better than the random baseline)
+- **Validated** - 58.0% primary aggregate historical backtest accuracy (2.2x better than random, 2.3pp ahead of a time-aware-popularity comparison arm)
 - **Scalable** - Works with any number of teams/practices
 - **Continuous Learning** - Gets smarter each month
 - **Pilot-Ready** - Tested and deployable for pilot use with selected teams (see [PROJECT_DOCUMENTATION.md §7.3](docs/PROJECT_DOCUMENTATION.md) for the gap to full production hardening)
@@ -151,7 +151,7 @@ similarity_engine.find_similar_teams(target_team, current_month, k=19)
 **What it does:**
 - Looks at Team A's current practice scores (e.g., DoD=3, CI/CD=1, TDD=0)
 - Compares them to all other teams using cosine similarity
-- Finds the K most similar teams (default K=19, optimized through validation)
+- Finds the K most similar teams (K is one of 5, 10, or 19 - chosen automatically per prediction month by the global policy, not a fixed default)
 - Returns: The most similar teams to Team A
 
 **Why this matters:**
@@ -252,7 +252,7 @@ results = backtest.run_backtest()
 
 **Why this matters:**
 - Evaluates recommendation alignment against historical data
-- 50.3% aggregate backtest accuracy vs ~23.5% random = **2.14x better**
+- 58.0% primary aggregate backtest accuracy vs ~26.0% random = **2.2x better**
 - Supports informed use of recommendations while individual outcomes remain uncertain
 
 ---
@@ -330,7 +330,7 @@ The system answers: **"What did successful peers do next?"**
 **It does:**
 - Personalized (tailored to each team's context)
 - Evidence-based (from 87 real teams)
-- Validated (50.3% aggregate historical backtest accuracy)
+- Validated (58.0% primary aggregate historical backtest accuracy)
 - Scalable (works for all teams simultaneously)
 - Continuous learning (improves each month)
 
@@ -357,7 +357,7 @@ The system answers: **"What did successful peers do next?"**
 
 **Solution:** "Look at teams that are doing well, see what they did next, check if it fits the natural sequence, and recommend that."
 
-**Result:** 2.14x better decisions than random guessing, fully automated, works for 70+ teams simultaneously.
+**Result:** 2.2x better decisions than random guessing, fully automated, works for 70+ teams simultaneously.
 
 ## Features
 
@@ -558,8 +558,8 @@ python src/web_main.py data/raw/combined_dataset.xlsx
 4. Features:
    - Filter teams by improvements (for validation)
    - Interactive team and month selection
-   - Visual validation results
-   - Real-time backtest with adjustable train/test split
+   - Visual validation results, split into primary and sensitivity backtest results
+   - No configuration form - the global monthly policy is the sole configuration authority
 
 ### Command-Line Interface
 
@@ -571,7 +571,8 @@ Then select from the menu:
 - **1** - Get recommendations for a team
 - **2** - Run backtest validation
 - **3** - View system statistics
-- **4** - Exit
+- **4** - View improvement sequences
+- **5** - Exit
 
 ### Example: Get Recommendations
 
@@ -588,23 +589,24 @@ Top 2 Recommendations for Avengers (Month 200705):
    Recommendation Score: 0.681
    Current Level: 0.00
 
-Note: Number of recommendations configurable with top_n parameter
+Note: the primary flow always returns exactly two recommendations - top_n is not configurable
 ```
 
 ### Example: Run Backtest
 
 ```
-BACKTEST RESULTS
-================
-Total Recommendations Evaluated: 25
-Validated Recommendations: 12
-Overall Accuracy: 50.3%
-Random Baseline: ~23.5%
-Improvement Over Baseline: 2.14x
+Primary Results:
+   Months Included: 5
+   Total Predictions: 121 (team/month combinations)
+   Overall Accuracy: 58.0% (average of all months)
+   Random Baseline: 26.0%
+   Improvement: 2.2x better than random
+   Time-Aware Popularity: 55.7% (blend beats it by 2.3pp)
 
-Teams Tested: 85+
-Train Period: First 60% of months
-Test Period: Last 40% of months
+Sensitivity Results:
+   Months Included: 7
+   Overall Accuracy: 50.9%
+   Random Baseline: 23.5%
 ```
 
 *Note: Actual results may vary based on data distribution and test configuration*
@@ -716,16 +718,15 @@ With the implemented codebase:
 
 - **MVP Timeline**: 1-2 days
 - **Data Coverage**: 87 teams, 35 practices, 10 months; 655 team-month observations with variable per-team coverage
-- **Backtest Accuracy**: 50.3% aggregate accuracy (validated on historical data; not a per-team guarantee)
-- **vs Random Baseline**: 2.14x better than random baseline
+- **Backtest Accuracy**: 58.0% primary aggregate accuracy, 2.2x random baseline, 2.3pp ahead of a walk-forward time-aware-popularity comparison arm (validated on historical data; exploratory, not a per-team guarantee - see `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md`)
 
 ## ML Algorithm Details
 
 ### Collaborative Filtering
 ```
 For team T at month M:
-  1. Find K=19 most similar teams (optimized default, by practice profiles)
-  2. Check what those teams improved in month M+1
+  1. Find K most similar teams (K chosen per month by the global policy - 5, 10, or 19)
+  2. Check what those teams improved in the next 2 observed snapshots
   3. Weight by similarity: score += similarity_weight * improvement_magnitude
 ```
 
@@ -740,10 +741,14 @@ For each practice P:
 
 ### Recommendation Scoring
 ```
-score(practice) = collaborative_filtering_score + sequence_boost
+score(practice) = similarity_weight * similarity_score
+                 + sequence_weight   * sequence_score
+                 + popularity_weight * time_aware_popularity_score
 
-- Collaborative: based on similar teams
+- Similarity: based on similar teams
 - Sequence: based on common improvement patterns
+- Time-aware popularity: based on organization-wide improvement trends
+- All three weights are chosen once per prediction month by the global policy, not fixed constants
 ```
 
 ## How This Project Was Built
@@ -785,15 +790,15 @@ The system is built in 5 modular components:
    - Learns transition probabilities
    - Boosts logical improvement sequences
 
-3. **Hybrid Ranking**
-   - Combines similarity + sequence patterns
+3. **Global Adaptive Blend**
+   - Combines similarity + sequence + time-aware popularity, weighted by a policy selected once per prediction month
    - Filters out already-mature practices
-   - Returns top 5 ranked recommendations
+   - Always returns exactly two ranked recommendations
 
 ### **Validation & Testing**
 
-- **177+ test functions** - Comprehensive test suite covering all components
-- **50.3% aggregate backtest accuracy** - 2.14x better than the random baseline; individual team outcomes may differ
+- **Comprehensive test suite** covering all components, including a byte-exact reproduction test against the research-validated blend numbers
+- **58.0% primary aggregate backtest accuracy** - 2.2x better than the random baseline, 2.3pp ahead of a time-aware-popularity comparison arm; individual team outcomes may differ, and this remains an exploratory result
 - **Data validation** - Quality checks on input
 - **Error handling** - Robust edge case handling
 - **Pilot-ready** - Code ready for pilot deployment (see `PROJECT_DOCUMENTATION.md` §7.3 for production-hardening gaps: auth, monitoring, automated data pipeline, multi-tenancy)
@@ -891,22 +896,24 @@ WeView       200402  2    2    1      1                1    1
 
 ## Configuration
 
-Edit constants in `src/ml/recommender.py`:
-- `k_similar = 19` - Number of similar teams to consider (optimized through validation)
-- `top_n = 2` - Number of recommendations to return (default, configurable)
-- `similarity_weight = 0.7` - Weight for similarity (0.7 = 70% similarity, 30% sequence)
+There is nothing to configure. The global two-month adaptive blend (`src/ml/policy.py`,
+`PolicyEngine`) selects one policy automatically for each prediction month from a fixed grid, and
+that policy - not a caller, not a config file - is the sole configuration authority for the
+primary recommendation flow and its backtest:
 
-### Complete Parameter Reference
+- **Peer count**: 5, 10, or 19 similar teams, chosen per prediction month
+- **Minimum similarity threshold**: 0.0, 0.5, or 0.75, chosen per prediction month
+- **Similarity / sequence / popularity weights**: one of 15 combinations of 0/25/50/75/100% summing to 100%, chosen per prediction month
+- **Popularity recency weight**: 0/25/50/75/100%, chosen per prediction month
+- **`top_n`**: pinned to 2 - the primary flow always returns exactly two recommendations
+- **Similarity look-ahead and sequence recency windows**: fixed at 2 observed snapshots, never part of the grid
 
-Default parameters (optimized through backtest validation):
-- `top_n = 2` - Number of recommendations (configurable to any value)
-- `k_similar = 19` - Number of similar teams for collaborative filtering
-- `similarity_weight = 0.7` - Hybrid scoring weight (70% similarity, 30% sequence)
-- `similar_teams_lookahead_months = 3` - Months to check for similar team improvements
-- `recent_improvements_months = 3` - Months to look back for recent team improvements
-- `min_similarity_threshold = 0.75` - Minimum cosine similarity to consider teams similar
-
-These defaults were optimized using grid search validation (see `src/validation/optimizer.py`).
+The selection rule: maximize mean Hit Rate@N over strictly earlier prediction months whose full
+3-snapshot outcome window has already closed, falling back to a 100%-popularity bootstrap policy
+before any prior month qualifies. See `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md`
+for the full protocol. A static all-history grid-search optimizer (`src/validation/optimizer.py`)
+existed earlier in the project but was removed entirely after walk-forward analysis showed its
+headline accuracy figure had been selected on the same data it was measured on.
 
 ## Troubleshooting
 

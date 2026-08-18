@@ -1,91 +1,81 @@
 ---
 name: domain-ml
-description: ML engine: collaborative filtering (cosine similarity), Markov chain sequences, and hybrid scoring. Use when modifying recommendation logic, similarity search, sequence learning, or scoring/normalization.
+description: ML engine - collaborative filtering (cosine similarity), Markov chain sequences, time-aware popularity, and the global two-month adaptive blend policy. Use when modifying recommendation logic, similarity search, sequence learning, popularity scoring, or monthly policy selection.
 ---
 
 # Domain: ML
 
 ## Summary
-Three tightly coupled components produce hybrid practice recommendations: `SimilarityEngine` finds peers via cosine similarity, `SequenceMapper` learns Markov transitions between improvements, and `RecommendationEngine` combines both signals with weighted scoring.
+Four components produce practice recommendations. `SimilarityEngine` finds peers via cosine similarity. `SequenceMapper` learns Markov transitions between improvements and also tracks organization-wide practice-improvement counts (popularity). `PolicyEngine` (`src/ml/policy.py`) owns the global two-month adaptive blend: it selects one policy per prediction month from prior completed outcomes and scores similarity/sequence/time-aware-popularity evidence under it. `RecommendationEngine` is now a thin compatibility wrapper that constructs and delegates to a `PolicyEngine`.
 
 ## Data Flows
 
-- **Recommendation:** `RecommendationEngine.recommend()` → `SequenceMapper.learn_sequences_up_to_month(current_month)` → `SimilarityEngine.find_similar_teams(target_team, current_month)` → for each similar team check improvements in next 1–N months (N = `similar_teams_lookahead_months`, default 3; capped at current_month) → apply sequence boost from recently improved practices → normalize each component separately → combine with weights → filter maxed-out practices → return top N
-- **Explanation:** `get_recommendation_explanation()` runs the same similarity + sequence lookup — now using the same `k_similar`/`min_similarity_threshold`/`similar_teams_lookahead_months` as the `recommend()` call it's explaining, so both the peer pool and the lookahead window named in the explanation match what actually produced the score — and returns a breakdown dict (similar_teams_list, improved_count, has_sequence_boost) instead of ranked scores
-- **Sequence cache:** `learn_sequences_up_to_month(max_month)` stores results in `_sequence_cache[max_month]`; subsequent calls with the same max_month return from cache, avoiding recomputation across backtest iterations
+- **Recommendation:** `RecommendationEngine.recommend(team, prediction_month)` → `PolicyEngine.recommend()` → `is_recommendable()` (baseline exists + ≥2 non-maxed candidates) → `select_policy(prediction_month)` (from completed prior months, or `BOOTSTRAP_POLICY` if none) → `score_case()` blends similarity/sequence/popularity under that policy → top 2 by `(-score, name)`
+- **Case components:** `PolicyEngine.case_components(team, baseline_month)` (cached) computes, per (team, baseline): candidate practices, full ranked+deduped peer list (`k=num_teams, min_similarity=0.0`) with per-peer improvement contributions, the target's own sequence-trigger evidence, and org-wide historical/recent popularity counts for that baseline month
+- **Policy variants without re-querying:** `SimilarityEngine.find_similar_teams` dedups by team name *before* truncating to `k`, so fetching once at `k=num_teams, min_similarity=0.0` and then filtering-by-threshold-then-truncating-to-`k` (`PolicyEngine._selected_peer_indices`) reproduces every `(peer_count, min_similarity)` variant in the 9-combination grid exactly
+- **Explanation:** `RecommendationEngine.get_recommendation_explanation(team, prediction_month, practice)` → `PolicyEngine.explain_practice()` — re-derives the selected policy's peer subset and looks up whether each selected peer's cached contribution touched `practice`; returns a breakdown dict (`similar_teams_list`, `similar_teams_improved`, `has_sequence_boost`, `no_similar_teams_found`)
+- **Sequence cache:** `learn_sequences_up_to_month(max_month)` stores results in `_sequence_cache[max_month]`; subsequent calls with the same max_month return from cache. `PolicyEngine._month_popularity(baseline_month)` calls this once per baseline month and also extracts `get_practice_popularity()` immediately into a plain dict, so later mutations of the shared mapper never affect an already-cached `CaseComponents`
 
 ## Domain Validation Rules and Business Logic
 
-- Only data from months **< current_month** is used for sequence learning and similarity matching (data leakage prevention)
+- Only data from months **< baseline_month** is used for sequence learning, popularity, and similarity matching (data leakage prevention)
 - Similar teams deduplicated by team name — only the highest-similarity historical snapshot is kept per team
-- Practices at normalized score ≥ 1.0 are excluded from recommendations (already at max maturity)
-- `allow_first_three_months=True` bypasses the month-1 guard; used only by backtest engine
-- **Sequence transitions are first-order Markov, built per team over chronological "improvement-bearing" steps** (consecutive months where ≥1 practice improved; empty steps are skipped, so "next" means the next time something actually improved, not the next calendar month). Each practice improved in one step gets an edge to every practice improved in the *next* step (full cross-product). Practices improved within the *same* step get no edge between them — simultaneous improvements carry no ordering signal, so no direction is asserted.
+- Practices at normalized score ≥ 1.0 are excluded from the candidate set (already at max maturity)
+- **Fixed component windows, never tunable:** `FIXED_LOOKAHEAD_SNAPSHOTS = 2` (similarity: peer's observed snapshots after it looked similar) and `FIXED_RECENCY_SNAPSHOTS = 2` (sequence: target team's own preceding observed snapshots) — see `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md`
+- **Baseline** for a (team, prediction_month) case = the team's own most recent observed snapshot strictly before `prediction_month` (`PolicyEngine.baseline_month_for`), not necessarily the prior *global* month — generalizes correctly if a team has data gaps (none exist in the current dataset, verified)
+- **Recommendable** (no outcome required, used by the live flow): baseline exists AND ≥2 candidate practices. **Evaluable** (used by cohorts/backtest): recommendable AND at least one observed improvement in the 3-snapshot outcome window after baseline
+- A missing/empty peer list is not an error: `PolicyEngine._compute_components` catches `ValueError` from `find_similar_teams` and sets `no_similar_teams_found=True`; similarity contributes 0 and the blend still returns 2 recommendations from sequence + popularity
+- Sequence transitions are still first-order Markov exactly as before (see `SequenceMapper`); no change to `learn_sequences()` / `learn_sequences_up_to_month()` / `_learn_team_transitions()`
 
 ## Formulas / Scoring / Calculation Logic
 
-**Hybrid scoring:**
+**Blend (per candidate practice):**
 ```
-final_score = similarity_weight × norm_sim_score + (1 − similarity_weight) × norm_seq_score
+final_score = similarity_weight × similarity_norm + sequence_weight × sequence_norm + popularity_weight × popularity
+popularity   = recency_weight × recent_popularity_norm + (1 - recency_weight) × historical_popularity_norm
 ```
-- `similarity_weight` default: **0.7** (70% similarity, 30% sequence) — updated from a prior
-  default of 0.6 after a post-fix optimizer grid search found 0.7 performs at least as well on
-  every backtest month and metric (see fixed bug below and
-  `docs/known-issues/01-similarity-weight-shadowing.md`)
-- Each component normalized independently to [0, 1] before combining
-- Combined scores normalized again to [0, 1] before returning
-- **Deterministic tie-break**: final ranking sorts by `(-score, practice_name)`, and every
-  practice-name collection feeding into it (`all_practices`, `recently_improved_practices`) is
-  iterated in canonical `self.practices` order rather than raw `set`/dict iteration. Plain
-  `set()` iteration order in Python depends on the process's hash seed, which previously made
-  tied recommendations (and therefore backtest accuracy) non-reproducible across runs.
-- **Fixed variable-shadowing bug**: the loop that walks similar teams previously used
-  `similarity_weight` as its per-team-similarity loop variable name, silently overwriting the
-  function's own `similarity_weight` parameter before the Step 4 blend formula read it — so the
-  blend ratio was never actually tunable (every value behaved like the last similar team's
-  cosine-similarity score, always ≥ `min_similarity_threshold`). The loop variable is now named
-  `peer_similarity`.
-- **Fixed dead lookahead parameter**: both `recommend()` and `get_recommendation_explanation()`
-  previously hardcoded the lookahead window to `max_months_ahead = 3`, ignoring the
-  `similar_teams_lookahead_months` parameter entirely (`get_recommendation_explanation()` didn't
-  even accept it as a parameter). Both now use `max_months_ahead = similar_teams_lookahead_months`
-  (see `docs/known-issues/02-similar-teams-lookahead-not-wired.md`). Default-neutral since the
-  parameter's default was already `3`; only matters once a caller (or the optimizer) sets a
-  different value.
+- The three factor weights are one of 15 combinations of `(0, 0.25, 0.5, 0.75, 1.0)` summing to exactly 1.0 (`WEIGHT_TRIPLES`)
+- `recency_weight` ∈ `(0.0, 0.25, 0.5, 0.75, 1.0)`, `peer_count` ∈ `(5, 10, 19)`, `min_similarity` ∈ `(0.0, 0.5, 0.75)` — full grid is `POLICY_GRID`, 675 combinations
+- **Normalization scope differs by component (research-exact, not the literal spec wording — see the plan/spec deviation note)**:
+  | Component | Scope |
+  |---|---|
+  | Similarity | normalize over all evidence (may include maxed-out practices) → mask to candidates |
+  | Sequence | normalize over all evidence → mask to candidates |
+  | Historical popularity | mask to candidates → normalize |
+  | Recent popularity | normalize org-wide → mask to candidates |
+- Deterministic tie-break: final ranking sorts by `(-score, practice_name)`, exactly as before
 
-**Similarity score (per practice):**
-```
-similarity_scores[practice] += similarity_score × improvement_magnitude
-```
-- `improvement_magnitude` = max improvement across the `similar_teams_lookahead_months` lookahead window (default 3)
+**Similarity evidence (per peer, per practice):** `similarity_score × best_improvement_magnitude` where the magnitude is the max improvement across the fixed 2-snapshot look-ahead from the peer's historical month, gated to not exceed the target's baseline month
 
-**Sequence score (per practice):**
-```
-sequence_scores[practice] += transition_probability
-```
-- Summed across all recently-improved practices that have a transition to this practice
+**Sequence evidence:** for each practice the target improved in its own preceding 2 snapshots (canonical `self.practices` order, not raw set iteration — same reproducibility fix as before), sum `get_typical_next_practices(practice, top_n=3)` transition probabilities into the successor practices
 
-**Default tunable parameters** (all in `RecommendationEngine.recommend()`):
-| Parameter | Default | Effect |
-|---|---|---|
-| `top_n` | 2 | Recommendations returned |
-| `k_similar` | 19 | Similar teams considered |
-| `similarity_weight` | 0.7 | Similarity vs sequence balance |
-| `similar_teams_lookahead_months` | 3 | Months ahead to check for improvements |
-| `recent_improvements_months` | 3 | Months back to detect recent improvements |
-| `min_similarity_threshold` | 0.75 | Min cosine similarity to include a team |
+**Popularity evidence:** historical = org-wide improvement counts from `learn_sequences_up_to_month(baseline_month)` (strictly before baseline); recent = org-wide improvement counts for the single immediately-preceding observed transition into baseline (complementary windows, no overlap)
+
+## Global Monthly Policy Selection
+
+- `PolicyEngine.select_policy(prediction_month)`: if `completed_prior_months(prediction_month)` is empty, use `BOOTSTRAP_POLICY` (100% popularity, 50% recency); otherwise `max()` over the full 675-policy grid by `(mean_hit_rate_over_completed_months, *_preference_key(policy))`
+- `_preference_key`: `(popularity_weight, -recency_weight, -similarity_weight, -sequence_weight, -peer_count_index, -threshold_index)` — a strict total order (ported from `scripts/research_full_per_team_optimization.py:prefer()`)
+- `completed_prior_months(month)`: earlier prediction months whose own 3-snapshot outcome window has fully closed *before* `month`'s index — not the same as that month's own `full_outcome_window` flag (which compares against the dataset's end, used only for primary/sensitivity classification)
+- `select_popularity_arm(prediction_month)`: same walk-forward rule, restricted to the 5 pure-popularity policies (`POPULARITY_ARM_POLICIES`), tie-break `-recency_weight` — this is the backtest's independent comparison arm
+- All hit-rate sweeps are cached per prediction month (`month_hit_rates`) over that month's fixed `evaluable_cases()` cohort, which never depends on which policy is being scored
 
 ## Backend Functions
 
 | Class / Method | File | Called from | Key params / returns |
 |---|---|---|---|
-| `SimilarityEngine.find_similar_teams()` | `src/ml/similarity.py:21` | `RecommendationEngine.recommend()` | `target_team, target_month, k, min_similarity` → `list[(team, score, historical_month)]` |
-| `SequenceMapper.learn_sequences_up_to_month()` | `src/ml/sequences.py:121` | `RecommendationEngine.recommend()`, `BacktestEngine.run_backtest()` | `max_month` → mutates `transition_matrix`; cached by `max_month` |
-| `SequenceMapper._learn_team_transitions()` | `src/ml/sequences.py:82` | `learn_sequences()`, `learn_sequences_up_to_month()` | `team_months, history` → mutates `transition_matrix`/`practice_popularity` in place (first-order Markov construction) |
-| `SequenceMapper.get_typical_next_practices()` | `src/ml/sequences.py:178` | `RecommendationEngine.recommend()` | `practice, top_n` → `list[(practice_name, probability)]` |
-| `RecommendationEngine.recommend()` | `src/ml/recommender.py:25` | `APIService.get_recommendations()`, `BacktestEngine` | `target_team, current_month, top_n, k_similar, ...` → `list[(practice, score, current_level)]` |
-| `RecommendationEngine.get_recommendation_explanation()` | `src/ml/recommender.py:301` | `APIService.get_recommendations()` | `target_team, current_month, practice, recent_improvements_months, k_similar, min_similarity_threshold, similar_teams_lookahead_months` → explanation dict |
+| `SimilarityEngine.find_similar_teams()` | `src/ml/similarity.py:21` | `PolicyEngine._compute_components()` | `target_team, target_month, k, min_similarity` → `list[(team, score, historical_month)]` |
+| `SequenceMapper.learn_sequences_up_to_month()` | `src/ml/sequences.py:121` | `PolicyEngine._compute_components()`, `_month_popularity()` | `max_month` → mutates `transition_matrix`/`practice_popularity`; cached by `max_month` |
+| `SequenceMapper.get_typical_next_practices()` | `src/ml/sequences.py:178` | `PolicyEngine._compute_components()`, `explain_practice()` | `practice, top_n` → `list[(practice_name, probability)]` |
+| `SequenceMapper.get_practice_popularity()` | `src/ml/sequences.py:242` | `PolicyEngine._month_popularity()` | → `dict[practice, count]`, most-improved first |
+| `PolicyEngine.case_components()` | `src/ml/policy.py` | `is_recommendable()`, `evaluable_cases()`, `recommend()` | `team, baseline_month` → cached `CaseComponents` |
+| `PolicyEngine.evaluable_cases()` | `src/ml/policy.py` | `month_hit_rates()`, `BacktestEngine` | `prediction_month` → cached `list[CohortCase]`, fixed before any policy scoring |
+| `PolicyEngine.select_policy()` / `select_popularity_arm()` | `src/ml/policy.py` | `recommend()`, `BacktestEngine._score_month()` | `prediction_month` → `SelectedPolicy` |
+| `PolicyEngine.score_case()` / `top_practices()` | `src/ml/policy.py` | `recommend()`, `month_hit_rates()`, backtest | `CaseComponents, Policy` → `dict[practice, score]` / top-2 tuple |
+| `PolicyEngine.recommend()` | `src/ml/policy.py` | `RecommendationEngine.recommend()` | `team, prediction_month` → `RecommendationResult` |
+| `PolicyEngine.explain_practice()` | `src/ml/policy.py` | `RecommendationEngine.get_recommendation_explanation()` | `team, prediction_month, practice` → explanation dict |
+| `policy_summary()` | `src/ml/policy.py` (module function) | `BacktestEngine`, `APIService.get_recommendations()` | `SelectedPolicy` → serializable audit dict (peer_count/min_similarity are `None` on bootstrap) |
+| `RecommendationEngine.recommend()` | `src/ml/recommender.py` | `APIService.get_recommendations()`, `BacktestEngine`, CLI | `target_team, prediction_month` → `RecommendationResult` (thin delegation to `PolicyEngine`) |
 
 ## Cross-references
-- **Related Use Case Skills:** `/uc-01-get-recommendations` (primary consumer of recommendations), `/uc-02-run-backtest-validation` (calls recommender in a loop), `/uc-03-run-parameter-optimization` (tunes ML parameters)
-- **Related Domain Skills:** `/domain-data` (provides `DataProcessor` and team histories), `/domain-validation` (wraps recommender for backtest/optimization), `/domain-api` (exposes recommendations via REST)
+- **Related Use Case Skills:** `/uc-01-get-recommendations` (primary consumer of recommendations), `/uc-02-run-backtest-validation` (calls `PolicyEngine` per prediction month)
+- **Related Domain Skills:** `/domain-data` (provides `DataProcessor` and team histories), `/domain-validation` (wraps `PolicyEngine` for the backtest), `/domain-api` (exposes recommendations via REST)

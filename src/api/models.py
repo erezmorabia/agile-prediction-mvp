@@ -2,57 +2,59 @@
 Pydantic models for API request/response validation.
 """
 
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RecommendationRequest(BaseModel):
-    """Request model for getting recommendations."""
+    """Request model for getting recommendations.
+
+    top_n is pinned to 2 (the primary flow always returns exactly two recommendations -
+    see docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md). A request for
+    any other value fails Pydantic validation rather than silently receiving a different
+    policy. There is no k_similar - peer count is chosen by the month's selected policy,
+    not by the caller.
+    """
+
+    model_config = ConfigDict(extra="forbid")
 
     team: str = Field(..., description="Team name")
     month: int = Field(..., description="Month to predict (yyyymmdd format) - must be month 3 or later")
-    top_n: int = Field(2, ge=1, le=10, description="Number of recommendations")
-    k_similar: int = Field(19, ge=1, le=20, description="Number of similar teams to consider")
+    top_n: Literal[2] = Field(2, description="Number of recommendations - must be exactly 2")
 
 
-class BacktestConfig(BaseModel):
-    """Configuration for fine-tuning backtest parameters."""
+class SelectedPolicyInfo(BaseModel):
+    """Audit record for the global policy selected for one prediction month."""
 
-    top_n: int = Field(2, ge=1, le=10, description="Number of recommendations")
-    k_similar: int = Field(19, ge=1, le=20, description="Number of similar teams to consider")
-    similarity_weight: float = Field(0.7, ge=0.0, le=1.0, description="Weight for similarity scores (0.0-1.0)")
-    similar_teams_lookahead_months: int = Field(
-        3, ge=1, le=6, description="Months to look ahead for similar teams' improvements"
-    )
-    recent_improvements_months: int = Field(3, ge=1, le=6, description="Months to check back for recent improvements")
-    min_similarity_threshold: float = Field(
-        0.75, ge=0.0, le=1.0, description="Minimum similarity threshold (0.0 = no filter)"
-    )
-
-
-class BacktestRequest(BaseModel):
-    """Request model for running backtest."""
-
-    train_ratio: float | None = Field(
-        None, ge=0.1, le=0.9, description="Training data ratio (ignored, kept for compatibility)"
-    )
-    config: BacktestConfig | None = Field(None, description="Optional configuration for fine-tuning parameters")
+    is_bootstrap: bool
+    peer_count: int | None = Field(None, description="None (not a default) when the bootstrap policy is in effect")
+    min_similarity: float | None = Field(None, description="None (not a default) when the bootstrap policy is in effect")
+    similarity_weight: float
+    sequence_weight: float
+    popularity_weight: float
+    popularity_recency_weight: float
+    completed_prior_months: list[int]
+    mean_prior_hit_rate: float | None = None
 
 
 class PerMonthResult(BaseModel):
-    """Results for a single month in rolling window backtest."""
+    """Results for a single prediction month in the backtest."""
 
     month: int
-    train_months: list[int]
+    full_outcome_window: bool
+    evaluable_cases: int
     predictions: int
     correct: int
     accuracy: float
+    time_aware_popularity_accuracy: float
+    blend_minus_popularity: float
     precision: float
     recall: float
     mrr: float
-    popularity_accuracy: float
     teams_tested: int
+    selected_policy: SelectedPolicyInfo
+    popularity_arm_recency_weight: float
 
 
 class TeamInfo(BaseModel):
@@ -94,6 +96,7 @@ class ValidationSummary(BaseModel):
     validated_count: int
     total_recommendations: int
     accuracy: float | None = None  # None when no improvements occurred (not a model failure)
+    team_improved_anything: bool = False
 
 
 class SimilarTeamInfo(BaseModel):
@@ -118,6 +121,7 @@ class RecommendationItem(BaseModel):
     why: str
     similar_teams: list[SimilarTeamInfo] = []
     validated: bool
+    improved_in_months: list[int] | None = None
 
 
 class PracticeProfile(BaseModel):
@@ -137,35 +141,54 @@ class RecommendationResponse(BaseModel):
     recommendations: list[RecommendationItem]
     validation: ValidationSummary | None = None
     practice_profile: PracticeProfile | None = None
+    selected_policy: SelectedPolicyInfo
+    no_similar_teams_found: bool = False
+    message: str | None = Field(
+        None, description="Set when fewer than two recommendations can be returned, e.g. the team has fewer than two practices left to improve"
+    )
+
+
+class BacktestScopeResult(BaseModel):
+    """Aggregate backtest metrics over one scope (primary or sensitivity). Rate fields
+    are None (not 0.0) when zero months qualify for this scope."""
+
+    months_included: int
+    total_predictions: int
+    correct_predictions: int
+    overall_accuracy: float | None
+    random_baseline: float | None
+    improvement_gap: float | None
+    improvement_factor: float | None
+    time_aware_popularity_accuracy: float | None
+    blend_minus_popularity: float | None
+    overall_precision: float | None
+    overall_recall: float | None
+    overall_mrr: float | None
+    random_precision: float | None
+    random_recall: float | None
+    random_mrr: float | None
+    precision_gap: float | None
+    recall_gap: float | None
+    mrr_gap: float | None
+    precision_improvement_factor: float | None
+    recall_improvement_factor: float | None
+    mrr_improvement_factor: float | None
+    teams_tested: int
+    avg_improvements_per_case: float | None
 
 
 class BacktestResponse(BaseModel):
-    """Response model for backtest results (rolling window)."""
+    """Response model for backtest results.
 
-    total_predictions: int
-    correct_predictions: int
-    overall_accuracy: float
-    random_baseline: float
-    improvement_gap: float
-    improvement_factor: float
-    overall_popularity_baseline: float
-    popularity_gap: float
-    popularity_improvement_factor: float
-    overall_precision: float
-    overall_recall: float
-    overall_mrr: float
-    random_precision: float
-    random_recall: float
-    random_mrr: float
-    precision_gap: float
-    recall_gap: float
-    mrr_gap: float
-    precision_improvement_factor: float
-    recall_improvement_factor: float
-    mrr_improvement_factor: float
+    Primary aggregate reporting covers only prediction months with a complete
+    three-snapshot outcome window; sensitivity covers every prediction month and must
+    be labelled/kept separate, never mixed into the primary figures.
+    """
+
     per_month_results: list[PerMonthResult]
-    teams_tested: int
-    avg_improvements_per_case: float
+    primary: BacktestScopeResult
+    sensitivity: BacktestScopeResult
+    cancelled: bool = False
 
 
 class MissingValuesDetails(BaseModel):
@@ -201,48 +224,3 @@ class ErrorResponse(BaseModel):
 
     error: str
     detail: str | None = None
-
-
-class OptimizationRequest(BaseModel):
-    """Request model for finding optimal configuration."""
-
-    min_accuracy: float = Field(0.40, ge=0.0, le=1.0, description="Minimum accuracy threshold")
-    top_n_range: list[int] | None = Field(None, description="List of top_n values to test")
-    similarity_weight_range: list[float] | None = Field(None, description="List of similarity_weight values to test")
-    k_similar_range: list[int] | None = Field(None, description="List of k_similar values to test")
-    similar_teams_lookahead_months_range: list[int] | None = Field(None, description="List of lookahead months to test")
-    recent_improvements_months_range: list[int] | None = Field(None, description="List of recent months to test")
-    min_similarity_threshold_range: list[float] | None = Field(
-        None, description="List of min_similarity values to test"
-    )
-    fixed_params: dict[str, Any] | None = Field(None, description="Fixed parameter values (overrides ranges)")
-
-
-class OptimizationResult(BaseModel):
-    """Single optimization result."""
-
-    config: dict[str, Any]
-    model_accuracy: float
-    random_baseline: float
-    improvement_gap: float
-    improvement_factor: float
-    total_predictions: int
-    correct_predictions: int
-
-
-class OptimizationResponse(BaseModel):
-    """Response model for optimization results."""
-
-    optimal_config: dict[str, Any] | None = None
-    model_accuracy: float
-    random_baseline: float
-    improvement_gap: float
-    improvement_factor: float
-    total_predictions: int
-    correct_predictions: int
-    total_combinations_tested: int
-    total_combinations_available: int
-    valid_combinations: int
-    all_results: list[OptimizationResult] = Field(default_factory=list, description="Top 10 results")
-    early_stopped: bool = False
-    cancelled: bool = False

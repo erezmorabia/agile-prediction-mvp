@@ -7,9 +7,9 @@
 | `src/web_main.py` | Entry point; orchestrates data loading, ML init, FastAPI startup |
 | `src/main.py` | CLI entry point (non-web usage) |
 | `src/api/` | FastAPI app factory, route handlers, service layer, Pydantic models |
-| `src/ml/` | ML engine: similarity search, sequence learning, hybrid recommendations |
+| `src/ml/` | ML engine: similarity search, sequence learning, global two-month adaptive blend policy |
 | `src/data/` | Data loading, normalization, validation, practice definitions |
-| `src/validation/` | Backtest validation, parameter optimization, accuracy metrics |
+| `src/validation/` | Backtest validation of the blend, accuracy metrics |
 | `src/interface/` | CLI interface and output formatting |
 | `web/` | Static SPA served by FastAPI at `/` |
 
@@ -39,10 +39,10 @@ src/
 ├── ml/
 │   ├── similarity.py        # SimilarityEngine: cosine similarity, K-NN lookup
 │   ├── sequences.py         # SequenceMapper: Markov transition matrix + cache
-│   └── recommender.py       # RecommendationEngine: hybrid scoring (main engine)
+│   ├── policy.py            # PolicyEngine: 675-policy grid, monthly selection, blend scoring
+│   └── recommender.py       # RecommendationEngine: thin wrapper delegating to PolicyEngine
 ├── validation/
-│   ├── backtest.py          # BacktestEngine: rolling window validation
-│   ├── optimizer.py         # OptimizationEngine: grid search + _cancelled flag
+│   ├── backtest.py          # BacktestEngine: rolling window validation of the blend, cancellation
 │   └── metrics.py           # Accuracy calculations, random baseline
 ├── api/
 │   ├── main.py              # create_app(): FastAPI app factory
@@ -59,9 +59,9 @@ web/
     │   ├── app.js           # Tab init, event handlers, render functions
     │   └── api.js           # API client wrapper functions
     └── css/style.css
-tests/                       # 13 pytest files
+tests/                       # pytest files
 data/raw/                    # Excel data files (gitignored)
-results/                     # Optimization output JSON files
+results/                     # Research-script output JSON files (see docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md)
 ```
 
 ## Functional Domains
@@ -69,9 +69,9 @@ results/                     # Optimization output JSON files
 | Domain | Purpose | Key Components | Key Functions |
 |---|---|---|---|
 | data | Load Excel, normalize scores, validate data, filter practices | `DataLoader`, `DataProcessor`, `DataValidator`, `PracticeDefinitionsLoader` | `load()`, `process()`, `validate()`, `filter_high_missing_practices()` |
-| ml | Similarity search, sequence learning, hybrid recommendation scoring | `SimilarityEngine`, `SequenceMapper`, `RecommendationEngine` | `find_similar_teams()`, `learn_sequences_up_to_month()`, `recommend()`, `get_recommendation_explanation()` |
-| validation | Rolling window backtest, grid search optimization, accuracy metrics | `BacktestEngine`, `OptimizationEngine` | `run_backtest()`, `find_optimal_config()`, `cancel()`, `generate_parameter_combinations()` |
-| api | FastAPI routes, service orchestration, request/response models | `APIService`, route handlers, Pydantic models | `create_routes()`, `get_recommendations()`, `run_backtest()`, `find_optimal_config()`, `cancel_optimization()` |
+| ml | Similarity search, sequence learning, global two-month adaptive blend policy | `SimilarityEngine`, `SequenceMapper`, `PolicyEngine`, `RecommendationEngine` | `find_similar_teams()`, `learn_sequences_up_to_month()`, `PolicyEngine.recommend()`, `select_policy()`, `explain_practice()` |
+| validation | Rolling window backtest of the blend, primary/sensitivity aggregation, accuracy metrics | `BacktestEngine` | `run_backtest()`, `cancel()`, `reset_cancellation()` |
+| api | FastAPI routes, service orchestration, request/response models | `APIService`, route handlers, Pydantic models | `create_routes()`, `get_recommendations()`, `run_backtest()`, `cancel_backtest()` |
 | frontend | Single-page web app, 4-tab UI, API client | `index.html`, `app.js`, `api.js`, `style.css` | `initializeRecommendations()`, `initializeBacktest()`, `initializeStats()`, `initializeSequences()` |
 
 For detailed domain information, see `/domain-data`, `/domain-ml`, `/domain-validation`, `/domain-api`, `/domain-frontend`.
@@ -87,9 +87,7 @@ For detailed domain information, see `/domain-data`, `/domain-ml`, `/domain-vali
 | POST | `/api/backtest` | Run rolling window backtest |
 | GET | `/api/stats` | System statistics |
 | GET | `/api/sequences` | Learned improvement sequences |
-| POST | `/api/optimize` | Run parameter grid search |
-| POST | `/api/optimize/cancel` | Cancel in-progress optimization |
-| GET | `/api/optimize/latest` | Latest saved optimization results |
+| POST | `/api/backtest/cancel` | Cancel in-progress backtest |
 | GET | `/api/example-data` | Serve raw Excel dataset file (Statistics tab modal) |
 | GET | `/api/docs` | Serve PROJECT_DOCUMENTATION.md as plain text (About modal) |
 
@@ -109,10 +107,11 @@ web_main.py
 
 ## Architectural Constraints
 
-- **Temporal ordering (CRITICAL):** All ML algorithms must only access data from months ≤ current_month. Future data must never influence predictions. Enforced by `test_temporal_boundaries.py`.
+- **Temporal ordering (CRITICAL):** All ML algorithms must only access data from months strictly before the baseline they're scoring. Future data must never influence predictions or monthly policy selection. Enforced by `test_temporal_boundaries.py`.
 - **Practice filtering at startup:** Practices with >90% missing values are excluded before model building; `practices` list updated in-place.
-- **Thread pool for optimization:** `POST /api/optimize` runs in a `ThreadPoolExecutor(max_workers=1)` so the event loop stays free to process `/api/optimize/cancel`.
-- **Cancellation pattern:** `OptimizationEngine._cancelled` flag is polled inside the backtest loop (every 10 teams and at each month boundary); set via `cancel()` → `POST /api/optimize/cancel`.
+- **Single configuration authority:** The global two-month adaptive blend policy (`PolicyEngine`, `/domain-ml`) selected per prediction month is the only configuration authority for the primary recommendation flow, the CLI, and the backtest. There is no static all-history optimizer and no per-request or per-team tunable parameters.
+- **Thread pool for the backtest:** `POST /api/backtest` runs in a `ThreadPoolExecutor(max_workers=1)` so the event loop stays free to process `POST /api/backtest/cancel`. Repointed from the deleted optimizer's identical pattern.
+- **Cancellation pattern:** `BacktestEngine._cancelled` flag is polled inside the per-month/per-case loop (every 10 cases and at each month boundary); set via `cancel()` → `POST /api/backtest/cancel`. `run_backtest()` resets it at the top of every call so a stale prior cancellation can't silently cancel a fresh run.
 - **PyInstaller path resolution:** `get_resource_path()` in `web_main.py` checks `sys._MEIPASS` first (frozen) then project root (dev).
 - **Run from project root:** All imports assume project root is in `sys.path`.
 

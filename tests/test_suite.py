@@ -158,12 +158,9 @@ class TestRecommendations:
         
         current_month = team_months[-1]
 
-        recommendations = recommender.recommend(
-            team, current_month, top_n=3, k_similar=5
-        )
-        
-        assert isinstance(recommendations, list)
-        assert len(recommendations) <= 3
+        result = recommender.recommend(team, current_month)
+
+        assert result.practices == () or len(result.practices) == 2
 
 
 def run_tests():

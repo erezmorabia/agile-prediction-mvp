@@ -60,131 +60,33 @@
         <div id="backtest-tab" class="tab-content">
             <div class="section">
                 <h2>Run Backtest Validation (Rolling Window)</h2>
-                <p class="demo-step">Here's the scientific proof (49% accuracy)</p>
-                <p>Validate recommendations against historical data using rolling window approach</p>
+                <p class="demo-step">Here's the scientific proof</p>
+                <p>Validate recommendations against historical data using a rolling window approach</p>
                 <div class="info-box" style="margin-bottom: 20px;">
                     <strong>Rolling Window Approach:</strong>
                     <ul>
-                        <li>For each month starting from month 4:
+                        <li>For each prediction month:
                             <ul>
-                                <li>Train on all previous months</li>
-                                <li>Identify likely next practices for that month</li>
-                                <li>Validate against actual data (checks that month, month+1, AND month+2)</li>
+                                <li>Select one global policy from earlier prediction months whose full 3-snapshot outcome window has already closed</li>
+                                <li>Identify likely next practices for every eligible team using that month's policy</li>
+                                <li>Validate against actual data (checks that month, the next observed snapshot, and the one after that)</li>
                             </ul>
                         </li>
                         <li>Shows accuracy per month and overall average</li>
-                        <li><strong>Note:</strong> Validation checks 3 months ahead to account for adoption timelines (This aligns with recommendation logic which looks up to 3 months ahead)</li>
-                        <li>Each recommendation combines two algorithms: <strong>Collaborative Filtering</strong> (60% default) — what similar teams improved next — and the <strong>Practice Transition Model</strong> (40% default) — observed transitions between consecutive improvement-bearing steps. The balance is configurable below.</li>
+                        <li><strong>Note:</strong> Validation checks up to 3 observed snapshots ahead to account for adoption timelines</li>
+                        <li>Each recommendation blends three evidence sources — <strong>similarity</strong> (what comparable teams improved), the <strong>Practice Transition Model</strong> (observed transitions between consecutive improvement-bearing steps), and <strong>time-aware popularity</strong> (organization-wide improvement trends) — combined with weights chosen automatically per month. There are no user-adjustable model parameters.</li>
                     </ul>
                 </div>
 
                 <div style="margin-bottom: 20px; font-size: 0.82em; color: #6b6865;">
                     Strict temporal isolation enforced — recommendations never use future data
-                    <span class="tooltip-icon" data-tooltip-html="For each recommendation at month M:&lt;ul&gt;&lt;li&gt;Similar teams found from months &amp;lt; M only&lt;/li&gt;&lt;li&gt;Practice transition patterns learned from months &amp;lt; M only&lt;/li&gt;&lt;li&gt;No peeking at future improvements&lt;/li&gt;&lt;/ul&gt;Validated by rolling-window backtest (time-series cross-validation). This makes the reported accuracy (49%, 2.0× vs random) a trustworthy measure of recommendation quality." role="img" aria-label="More information">ⓘ</span>
-                </div>
-
-                <!-- Configuration Panel -->
-                <div class="config-panel" style="margin-bottom: 20px; border: 1px solid var(--gray-300); padding: 20px; border-radius: 8px; background: var(--gray-50);">
-                    <h3 style="margin-top: 0;">Fine-Tuning Configuration</h3>
-
-                    <!-- Primary Parameters -->
-                    <div class="config-section">
-                        <h4 style="margin-top: 0; cursor: pointer;" onclick="toggleConfigSection('primary-config')">
-                            <span id="primary-config-toggle">▶</span> Primary Parameters
-                        </h4>
-                        <div id="primary-config" class="config-content" style="display: none;">
-                            <div class="form-group">
-                                <label for="config-top-n">
-                                    Number of Recommendations:
-                                    <span id="config-top-n-value">2</span>
-                                </label>
-                                <input type="range" id="config-top-n" min="1" max="10" value="2" step="1">
-                                <small>Controls how many practices are recommended as likely subsequent improvements. More recommendations give teams more options but also increase the chance of getting one right by chance (higher random baseline).</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="config-similarity-weight">
-                                    Similarity Weight:
-                                    <span id="config-similarity-weight-value">0.7</span>
-                                    (Transition Model Weight: <span id="config-sequence-weight-value">0.3</span>)
-                                </label>
-                                <input type="range" id="config-similarity-weight" min="0" max="1" value="0.7" step="0.05">
-                                <small>Controls the balance between two recommendation sources: (1) What similar teams improved (peer learning) vs (2) the Practice Transition Model (what typically follows at the next improvement-bearing step). Higher values favor peer learning, lower values favor transition patterns.</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Advanced Parameters -->
-                    <div class="config-section">
-                        <h4 style="cursor: pointer;" onclick="toggleConfigSection('advanced-config')">
-                            <span id="advanced-config-toggle">▶</span> Advanced Parameters
-                        </h4>
-                        <div id="advanced-config" class="config-content" style="display: none;">
-                            <div class="form-group">
-                                <label for="config-k-similar">
-                                    Number of Similar Teams:
-                                    <span id="config-k-similar-value">19</span>
-                                </label>
-                                <input type="range" id="config-k-similar" min="3" max="20" value="19" step="1">
-                                <small>How many similar teams to consider when making recommendations. More teams provide more data but may include less relevant teams. Fewer teams focus on the most similar teams.</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="config-lookahead-months">
-                                    Months to Look Ahead for Similar Teams:
-                                    <span id="config-lookahead-months-value">3</span>
-                                </label>
-                                <input type="range" id="config-lookahead-months" min="1" max="6" value="3" step="1">
-                                <small>How far ahead to check what similar teams improved. For example, if set to 3, the system looks at what similar teams improved 1-3 months after they were in a similar state.</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="config-recent-months">
-                                    Months to Check for Recent Improvements:
-                                    <span id="config-recent-months-value">3</span>
-                                </label>
-                                <input type="range" id="config-recent-months" min="1" max="6" value="3" step="1">
-                                <small>How far back to look for your team's own improvements to trigger sequence boosts. If your team improved a practice within this timeframe, related practices get boosted.</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="config-min-similarity">
-                                    Minimum Similarity Threshold:
-                                    <span id="config-min-similarity-value">0.75</span>
-                                </label>
-                                <input type="range" id="config-min-similarity" min="0" max="1" value="0.75" step="0.05">
-                                <small>Minimum similarity required for a team to be considered 'similar'. Teams below this threshold are ignored. Set to 0.0 to consider all teams regardless of similarity.</small>
-                            </div>
-                        </div>
-                    </div>
+                    <span class="tooltip-icon" data-tooltip-html="For each recommendation at baseline month B:&lt;ul&gt;&lt;li&gt;Similar teams found from months &amp;lt; B only&lt;/li&gt;&lt;li&gt;Practice transition patterns learned from months &amp;lt; B only&lt;/li&gt;&lt;li&gt;The month's policy is selected only from earlier prediction months whose outcomes have already closed&lt;/li&gt;&lt;li&gt;No peeking at future improvements&lt;/li&gt;&lt;/ul&gt;Validated by rolling-window backtest (time-series cross-validation)." role="img" aria-label="More information">ⓘ</span>
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button id="run-backtest-btn" class="btn btn-primary">Run Backtest Validation with Configuration</button>
-                    <button id="find-optimal-btn" class="btn btn-primary">Find Optimal Configuration</button>
-                    <button id="view-latest-results-btn" class="btn btn-ghost">View Latest Results</button>
-                    <button id="upload-results-btn" class="btn btn-ghost">Upload Results</button>
+                    <button id="run-backtest-btn" class="btn btn-primary">Run Backtest Validation</button>
+                    <button id="cancel-backtest-btn" class="btn btn-error hidden">Cancel Backtest</button>
                 </div>
-                <input type="file" id="upload-results-input" accept=".json" style="display: none;">
-
-                <!-- Optimization Progress -->
-                <div id="optimization-progress" class="results hidden" style="margin-top: 20px;">
-                    <div class="info-box">
-                        <h4>Searching for Optimal Configuration...</h4>
-                        <div id="optimization-progress-text">Initializing...</div>
-                        <div style="margin-top: 10px;">
-                            <div style="background: var(--gray-200); border-radius: 4px; height: 20px; overflow: hidden;">
-                                <div id="optimization-progress-bar" style="background: var(--primary-500); height: 100%; width: 0%; transition: width 0.3s;"></div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 15px;">
-                            <button id="cancel-optimization-btn" class="btn btn-error">Cancel Optimization</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Optimization Results -->
-                <div id="optimization-results" class="results hidden" style="margin-top: 20px;"></div>
             </div>
 
             <div id="backtest-results" class="results hidden"></div>
@@ -216,11 +118,11 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="month-select">Select Recommendation Month:<span class="tooltip-icon" data-tooltip="The month for which you want likely next-practice recommendations. Only data before this month is used — months 1–2 provide the minimum history, so recommendations start from month 3." role="img" aria-label="More information">ⓘ</span></label>
+                    <label for="month-select">Select Recommendation Month:<span class="tooltip-icon" data-tooltip="The month for which you want likely next-practice recommendations. Only data before this month is used — months 1–3 provide the minimum history, so recommendations start from month 4." role="img" aria-label="More information">ⓘ</span></label>
                     <select id="month-select" disabled>
                         <option value="">Select a team first</option>
                     </select>
-                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">Recommendations start from month 3 (we need months 1–2 as history)</small>
+                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">Recommendations start from month 4 (we need months 1–3 as history)</small>
                 </div>
 
                 <button id="get-recommendations-btn" class="btn btn-primary" disabled>Get Recommendations</button>

@@ -12,7 +12,6 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from collections import Counter, defaultdict
-from unittest.mock import patch
 
 import pytest
 import pandas as pd
@@ -165,18 +164,11 @@ class TestTemporalBoundaries:
         target_team = 'TeamA'
         test_month = 202004
 
-        # Get recommendations at test_month (use min_similarity=0.0 to ensure we find teams)
-        recommendations = temporal_recommender.recommend(
-            target_team,
-            test_month,
-            top_n=2,
-            k_similar=3,
-            allow_first_three_months=True,  # Allow testing at any month
-            min_similarity_threshold=0.0  # Allow all similarity levels for testing
-        )
+        # Get recommendations at test_month
+        result = temporal_recommender.recommend(target_team, test_month)
 
-        # Verify recommendations were generated (basic sanity check)
-        assert isinstance(recommendations, list), "Recommendations should be a list"
+        # Verify a result was generated (basic sanity check)
+        assert result.practices == () or len(result.practices) == 2
 
         # CRITICAL: Verify sequences were learned only from months < test_month
         sequence_mapper = temporal_recommender.sequence_mapper
@@ -251,96 +243,62 @@ class TestTemporalBoundaries:
 
     def test_recommendation_at_first_month_raises_error(self, temporal_recommender):
         """
-        CRITICAL: Verify recommendations at first global month raise ValueError.
+        CRITICAL: Verify recommendations at the first global month are refused.
 
-        The first month has no history, so recommendations should fail
-        unless allow_first_three_months=True.
+        The first month has no prior snapshot for any team, so PolicyEngine.recommend()
+        reports it gracefully via insufficient_practices (there is no more
+        allow_first_three_months escape hatch - a month is either recommendable, because
+        some team has a real baseline before it, or it isn't).
         """
         target_team = 'TeamA'
         first_month = 202001  # First month in our test data
 
-        # Should raise ValueError
-        with pytest.raises(ValueError, match="first month"):
-            temporal_recommender.recommend(
-                target_team,
-                first_month,
-                top_n=2,
-                allow_first_three_months=False  # Strict mode
-            )
+        result = temporal_recommender.recommend(target_team, first_month)
+        assert result.insufficient_practices is True
+        assert result.practices == ()
+        assert result.baseline_month is None
 
-        # Should work at a non-first month with allow_first_three_months=True
-        # (month 1 itself has no past history to draw from, use month 4 which has it)
-        recommendations = temporal_recommender.recommend(
-            target_team,
-            202004,
-            top_n=2,
-            allow_first_three_months=True,
-            min_similarity_threshold=0.0,
-        )
-        assert isinstance(recommendations, list)
+        # A later month, where TeamA has real prior history, must be recommendable.
+        result_later = temporal_recommender.recommend(target_team, 202004)
+        assert result_later.baseline_month is not None
+        assert result_later.practices == () or len(result_later.practices) == 2
 
     def test_no_future_similar_teams_in_explanation(self, temporal_recommender, temporal_processor):
         """
         CRITICAL: Verify recommendation explanations don't reference future data.
 
-        When explaining why a practice was recommended, the system should
-        only reference similar teams from past months, not future months.
+        When explaining why a practice was recommended, the system should only
+        reference similar teams that improved at or before target_month, never later.
+        get_recommendation_explanation() no longer takes k_similar/min_similarity_threshold -
+        the peer pool comes from the target month's selected policy, the same one
+        recommend() used to produce the score being explained.
         """
         target_team = 'TeamA'
         target_month = 202004
-        practice = 'Practice1'
 
-        # Get recommendations (use min_similarity=0.0)
-        recommendations = temporal_recommender.recommend(
-            target_team,
-            target_month,
-            top_n=2,
-            allow_first_three_months=True,
-            min_similarity_threshold=0.0
-        )
+        result = temporal_recommender.recommend(target_team, target_month)
 
-        # Get explanation for first recommended practice
-        if len(recommendations) > 0:
-            recommended_practice = recommendations[0][0]
+        if result.practices:
+            recommended_practice = result.practices[0]
 
             explanation = temporal_recommender.get_recommendation_explanation(
-                target_team,
-                target_month,
-                recommended_practice,
-                recent_improvements_months=3,
-                k_similar=19,
-                min_similarity_threshold=0.0,
+                target_team, target_month, recommended_practice
             )
 
-            # Parse explanation for mentioned months (this is heuristic)
-            # The explanation should not mention months >= target_month
-
-            # Verify explanation exists and is a dict
             assert isinstance(explanation, dict), "Explanation should be a dict"
             assert len(explanation) > 0, "Explanation should not be empty"
 
-            # Verify get_recommendation_explanation() actually threads k_similar/min_similarity_threshold
-            # into its SimilarityEngine.find_similar_teams() call, rather than using its own
-            # hardcoded, unfiltered lookup (docs/known-issues/03-explanation-peer-pool-mismatch.md).
-            # A subset-of-the-pool check isn't sufficient here since this fixture only has 2
-            # candidate teams total, so any k/threshold combination trivially returns the same
-            # pool - spy on the actual call to prove the specific values passed above are used.
-            with patch.object(
-                temporal_recommender.similarity_engine,
-                "find_similar_teams",
-                wraps=temporal_recommender.similarity_engine.find_similar_teams,
-            ) as spy_find_similar_teams:
-                temporal_recommender.get_recommendation_explanation(
-                    target_team,
-                    target_month,
-                    recommended_practice,
-                    recent_improvements_months=3,
-                    k_similar=7,
-                    min_similarity_threshold=0.42,
+            # CRITICAL: no similar-team entry may reference a month >= target_month.
+            for entry in explanation["similar_teams_list"]:
+                assert entry["similar_at_month"] < target_month, (
+                    f"Data leakage! Peer '{entry['team']}' was compared at month "
+                    f"{entry['similar_at_month']} >= target {target_month}"
                 )
-                spy_find_similar_teams.assert_called_once_with(
-                    target_team, target_month, k=7, min_similarity=0.42
-                )
+                if entry["month"] is not None:
+                    assert entry["month"] <= target_month, (
+                        f"Data leakage! Peer '{entry['team']}' improvement at month "
+                        f"{entry['month']} > target {target_month}"
+                    )
 
 
 class TestDataLeakageEdgeCases:
@@ -484,20 +442,13 @@ class TestRecommendationTemporalConsistency:
         """
         target_team = 'TeamB'
 
-        # Get recommendations at different months (use min_similarity=0.0)
-        recs_early = consistency_recommender.recommend(
-            target_team, 202002, top_n=2, allow_first_three_months=True,
-            min_similarity_threshold=0.0
-        )
+        # Get recommendations at different months
+        recs_early = consistency_recommender.recommend(target_team, 202002)
+        recs_late = consistency_recommender.recommend(target_team, 202004)
 
-        recs_late = consistency_recommender.recommend(
-            target_team, 202004, top_n=2, allow_first_three_months=True,
-            min_similarity_threshold=0.0
-        )
-
-        # Both should be valid recommendations
-        assert isinstance(recs_early, list)
-        assert isinstance(recs_late, list)
+        # Both should be valid results (0 or exactly 2 practices)
+        assert recs_early.practices == () or len(recs_early.practices) == 2
+        assert recs_late.practices == () or len(recs_late.practices) == 2
 
         # Later recommendations might be different (more data available)
         # This is not a strict requirement, just a consistency check

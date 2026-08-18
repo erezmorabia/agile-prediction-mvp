@@ -48,13 +48,16 @@ class TestBacktestEngine:
         
         if 'error' not in result:
             assert 'per_month_results' in result
-            assert 'total_predictions' in result
-            assert 'correct_predictions' in result
-            assert 'overall_accuracy' in result
-            assert 'random_baseline' in result
-            assert 'improvement_gap' in result
-            assert 'improvement_factor' in result
-            assert 'teams_tested' in result
+            assert 'primary' in result
+            assert 'sensitivity' in result
+            for scope in (result['primary'], result['sensitivity']):
+                assert 'total_predictions' in scope
+                assert 'correct_predictions' in scope
+                assert 'overall_accuracy' in scope
+                assert 'random_baseline' in scope
+                assert 'improvement_gap' in scope
+                assert 'improvement_factor' in scope
+                assert 'teams_tested' in scope
     
     def test_run_backtest_per_month_results(self, sample_recommender, sample_processor):
         """Test run_backtest returns per-month results."""
@@ -72,52 +75,60 @@ class TestBacktestEngine:
             # Check structure of per-month results
             for month_result in result['per_month_results']:
                 assert 'month' in month_result
-                assert 'train_months' in month_result
+                assert 'full_outcome_window' in month_result
+                assert 'evaluable_cases' in month_result
                 assert 'predictions' in month_result
                 assert 'correct' in month_result
                 assert 'accuracy' in month_result
                 assert 'teams_tested' in month_result
-                
+                assert 'selected_policy' in month_result
+
                 assert isinstance(month_result['month'], int)
-                assert isinstance(month_result['train_months'], list)
+                assert isinstance(month_result['full_outcome_window'], bool)
                 assert isinstance(month_result['predictions'], int)
                 assert isinstance(month_result['correct'], int)
                 assert isinstance(month_result['accuracy'], float)
                 assert 0.0 <= month_result['accuracy'] <= 1.0
     
     def test_run_backtest_accuracy_calculation(self, sample_recommender, sample_processor):
-        """Test run_backtest calculates accuracy correctly."""
+        """Test run_backtest calculates accuracy correctly for each scope."""
         backtest = BacktestEngine(sample_recommender, sample_processor)
         months = sample_processor.get_all_months()
-        
+
         if len(months) < 4:
             pytest.skip("Need at least 4 months for backtest")
-        
+
         result = backtest.run_backtest()
-        
+
         if 'error' not in result:
-            overall_accuracy = result['overall_accuracy']
-            assert 0.0 <= overall_accuracy <= 1.0
-            
-            # Overall accuracy should be average of per-month accuracies
-            if result['per_month_results']:
-                per_month_accuracies = [r['accuracy'] for r in result['per_month_results']]
+            sensitivity_rows = result['per_month_results']
+            scope = result['sensitivity']
+            overall_accuracy = scope['overall_accuracy']
+            if scope['months_included'] > 0:
+                assert 0.0 <= overall_accuracy <= 1.0
+                # Sensitivity accuracy should be the average of every month's accuracy
+                per_month_accuracies = [r['accuracy'] for r in sensitivity_rows]
                 expected_accuracy = sum(per_month_accuracies) / len(per_month_accuracies)
                 assert abs(overall_accuracy - expected_accuracy) < 0.01
-    
+            else:
+                assert overall_accuracy is None
+
     def test_run_backtest_random_baseline(self, sample_recommender, sample_processor):
-        """Test run_backtest calculates random baseline."""
+        """Test run_backtest calculates random baseline for each scope."""
         backtest = BacktestEngine(sample_recommender, sample_processor)
         months = sample_processor.get_all_months()
-        
+
         if len(months) < 4:
             pytest.skip("Need at least 4 months for backtest")
-        
+
         result = backtest.run_backtest()
-        
+
         if 'error' not in result:
-            random_baseline = result['random_baseline']
-            assert 0.0 <= random_baseline <= 1.0
+            for scope in (result['primary'], result['sensitivity']):
+                if scope['months_included'] > 0:
+                    assert 0.0 <= scope['random_baseline'] <= 1.0
+                else:
+                    assert scope['random_baseline'] is None
 
     def test_baseline_from_k_avg_matches_hand_computed_value(self):
         """Independently verify the hypergeometric formula against a hand-checkable example.
@@ -140,46 +151,32 @@ class TestBacktestEngine:
         assert baseline == pytest.approx(0.3)
 
     def test_run_backtest_improvement_gap(self, sample_recommender, sample_processor):
-        """Test run_backtest calculates improvement gap."""
+        """Test run_backtest calculates improvement gap per scope."""
         backtest = BacktestEngine(sample_recommender, sample_processor)
         months = sample_processor.get_all_months()
-        
+
         if len(months) < 4:
             pytest.skip("Need at least 4 months for backtest")
-        
+
         result = backtest.run_backtest()
-        
+
         if 'error' not in result:
-            improvement_gap = result['improvement_gap']
-            overall_accuracy = result['overall_accuracy']
-            random_baseline = result['random_baseline']
-            
-            # Improvement gap should be accuracy - baseline
-            expected_gap = overall_accuracy - random_baseline
-            assert abs(improvement_gap - expected_gap) < 0.01
+            for scope in (result['primary'], result['sensitivity']):
+                if scope['months_included'] == 0:
+                    assert scope['improvement_gap'] is None
+                    continue
+                # Improvement gap should be accuracy - baseline
+                expected_gap = scope['overall_accuracy'] - scope['random_baseline']
+                assert abs(scope['improvement_gap'] - expected_gap) < 0.01
     
-    def test_run_backtest_with_config(self, sample_recommender, sample_processor):
-        """Test run_backtest accepts configuration parameters."""
-        backtest = BacktestEngine(sample_recommender, sample_processor)
-        months = sample_processor.get_all_months()
-        
-        if len(months) < 4:
-            pytest.skip("Need at least 4 months for backtest")
-        
-        config = {
-            'top_n': 3,
-            'k_similar': 10,
-            'similarity_weight': 0.7,
-            'similar_teams_lookahead_months': 2,
-            'recent_improvements_months': 2,
-            'min_similarity_threshold': 0.5
-        }
-        
-        result = backtest.run_backtest(config=config)
-        
-        if 'error' not in result:
-            assert isinstance(result, dict)
-    
+    def test_run_backtest_accepts_no_model_parameters(self, sample_recommender, sample_processor):
+        """run_backtest() takes only an optional cancellation_check - no config dict,
+        no train_ratio. The monthly policy is the only configuration authority."""
+        import inspect
+
+        signature = inspect.signature(BacktestEngine.run_backtest)
+        assert list(signature.parameters) == ["self", "cancellation_check"]
+
     def test_run_backtest_cancellation(self, sample_recommender, sample_processor):
         """Test run_backtest handles cancellation."""
         backtest = BacktestEngine(sample_recommender, sample_processor)
@@ -201,70 +198,18 @@ class TestBacktestEngine:
         assert result.get('cancelled', False) is True
         assert 'per_month_results' in result
     
-    def test_build_partial_results(self, sample_recommender, sample_processor):
-        """Test _build_partial_results builds correct structure."""
+    def test_aggregate_scope_empty_returns_none_fields(self, sample_recommender, sample_processor):
+        """_aggregate_scope([]) - e.g. a cancelled run with zero qualifying months - returns
+        None rate fields (not 0.0), so the caller can render 'not enough completed months'
+        instead of a misleading 0%. Replaces the old _build_partial_results, which this
+        refactor collapsed into one aggregation function used for every scope."""
         backtest = BacktestEngine(sample_recommender, sample_processor)
-        
-        per_month_results = [
-            {
-                'month': 202001,
-                'train_months': [],
-                'predictions': 10,
-                'correct': 7,
-                'accuracy': 0.7,
-                'teams_tested': 5
-            }
-        ]
-        total_predictions = 10
-        total_correct = 7
-        improvements_per_case = [2, 3, 2]
-        all_teams_tested = {'Team1', 'Team2'}
-        top_n = 2
-        
-        result = backtest._build_partial_results(
-            per_month_results, total_predictions, total_correct,
-            improvements_per_case, all_teams_tested, top_n
-        )
-        
-        assert isinstance(result, dict)
-        assert result['cancelled'] is True
-        assert 'per_month_results' in result
-        assert 'total_predictions' in result
-        assert 'correct_predictions' in result
-        assert 'overall_accuracy' in result
-        assert 'random_baseline' in result
-        assert 'improvement_gap' in result
-    
-    def test_get_accuracy_summary_error(self, sample_recommender, sample_processor):
-        """Test get_accuracy_summary handles error results."""
-        backtest = BacktestEngine(sample_recommender, sample_processor)
-        
-        error_result = {'error': 'Insufficient data'}
-        summary = backtest.get_accuracy_summary(error_result)
-        
-        assert isinstance(summary, str)
-        assert 'Error' in summary or 'error' in summary.lower()
-    
-    def test_get_accuracy_summary_success(self, sample_recommender, sample_processor):
-        """Test get_accuracy_summary formats successful results."""
-        backtest = BacktestEngine(sample_recommender, sample_processor)
-        
-        success_result = {
-            'total_predictions': 100,
-            'correct_predictions': 70,
-            'overall_accuracy': 0.7,
-            'random_baseline': 0.1,
-            'improvement_factor': 7.0,
-            'teams_tested': 10,
-            'per_month_results': [],
-            'train_months': [202001, 202002],
-            'test_months': [202003],
-        }
-        
-        summary = backtest.get_accuracy_summary(success_result)
-        
-        assert isinstance(summary, str)
-        assert '100' in summary or 'Total Predictions' in summary
-        assert '70' in summary or 'Correct' in summary
-        assert '70.0%' in summary or '70%' in summary or '0.7' in summary
+
+        result = backtest._aggregate_scope([], {}, {}, total_practices=3)
+
+        assert result['months_included'] == 0
+        assert result['overall_accuracy'] is None
+        assert result['random_baseline'] is None
+        assert result['total_predictions'] == 0
+        assert result['correct_predictions'] == 0
 

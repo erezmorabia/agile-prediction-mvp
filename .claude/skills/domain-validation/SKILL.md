@@ -1,68 +1,51 @@
 ---
 name: domain-validation
-description: Rolling window backtest, grid search parameter optimization, accuracy metrics, cancellation. Use when modifying backtest logic, optimization search space, random baseline formula, or the cancel mechanism.
+description: Rolling window backtest of the global two-month adaptive blend, primary/sensitivity aggregation, rank-aware metrics, cancellation. Use when modifying backtest logic, the evaluable cohort, random/popularity baseline formulas, or the cancel mechanism.
 ---
 
 # Domain: Validation
 
 ## Summary
-`BacktestEngine` validates recommendation accuracy using a rolling window approach; `OptimizationEngine` automates running many backtests to find the best parameter combination. Results are saved to `results/` as JSON.
+`BacktestEngine` validates the global two-month adaptive blend (owned by `PolicyEngine`, see `/domain-ml`) using a rolling window over every prediction month. There is no static parameter optimizer — it was removed entirely (engine, endpoints, web/CLI controls, skill) because the monthly policy selection is now the sole configuration authority. `BacktestEngine` keeps its own `_cancelled` flag / `cancel()` / `reset_cancellation()`, moved over from the deleted optimizer.
 
 ## Data Flows
 
-- **Backtest:** `BacktestEngine.run_backtest()` → iterates test months starting at index 3 → for each test month: calls `learn_sequences_up_to_month(test_month)`, then loops all teams → calls `recommender.recommend(team, prev_month, ...)` → checks improvements in `test_month`, `test_month+1`, `test_month+2` → accumulates accuracy, precision@N, recall@N, and MRR per month → returns overall values + matching random baselines for each
-- **Optimization:** `OptimizationEngine.find_optimal_config()` → `generate_parameter_combinations()` yields dicts → for each: runs `run_backtest(config=combo)` → tracks best result → checks `_cancelled` flag every 10 teams and every month boundary → saves all results to `results/optimization_results_{timestamp}.json`
-- **Cancellation:** `POST /api/optimize/cancel` → `APIService.cancel_optimization()` → `optimizer_engine.cancel()` → sets `_cancelled = True` → polled inside backtest loop → returns partial results dict with `cancelled: True`
-- **Results persistence:** `OptimizationEngine.load_latest_results()` reads the most recent JSON file from `results/`; served by `GET /api/optimize/latest`
+- **Backtest:** `BacktestEngine.run_backtest()` → resets `_cancelled` (a prior `cancel()` call must not silently cancel a fresh run) → for each month in `PolicyEngine.prediction_months()`: `evaluable_cases(month)` (fixed cohort, before any policy scoring) → `select_policy(month)` (the blend) and `select_popularity_arm(month)` (independent comparison arm) → scores every case under both policies → accumulates accuracy, precision@N, recall@N, MRR per month
+- **Primary vs sensitivity split:** `per_month_results` covers every prediction month; `primary` aggregates only months where `PolicyEngine.full_outcome_window(month)` is true (complete 3-snapshot outcome window against the dataset's end); `sensitivity` aggregates all months. The two are never mixed
+- **Cancellation:** `cancellation_check` callable (or `self._cancelled` if none passed) is polled at the top of each month and every 10 cases within a month; on trip, the in-progress month is dropped entirely (not partially included) and the run returns with `cancelled: True`. `POST /api/backtest/cancel` → `APIService.cancel_backtest()` → `BacktestEngine.cancel()`
+- **No results persistence:** unlike the deleted optimizer, backtest results are not saved to `results/*.json` — they are returned directly in the API response
 
 ## Domain Validation Rules and Business Logic
 
-- Rolling window starts at month index 3 (0-based); months 0–2 used only as training data
-- Improvement validation window: checks `test_month`, `test_month+1`, `test_month+2` (3-month window to account for adoption lag)
-- Teams with zero improvements in the 3-month window are excluded from accuracy calculation (not a model failure)
-- `cancellation_check` callable is passed from `OptimizationEngine` into `BacktestEngine` and polled every 10 teams and at each month start
+- Prediction months = `PolicyEngine.prediction_months()` (global index 3+); a month needs at least 4 total months of data to have any prediction months at all
+- Evaluable cohort per month is fixed **before** any policy is scored, and is identical for every one of the 675 candidate policies and both reported arms (blend and popularity) — see `PolicyEngine.evaluable_cases()` in `/domain-ml`
+- A case is evaluable when: it is recommendable (baseline exists, ≥2 candidate practices) AND at least one practice improved in the 3-snapshot outcome window after baseline
+- Since every evaluable case is by construction recommendable, `BacktestEngine` never needs to catch a "can't recommend" exception per case — `PolicyEngine.recommend()`/`top_practices()` cannot raise for a cohort member
+- `cancellation_check` is polled every 10 cases within a month's team loop, and once at the start of each month
 
 ## Formulas / Scoring / Calculation Logic
 
 **Overall accuracy (HR@N, i.e. Hit Rate@N / Success@N):** binary per case — 1 if *any* recommended
 practice is in `actual_improved`, else 0.
 ```
-overall_accuracy = mean(per_month_accuracy for each test month)
+overall_accuracy = mean(per_month_accuracy for each month in scope)
 ```
 
 **Random baseline for HR@N** (probability of ≥1 correct recommendation by chance):
 ```
 month_baseline(m) = 1 − C(n − k_avg(m), top_n) / C(n, top_n)   # BacktestEngine._baseline_from_k_avg
-random_baseline    = mean(month_baseline(m) for each test month)
+random_baseline    = mean(month_baseline(m) for each month in scope)
 ```
-- `n` = total number of practices
-- `k_avg(m)` = average number of improvements per case, within test month `m` only
-- `top_n` = number of recommendations generated
+- `n` = total number of practices, `top_n` = 2 (`policy.TOP_N`)
+- `k_avg(m)` = average number of improvements per case, within month `m` only
 - Falls back to `min(1.0, (k_avg / n) * top_n)` if combination calculation fails
-- `random_baseline` is macro-averaged per month — the same aggregation `overall_accuracy` uses —
-  so the two headline figures are built the same way and can be validly ratioed. Before this fix,
-  `random_baseline` was computed once from a single `k_avg` pooled across the whole run, which
-  didn't match `overall_accuracy`'s per-month averaging; see
-  `docs/known-issues/04-accuracy-vs-baseline-aggregation-mismatch.md`.
-- `random_precision`/`random_recall` (below) still use the pooled `k_avg` (not macro-averaged per
-  month) while `overall_precision`/`overall_recall` are macro-averaged like accuracy — the same
-  kind of aggregation question this fix addressed for HR@N, just not yet applied there. Out of
-  scope for this fix; not known to matter in practice since these are supplementary diagnostics,
-  not the headline figure.
+- `random_baseline` is macro-averaged per month — the same aggregation `overall_accuracy` uses — so the two are directly comparable
 
-**Improvement factor:**
-```
-improvement_factor = overall_accuracy / random_baseline
-```
+**Improvement factor:** `overall_accuracy / random_baseline`
 
 ### Supplementary rank-aware metrics (precision@N, recall@N, MRR)
 
-HR@N is a standard top-N recommender metric, but it discards rank (an ordered list is
-collapsed to a set before checking for a hit) and gives full credit even when only one of
-`top_n` recommendations was right. `MetricsCalculator` (`src/validation/metrics.py`) already
-implements the per-case pieces — `calculate_hit_rate` (precision@N) and `calculate_mrr` — and
-`BacktestEngine.run_backtest()` wires them in per case, alongside a per-case recall@N calc,
-aggregated the same way as accuracy (per-month mean → overall mean):
+Same as before the blend refactor — unchanged formulas, still computed per scope (primary/sensitivity) instead of one pooled run:
 
 ```
 precision@N (case) = hits / top_n                       # MetricsCalculator.calculate_hit_rate
@@ -70,69 +53,43 @@ recall@N (case)    = hits / |actual_improved|            # hits / k for that cas
 mrr (case)         = 1 / rank of first hit, else 0        # MetricsCalculator.calculate_mrr
 ```
 
-**Random baselines** — these are *not* the same formula as HR@N's baseline; each metric needs
-its own chance-level comparison:
-
+**Random baselines** — each metric needs its own chance-level comparison:
 ```
-random_precision = k_avg / n     # exact — E[hits]/N is linear in k, so k_avg is safe to use
-random_recall    = top_n / n     # exact — doesn't depend on k at all
+random_precision = k_avg / n     # exact, linear in k
+random_recall    = top_n / n     # exact, doesn't depend on k
 random_mrr       = mean(expected_mrr_per_case)   # NOT derived from k_avg — nonlinear in k
 ```
-
-`random_mrr` is computed per case (`BacktestEngine._expected_random_mrr(n, k, top_n)`) via the
-negative hypergeometric rank distribution — `P(first hit at rank r) = C(n-r, k-1) / C(n, k)` —
-then averaged, because averaging the *inputs* (k) first and computing MRR from `k_avg` would
-give a different (wrong) answer than averaging the *outputs*.
+`random_mrr` uses `BacktestEngine._expected_random_mrr(n, k, top_n)` per case (negative hypergeometric rank distribution), averaged — not derived from `k_avg`.
 
 **Two caveats when reading these numbers:**
-- Recall@N is capped at `top_n / |actual_improved|` by construction — a team that improved 5
-  practices can never exceed recall 0.4 at the default `top_n=2`. A low recall reflects the cap,
-  not necessarily a weaker model.
-- Precision@N equals HR@N only when `top_n=1`. At the default `top_n=2`, 1-of-2 correct scores
-  HR@N=1.0 but precision@N=0.5 — this gap is exactly the leniency HR@N has relative to precision.
+- Recall@N is capped at `top_n / |actual_improved|` by construction.
+- Precision@N equals HR@N only when `top_n=1`; at `top_n=2`, 1-of-2 correct scores HR@N=1.0 but precision@N=0.5.
 
-Each has a matching gap/factor field (e.g. `precision_gap`, `precision_improvement_factor`),
-mirroring `improvement_gap`/`improvement_factor` for HR@N.
+### Time-aware popularity comparison arm (replaces the old static popularity baseline)
 
-### Popularity baseline (supplementary, alongside random)
-
-A stronger sanity check than random chance: always recommend the top-N practices that improve
-most often organization-wide (ignoring the target team's own state entirely), learned from the
-same months < `prev_month` cutoff the real model just used for that case. Computed inline in the
-per-team loop right after the real recommendation's hit check, reusing
-`sequence_mapper.get_practice_popularity()` (already populated as a side effect of the
-`recommend()` call that just ran — no extra learning pass needed):
+Independently selected each month under the same walk-forward rule as the blend, restricted to the 5 pure-popularity policies (0% similarity, 0% sequence — `POPULARITY_ARM_POLICIES` in `/domain-ml`), tie-broken by lower recency. Computed on **exactly the same evaluable cases** as the blend for that month — this is the fix for the old static popularity baseline, which used a fixed heuristic rather than a properly time-aware, walk-forward-selected comparison.
 
 ```
-popularity_recommended = top_n practices by practice_popularity, excluding this team's maxed-out practices
-popularity_accuracy = mean(per_month popularity hit-rate)   # same per-month-mean aggregation as HR@N
-popularity_gap = overall_accuracy - overall_popularity_baseline
-popularity_improvement_factor = overall_accuracy / overall_popularity_baseline
+time_aware_popularity_accuracy = mean(per_month popularity-arm hit-rate)
+blend_minus_popularity = accuracy - time_aware_popularity_accuracy
 ```
 
-On the reference dataset this comes out to ~43.6% (vs. the model's ~50.3%, and random's ~23.5%)
-— most of the model's edge over random is attributable to organization-wide popularity alone;
-the smaller remaining margin (~1.15x) over the popularity baseline is what's actually
-attributable to per-team personalization (collaborative filtering + sequences).
+On the reference dataset (primary, 5 full-outcome-window months): blend 57.98% vs time-aware popularity 55.66% (+2.31pp) — see `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md` for the full reproduction table and its caveats (exploratory, not a claim of proven superiority; three of the five primary months run on the bootstrap policy, where the blend IS the popularity arm and the two tie exactly).
 
-**Determinism note:** `RecommendationEngine.recommend()`'s final ranking is tie-broken
-deterministically by practice name (see `/domain-ml`) — without that fix, tied scores at the
-top-N cutoff resolved via Python's hash-seed-dependent set iteration order, making backtest
-accuracy non-reproducible across process runs.
+**Determinism note:** `PolicyEngine.top_practices()`'s final ranking is tie-broken deterministically by practice name, and `_preference_key()`'s monthly-policy-selection tie-break is a strict total order — both are reproducible across runs regardless of hash seed.
 
 ## Backend Functions
 
 | Class / Method | File | Called from | Key params / returns |
 |---|---|---|---|
-| `BacktestEngine.run_backtest()` | `src/validation/backtest.py:62` | `APIService.run_backtest()`, `OptimizationEngine` | `config: dict, cancellation_check: Callable` → results dict with `overall_accuracy`, `random_baseline`, `overall_popularity_baseline` (+ `popularity_gap`/`popularity_improvement_factor`), `overall_precision`/`overall_recall`/`overall_mrr` (+ matching random baselines), `per_month_results`, `cancelled` |
-| `BacktestEngine._expected_random_mrr()` | `src/validation/backtest.py:30` | `run_backtest()` (per case) | staticmethod; `n, k, top_n` → exact expected MRR under random selection, via negative hypergeometric rank distribution |
-| `BacktestEngine._baseline_from_k_avg()` | `src/validation/backtest.py:62` | `run_backtest()`, `_build_partial_results()` (per month) | staticmethod; `k_avg, total_practices, top_n` → P(≥1 correct by chance) for that k_avg |
-| `BacktestEngine._build_partial_results()` | `src/validation/backtest.py:531` | `run_backtest()` on cancellation | internal; builds same structure as full results with `cancelled: True` |
-| `OptimizationEngine.find_optimal_config()` | `src/validation/optimizer.py` | `APIService.find_optimal_config()` | param range lists, `min_accuracy`, `fixed_params` → results dict with `optimal_config`, `all_results`, `cancelled` |
-| `OptimizationEngine.generate_parameter_combinations()` | `src/validation/optimizer.py:31` | `find_optimal_config()` | range lists → generator of config dicts |
-| `OptimizationEngine.cancel()` | `src/validation/optimizer.py` | `APIService.cancel_optimization()` | sets `self._cancelled = True` |
-| `OptimizationEngine.load_latest_results()` | `src/validation/optimizer.py` | `GET /api/optimize/latest` route | static method; reads most recent JSON from `results/` |
+| `BacktestEngine.__init__()` | `src/validation/backtest.py` | `APIService`, CLI | `recommender_engine, processor` → also stores `self.policy_engine = recommender_engine.policy_engine` |
+| `BacktestEngine.run_backtest()` | `src/validation/backtest.py` | `APIService.run_backtest()`, CLI `_validate_recommendations()` | `cancellation_check: Callable \| None` → `{status, per_month_results, primary, sensitivity, cancelled}` — no config dict, no `train_ratio` |
+| `BacktestEngine.cancel()` / `reset_cancellation()` | `src/validation/backtest.py` | `APIService.cancel_backtest()`; internally at the top of `run_backtest()` | moved here from the deleted `OptimizationEngine` |
+| `BacktestEngine._score_month()` | `src/validation/backtest.py` | `run_backtest()` | one prediction month → `(row, improvements_per_case, expected_mrr_per_case, was_cancelled)` |
+| `BacktestEngine._aggregate_scope()` | `src/validation/backtest.py` | `run_backtest()` (primary and sensitivity, and any cancelled/empty scope) | replaces the old duplicated `_build_partial_results()` — one aggregation function used for every scope, complete or partial |
+| `BacktestEngine._expected_random_mrr()` | `src/validation/backtest.py` | `_score_month()` (per case) | staticmethod; `n, k, top_n` → exact expected MRR under random selection |
+| `BacktestEngine._baseline_from_k_avg()` | `src/validation/backtest.py` | `_aggregate_scope()` | staticmethod; `k_avg, total_practices, top_n` → P(≥1 correct by chance) |
 
 ## Cross-references
-- **Related Use Case Skills:** `/uc-02-run-backtest-validation`, `/uc-03-run-parameter-optimization`
-- **Related Domain Skills:** `/domain-ml` (BacktestEngine wraps RecommendationEngine), `/domain-api` (routes expose backtest + optimize endpoints)
+- **Related Use Case Skills:** `/uc-02-run-backtest-validation`
+- **Related Domain Skills:** `/domain-ml` (`PolicyEngine` owns the cohort, selection, and scoring that `BacktestEngine` replays), `/domain-api` (routes expose the backtest + cancel endpoints)

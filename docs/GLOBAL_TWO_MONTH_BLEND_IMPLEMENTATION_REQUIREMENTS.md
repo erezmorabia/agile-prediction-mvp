@@ -59,7 +59,9 @@ Popularity is an organization-wide score, restricted to practices not already co
 - **Historical popularity:** organization-wide practice-improvement frequency available before the target baseline.
 - **Recent popularity:** organization-wide practice improvements in the immediately preceding observed transition, from the prior snapshot to the target baseline.
 
-Both popularity inputs must be normalized across eligible practices. Compute time-aware popularity as:
+Normalize historical popularity across the target team's eligible practices. Normalize recent popularity across all organization-wide practice-improvement counts, then mask out practices that are not eligible for the target team without re-normalizing. This preserves the normalization semantics used by the evaluated research runs.
+
+Compute time-aware popularity as:
 
 `popularity = recency_weight × recent_popularity + (1 − recency_weight) × historical_popularity`
 

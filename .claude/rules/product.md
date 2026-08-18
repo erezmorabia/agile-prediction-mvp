@@ -2,7 +2,7 @@
 
 ## Domain Story
 
-The system analyzes improvement histories from 87 engineering teams tracked across 10 months. For any team at any given month, it asks: *"Which teams were in a similar position, what did they improve next, and what practice transitions typically follow?"* It combines both signals into ranked recommendations. Achieved 50.3% accuracy — 2.14× better than random selection — eliminating manual analysis and scaling to 70+ teams simultaneously.
+The system analyzes improvement histories from 87 engineering teams tracked across 10 months. For any team at any given month, it asks: *"Which teams were in a similar position, what did they improve next, what practice transitions typically follow, and what is the organization improving right now?"* It blends all three signals into exactly two ranked recommendations, using one policy selected per prediction month from prior completed outcomes - never tuned on the month being predicted or on the team's own future. A backtest of this walk-forward policy shows it outperforming a properly time-aware popularity comparison arm on the same evaluable cases (see `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md` for the current figures and their caveats - this remains an exploratory result, not a claim of proven superiority over popularity alone).
 
 ## Core Domain Concepts
 
@@ -13,11 +13,17 @@ The system analyzes improvement histories from 87 engineering teams tracked acro
 | **Maturity Level** | Practice score: 0 = not implemented, 1 = basic, 2 = intermediate, 3 = mature |
 | **Month** | A snapshot timestamp in yyyymmdd format; the fundamental time unit |
 | **Improvement** | A practice score increase from one month to the next (any positive delta) |
-| **Recommendation** | A predicted practice to improve next, with a confidence score 0–1 |
+| **Recommendation** | A predicted practice to improve next, with a confidence score 0–1; the primary flow always returns exactly two |
 | **Similarity Score** | Cosine similarity between two practice maturity vectors; range 0–1 |
 | **Sequence** | A Markov transition: "practice A improved → practice B typically follows" |
-| **Backtest** | Rolling window validation: train on past months, predict, check against actual improvements |
+| **Popularity** | Organization-wide practice-improvement frequency; time-aware popularity blends all-time counts with the single most recent transition |
+| **Policy** | One combination of peer count, similarity threshold, similarity/sequence/popularity weights, and popularity recency weight; selected once per prediction month, not per team |
+| **Bootstrap Policy** | The fallback policy (100% popularity, 50/50 recency) used when no prior prediction month yet has a completed 3-snapshot outcome window |
+| **Recommendable team-month** | Has a usable baseline snapshot and ≥2 candidate practices below max maturity; no outcome required - used by the live flow |
+| **Evaluable team-month** | Recommendable, and at least one practice improved in the 3-snapshot outcome window; used by the backtest cohort and by monthly policy selection |
+| **Backtest** | Rolling window validation: for each prediction month, select that month's policy from prior completed outcomes, predict, check against actual improvements |
 | **Random Baseline** | Probability of at least one correct recommendation by random selection; comparison benchmark |
+| **Time-Aware Popularity Arm** | The backtest's independent comparison policy: pure popularity (0% similarity, 0% sequence), selected under the same monthly walk-forward rule |
 | **Practice Profile** | A team's practices grouped into 4 maturity levels at a given month |
 
 ## Use Cases
@@ -26,25 +32,29 @@ The system analyzes improvement histories from 87 engineering teams tracked acro
 |---|---|---|---|---|
 | UC-01 | Get Recommendations | Analyst | Selects team + month, clicks "Get Recommendations" | ml, api, frontend |
 | UC-02 | Run Backtest Validation | Analyst | Clicks "Run Backtest" on Backtest tab | validation, api, frontend |
-| UC-03 | Run Parameter Optimization | Analyst | Configures param ranges, clicks "Find Optimal Config" | validation, api, frontend |
 | UC-04 | Explore Improvement Sequences | Analyst | Navigates to Sequences tab | ml, api, frontend |
 | UC-05 | View System Statistics | Analyst | Navigates to Statistics tab | data, api, frontend |
 
-For detailed use case flows, see `/uc-01-get-recommendations`, `/uc-02-run-backtest-validation`, `/uc-03-run-parameter-optimization`, `/uc-04-explore-improvement-sequences`, `/uc-05-view-system-statistics`.
+For detailed use case flows, see `/uc-01-get-recommendations`, `/uc-02-run-backtest-validation`, `/uc-04-explore-improvement-sequences`, `/uc-05-view-system-statistics`.
+
+There is no static all-history parameter optimizer (UC-03 was removed - the monthly-selected policy, `/domain-ml`, is the only configuration authority for the primary flow and its backtest).
 
 ## User Journey Summaries
 
 - **Core analysis:** UC-05 (understand data shape) → UC-04 (see existing sequences) → UC-01 (get recommendations for a team)
-- **Model tuning:** UC-02 (validate current accuracy) → UC-03 (optimize parameters) → UC-02 (re-validate with new params)
+- **Model validation:** UC-02 (validate the current monthly-policy blend against a time-aware popularity comparison, split into primary and sensitivity results)
 
 ## Domain Validation Rules
 
-- **Minimum history:** A team needs ≥ 2 months of data before predictions can be generated
-- **Prediction start month:** Only months 3+ (globally) are available for prediction; months 1–2 are reserved as training history
-- **Backtest minimum:** Rolling window requires ≥ 4 months of data; starts from month index 3 (0-based)
-- **Similarity threshold:** Default `min_similarity_threshold = 0.75`; teams below this are excluded from collaborative filtering
+- **Minimum history:** A team needs a usable baseline snapshot (some observed month strictly before the prediction month) before recommendations can be generated
+- **Prediction start month:** Only months at global index 3+ are valid prediction months; months at index 0–2 are reserved as minimum training history
+- **Backtest minimum:** Rolling window requires ≥ 4 months of data
+- **Fixed component windows:** Similarity look-ahead and sequence recency are both fixed at 2 observed snapshots - never tunable, never vary by team or month
+- **Global monthly policy selection:** Peer count (5/10/19), minimum similarity (0.0/0.5/0.75), similarity/sequence/popularity weights (15 combinations of 0/25/50/75/100%), and popularity recency (0/25/50/75/100%) are chosen once per prediction month - 675 candidate policies - by maximizing mean HR@2 over strictly earlier prediction months whose full 3-snapshot outcome window has already closed. Never selected per team, never using the target month's own outcome
+- **Bootstrap policy:** Used when no prior prediction month has a completed outcome window yet (100% popularity, 50/50 recency); peer count and similarity threshold are reported as not applicable, never as a default value
 - **Practice exclusion at startup:** Practices with > 90% missing values are dropped before model building
 - **Maxed-out practices excluded:** Practices with normalized score ≥ 1.0 are never recommended
-- **Validation window:** Backtest checks improvements in a 3-month window (test_month, +1, +2) to account for adoption timelines
-- **Teams with no improvements skipped:** In backtest, teams with zero improvements in the 3-month window are excluded from accuracy calculation (not a model failure)
-- **Optimization cancellation:** `_cancelled` flag on `OptimizationEngine` is polled every 10 teams and at each month; returns partial results with `cancelled: True`
+- **Validation/outcome window:** Checks improvements in a 3-snapshot window (baseline's prediction month, the next observed snapshot, and the one after that) to account for adoption timelines
+- **Evaluable cohort fixed before scoring:** A team-month's evaluable status never depends on which policy is being scored, and is identical across all 675 candidate policies and both reported comparison arms
+- **Primary vs sensitivity:** Backtest aggregates split into primary (prediction months with a complete 3-snapshot outcome window against the dataset's end) and sensitivity (all prediction months) - never mixed together
+- **Backtest cancellation:** `_cancelled` flag on `BacktestEngine` is polled every 10 cases and at each month boundary; a fresh `run_backtest()` call always resets it first so a stale prior cancellation can't silently cancel a new run

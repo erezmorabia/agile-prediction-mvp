@@ -12,20 +12,19 @@ from fastapi.responses import FileResponse, PlainTextResponse
 
 logger = logging.getLogger(__name__)
 
-# Thread pool executor for running blocking optimization tasks
+# Thread pool executor for running the (potentially long) backtest without blocking the
+# event loop, so a concurrent cancel request can still be processed.
 _executor = ThreadPoolExecutor(max_workers=1)
 from .models import (
-    BacktestRequest,
     BacktestResponse,
     ImprovementInfo,
-    OptimizationRequest,
-    OptimizationResponse,
     RecommendationRequest,
     RecommendationResponse,
     SystemStats,
     TeamInfo,
 )
 from .service import APIService
+
 
 def create_routes(service: APIService) -> APIRouter:
     """
@@ -34,7 +33,7 @@ def create_routes(service: APIService) -> APIRouter:
     Sets up all REST API endpoints including:
     - Team management endpoints (list teams, get team months)
     - Recommendation endpoints (get recommendations for teams)
-    - Validation endpoints (backtest, optimization)
+    - Validation endpoints (backtest)
     - System information endpoints (stats, sequences)
 
     Args:
@@ -50,11 +49,11 @@ def create_routes(service: APIService) -> APIRouter:
             - GET /api/teams/{team_name}/months - Get available months for a team
             - POST /api/recommendations - Get recommendations
             - POST /api/backtest - Run backtest validation
-            - POST /api/optimize - Find optimal configuration
-            - POST /api/optimize/cancel - Cancel optimization
-            - GET /api/optimize/latest - Get latest optimization results
+            - POST /api/backtest/cancel - Cancel an in-progress backtest
             - GET /api/stats - Get system statistics
             - GET /api/sequences - Get improvement sequences
+            - GET /api/example-data - Serve the raw Excel dataset
+            - GET /api/docs - Serve the project documentation
 
     Note:
         All endpoints are async and use Pydantic models for request/response
@@ -99,9 +98,7 @@ def create_routes(service: APIService) -> APIRouter:
     async def get_recommendations(request: RecommendationRequest):
         """Get recommendations for a team at a specific month."""
         try:
-            result = service.get_recommendations(
-                request.team, request.month, top_n=request.top_n, k_similar=request.k_similar
-            )
+            result = service.get_recommendations(request.team, request.month)
 
             if "error" in result:
                 raise HTTPException(status_code=400, detail=result["error"])
@@ -114,15 +111,13 @@ def create_routes(service: APIService) -> APIRouter:
             raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.post("/api/backtest", response_model=BacktestResponse)
-    async def run_backtest(request: BacktestRequest):
-        """Run backtest validation."""
+    async def run_backtest():
+        """Run the global two-month adaptive blend backtest. No model parameters are
+        accepted - the monthly policy is the only configuration authority. Runs in a
+        thread pool so a concurrent POST /api/backtest/cancel can still be processed."""
         try:
-            # Convert config Pydantic model to dict if present
-            config_dict = None
-            if request.config:
-                config_dict = request.config.dict()
-
-            result = service.run_backtest(train_ratio=request.train_ratio, config=config_dict)
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(_executor, service.run_backtest)
 
             if "error" in result:
                 raise HTTPException(status_code=400, detail=result["error"])
@@ -132,6 +127,17 @@ def create_routes(service: APIService) -> APIRouter:
             raise
         except Exception as e:
             logger.error(f"run_backtest: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
+
+    @router.post("/api/backtest/cancel")
+    async def cancel_backtest():
+        """Cancel the current backtest run."""
+        try:
+            service.cancel_backtest()
+            logger.info("Backtest cancellation requested")
+            return {"status": "cancelled", "message": "Backtest cancellation requested"}
+        except Exception as e:
+            logger.error(f"cancel_backtest: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.get("/api/stats", response_model=SystemStats)
@@ -150,91 +156,6 @@ def create_routes(service: APIService) -> APIRouter:
             return service.get_improvement_sequences()
         except Exception as e:
             logger.error(f"get_improvement_sequences: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
-
-    @router.post("/api/optimize", response_model=OptimizationResponse)
-    async def find_optimal_config(request: OptimizationRequest):
-        """Find optimal configuration by testing parameter combinations."""
-        try:
-            # Run optimization in thread pool to avoid blocking the event loop
-            # This allows the cancel endpoint to be processed concurrently
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                _executor,
-                lambda: service.find_optimal_config(
-                    min_accuracy=request.min_accuracy,
-                    top_n_range=request.top_n_range,
-                    similarity_weight_range=request.similarity_weight_range,
-                    k_similar_range=request.k_similar_range,
-                    similar_teams_lookahead_months_range=request.similar_teams_lookahead_months_range,
-                    recent_improvements_months_range=request.recent_improvements_months_range,
-                    min_similarity_threshold_range=request.min_similarity_threshold_range,
-                    fixed_params=request.fixed_params,
-                ),
-            )
-
-            # Convert to response model format
-            # Only raise error if not cancelled and no config found
-            if result["optimal_config"] is None and not result.get("cancelled", False):
-                raise HTTPException(
-                    status_code=400, detail=f"No configuration found with accuracy >= {request.min_accuracy * 100}%"
-                )
-
-            # Format all_results
-            formatted_results = []
-            # Reformat each tested configuration's result into the API response shape.
-            for r in result.get("all_results", []):
-                formatted_results.append(
-                    {
-                        "config": r["config"],
-                        "model_accuracy": r["model_accuracy"],
-                        "random_baseline": r["random_baseline"],
-                        "improvement_gap": r["improvement_gap"],
-                        "improvement_factor": r["improvement_factor"],
-                        "total_predictions": r["total_predictions"],
-                        "correct_predictions": r["correct_predictions"],
-                    }
-                )
-
-            # Return response (even if optimal_config is None, if cancelled we want to show partial results)
-            response_data = {
-                "optimal_config": result.get("optimal_config"),
-                "model_accuracy": result.get("model_accuracy", 0.0),
-                "random_baseline": result.get("random_baseline", 0.0),
-                "improvement_gap": result.get("improvement_gap", 0.0),
-                "improvement_factor": result.get("improvement_factor", 0.0),
-                "total_predictions": result.get("total_predictions", 0),
-                "correct_predictions": result.get("correct_predictions", 0),
-                "total_combinations_tested": result.get("total_combinations_tested", 0),
-                "total_combinations_available": result.get(
-                    "total_combinations_available", result.get("total_combinations_tested", 0)
-                ),
-                "valid_combinations": result.get("valid_combinations", 0),
-                "all_results": formatted_results,
-                "early_stopped": result.get("early_stopped", False),
-                "cancelled": result.get("cancelled", False),
-                "results_file": result.get("results_file"),  # Include saved file path if available
-            }
-
-            return response_data
-        except HTTPException:
-            raise
-        except KeyboardInterrupt:
-            # Handle Ctrl-C gracefully
-            raise HTTPException(status_code=499, detail="Optimization cancelled by user")
-        except Exception as e:
-            logger.error(f"find_optimal_config: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
-
-    @router.post("/api/optimize/cancel")
-    async def cancel_optimization():
-        """Cancel the current optimization."""
-        try:
-            service.cancel_optimization()
-            logger.info("Optimization cancellation requested")
-            return {"status": "cancelled", "message": "Optimization cancellation requested"}
-        except Exception as e:
-            logger.error(f"cancel_optimization: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     @router.get("/api/example-data")
@@ -257,21 +178,5 @@ def create_routes(service: APIService) -> APIRouter:
             raise HTTPException(status_code=404, detail="Documentation file not found")
         with open(docs_path, "r", encoding="utf-8") as f:
             return PlainTextResponse(f.read(), media_type="text/plain; charset=utf-8")
-
-    @router.get("/api/optimize/latest")
-    async def get_latest_optimization_results():
-        """Get the latest optimization results from saved file."""
-        try:
-            from src.validation.optimizer import OptimizationEngine
-
-            results = OptimizationEngine.load_latest_results()
-            if results is None:
-                raise HTTPException(status_code=404, detail="No optimization results found")
-            return results
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error loading latest optimization results: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
 
     return router
