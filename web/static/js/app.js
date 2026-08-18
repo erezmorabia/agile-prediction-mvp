@@ -7,6 +7,13 @@ let allTeams = [];
 let currentTeam = null;
 let currentMonth = null;
 
+/** Return the team's latest recorded snapshot before a prediction month. */
+function baselineMonthForPrediction(teamName, predictionMonth) {
+    const team = allTeams.find(candidate => candidate.name === teamName);
+    if (!team || !Array.isArray(team.months)) return null;
+    return team.months.filter(month => month < predictionMonth).at(-1) || null;
+}
+
 /**
  * Returns an inline tooltip icon span for use in HTML template literals.
  * @param {string} text - Tooltip content (keep to 1–2 sentences).
@@ -249,9 +256,13 @@ function initializeRecommendations() {
                 
                 if (data.months && data.months.length > 0) {
                     data.months.forEach(month => {
+                        const baselineMonth = baselineMonthForPrediction(teamName, month);
                         const option = document.createElement('option');
                         option.value = month;
-                        option.textContent = formatMonth(month);
+                        option.dataset.baselineMonth = baselineMonth || '';
+                        option.textContent = baselineMonth
+                            ? `Current: ${formatMonth(baselineMonth)} → Predict: ${formatMonth(month)}`
+                            : `Predict: ${formatMonth(month)}`;
                         monthSelect.appendChild(option);
                     });
                     monthSelect.disabled = false;
@@ -527,7 +538,7 @@ function displayRecommendations(data) {
         resultsDiv.innerHTML = `
             <div class="recommendations-header">
                 <h3>Recommendations for ${data.team}</h3>
-                <p class="month-info">Requested month: ${formatMonth(data.month)}</p>
+                <p class="month-info">Current snapshot: ${formatMonth(baselineMonthForPrediction(data.team, data.month) || 0)} → prediction: ${formatMonth(data.month)}</p>
             </div>
             <div class="error-message">${escapeHtml(data.message)}</div>
             ${policyAuditHtml(data.selected_policy)}
@@ -554,7 +565,7 @@ function displayRecommendations(data) {
     let html = `
         <div class="recommendations-header">
             <h3>Top ${data.recommendations.length} Recommendations for ${data.team}</h3>
-            <p class="month-info">Likely next practices for: ${formatMonth(data.month)}</p>
+            <p class="month-info">Current snapshot: ${formatMonth(baselineMonthForPrediction(data.team, data.month) || 0)} → likely next practices for: ${formatMonth(data.month)}</p>
             ${verdictLine}
             ${data.no_similar_teams_found ? '<p style="color:#8a8785;font-size:0.9em;margin-top:6px;">No comparable team was found for this baseline — recommendations rely on sequence and popularity evidence only.</p>' : ''}
         </div>
@@ -858,7 +869,7 @@ async function runBacktest() {
     const runBtn = document.getElementById('run-backtest-btn');
     const cancelBtn = document.getElementById('cancel-backtest-btn');
     resultsDiv.classList.add('hidden');
-    showLoading(true);
+    startBacktestProgress();
     if (runBtn) runBtn.disabled = true;
     if (cancelBtn) cancelBtn.classList.remove('hidden');
 
@@ -876,7 +887,7 @@ async function runBacktest() {
         console.error('Error running backtest validation:', error);
         showError(`Failed to run backtest validation: ${error.message}`);
     } finally {
-        showLoading(false);
+        stopBacktestProgress();
         if (runBtn) runBtn.disabled = false;
         if (cancelBtn) cancelBtn.classList.add('hidden');
     }
@@ -1402,9 +1413,85 @@ function formatMonth(month) {
 /**
  * Show/hide loading indicator
  */
+const BACKTEST_ESTIMATED_DURATION_MS = 25_000;
+const BACKTEST_ESTIMATED_MAX_PROGRESS = 90;
+let backtestProgressFrame = null;
+let backtestProgressStartedAt = null;
+
+/**
+ * Show an explicitly estimated progress indicator while the backtest API request runs.
+ * The API returns only once the full backtest completes, so this is intentionally a
+ * time-based estimate rather than an assertion of server-side completion percentage.
+ */
+function startBacktestProgress() {
+    const progress = document.getElementById('backtest-progress');
+    const fill = document.getElementById('backtest-progress-fill');
+    const percent = document.getElementById('backtest-progress-percent');
+    const message = document.getElementById('backtest-progress-message');
+    const track = progress?.querySelector('[role="progressbar"]');
+
+    showLoading(true);
+    if (!progress || !fill || !percent || !message || !track) return;
+
+    if (backtestProgressFrame !== null) {
+        cancelAnimationFrame(backtestProgressFrame);
+    }
+
+    progress.classList.remove('hidden');
+    backtestProgressStartedAt = performance.now();
+
+    const updateProgress = (now) => {
+        const elapsed = now - backtestProgressStartedAt;
+        const estimatedProgress = Math.min(
+            BACKTEST_ESTIMATED_MAX_PROGRESS,
+            Math.floor((elapsed / BACKTEST_ESTIMATED_DURATION_MS) * BACKTEST_ESTIMATED_MAX_PROGRESS)
+        );
+        fill.style.width = `${estimatedProgress}%`;
+        percent.textContent = `${estimatedProgress}%`;
+        track.setAttribute('aria-valuenow', String(estimatedProgress));
+
+        if (elapsed >= BACKTEST_ESTIMATED_DURATION_MS) {
+            message.textContent = 'Finalizing results — the validation is taking a little longer than usual';
+        } else if (elapsed >= BACKTEST_ESTIMATED_DURATION_MS * 0.6) {
+            message.textContent = 'Scoring recommendations against observed outcomes';
+        } else if (elapsed >= BACKTEST_ESTIMATED_DURATION_MS * 0.25) {
+            message.textContent = 'Selecting month-specific policies from earlier outcomes';
+        } else {
+            message.textContent = 'Preparing validation · typically completes in about 25 seconds';
+        }
+
+        backtestProgressFrame = requestAnimationFrame(updateProgress);
+    };
+
+    backtestProgressFrame = requestAnimationFrame(updateProgress);
+}
+
+/** Reset the estimated backtest progress UI after the request completes or fails. */
+function stopBacktestProgress() {
+    if (backtestProgressFrame !== null) {
+        cancelAnimationFrame(backtestProgressFrame);
+        backtestProgressFrame = null;
+    }
+
+    const progress = document.getElementById('backtest-progress');
+    const fill = document.getElementById('backtest-progress-fill');
+    const percent = document.getElementById('backtest-progress-percent');
+    const track = progress?.querySelector('[role="progressbar"]');
+
+    if (progress) progress.classList.add('hidden');
+    if (fill) fill.style.width = '0%';
+    if (percent) percent.textContent = '0%';
+    if (track) track.setAttribute('aria-valuenow', '0');
+    backtestProgressStartedAt = null;
+    showLoading(false);
+}
+
 function showLoading(show) {
     const loading = document.getElementById('loading');
+    const progress = document.getElementById('backtest-progress');
     if (show) {
+        // Other API requests share this loader but do not have backtest progress.
+        if (progress && backtestProgressStartedAt === null) progress.classList.add('hidden');
         loading.classList.remove('hidden');
     } else {
         loading.classList.add('hidden');

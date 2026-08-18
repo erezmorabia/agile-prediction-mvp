@@ -2,11 +2,7 @@
 Reproduction test for the global two-month adaptive recommendation blend.
 
 Pins src/ml/policy.py's PolicyEngine against results/fully-nested-global-fixed-two-month-
-20260818.json, produced by the research protocol this module ports
-(scripts/research_full_per_team_optimization.py's global-selection arm, verified during
-planning to use a cohort that does not depend on the component config - see the plan doc's
-"Established facts" section). If this test passes, the production port matches the
-research-validated numbers exactly.
+20260818.json, produced by the research protocol this module ports.
 
 Requires data/raw/combined_dataset.xlsx; skipped if absent.
 """
@@ -26,7 +22,6 @@ DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "raw", "combin
 
 pytestmark = pytest.mark.skipif(not os.path.exists(DATA_PATH), reason="requires data/raw/combined_dataset.xlsx")
 
-# From results/fully-nested-global-fixed-two-month-20260818.json's "global_*" fields.
 EXPECTED_PER_MONTH = [
     # month,     eligible, blend HR@2,          popularity HR@2,      full_window, bootstrap
     (20200503, 21, 0.2857142857142857, 0.2857142857142857, True, True),

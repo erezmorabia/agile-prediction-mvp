@@ -708,7 +708,7 @@ The web interface is built with vanilla HTML/CSS/JavaScript using a Dark Academi
 - Real-time updates without page refresh
 
 **Key Features:**
-- Team and month selection dropdowns
+- Team selection and a `Current Month → Prediction Month` dropdown; each option makes the baseline snapshot and target month explicit
 - Interactive result displays with inline tooltip explanations on each tab
 - A policy audit box showing the selected policy's weights, peer pool, and popularity recency for the current prediction month - no configuration form, since there are no user-adjustable model parameters
 - Primary and sensitivity result sections in the Backtest tab, with a cancel button for long runs
@@ -1728,7 +1728,7 @@ See **docs/QUICK_START.md** for a 3-step quick start guide.
 
 **4. Recommendations Tab:**
 - Select a team from the dropdown
-- Select a recommendation month
+- Select the displayed current-month → prediction-month pair
 - Click "Get Recommendations"
 - View top recommended practices with scores and explanations
 - See validation summary if available

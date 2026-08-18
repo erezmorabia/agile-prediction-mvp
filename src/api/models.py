@@ -20,7 +20,10 @@ class RecommendationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     team: str = Field(..., description="Team name")
-    month: int = Field(..., description="Month to predict (yyyymmdd format) - must be month 3 or later")
+    month: int = Field(
+        ...,
+        description="Prediction month in the project's YYMMDD-style integer encoding; must be the fourth recorded global month or later",
+    )
     top_n: Literal[2] = Field(2, description="Number of recommendations - must be exactly 2")
 
 

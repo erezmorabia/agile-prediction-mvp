@@ -212,4 +212,3 @@ class TestBacktestEngine:
         assert result['random_baseline'] is None
         assert result['total_predictions'] == 0
         assert result['correct_predictions'] == 0
-

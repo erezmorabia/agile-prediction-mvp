@@ -23,7 +23,7 @@ Frontend-only single-page application served as static files by FastAPI. Four ta
 ## Data Flows
 
 - **App init:** `DOMContentLoaded` → `initializeTabs()` → `initializeRecommendations()`, `initializeBacktest()`, `initializeStats()`, `initializeSequences()` (each in a `setTimeout` to avoid blocking) → `loadTeamsWithTimeout()` → `GET /api/teams` → populates team dropdown
-- **Recommendations flow:** team-select `change` → `GET /api/teams/{team}/months` → populates month dropdown → button enables → click → `POST /api/recommendations` (`{team, month, top_n: 2}`, no other params) → renders recommendation cards, policy audit box, practice profile, validation section. If the response carries a `message` (team has fewer than two candidate practices), that message is shown instead of recommendation cards
+- **Recommendations flow:** team-select `change` → `GET /api/teams/{team}/months` → populates each option as `Current: baseline → Predict: prediction` → button enables → click → `POST /api/recommendations` (`{team, month: prediction, top_n: 2}`, no other params) → renders recommendation cards, policy audit box, practice profile, validation section. If the response carries a `message` (team has fewer than two candidate practices), that message is shown instead of recommendation cards
 - **Backtest flow:** "Run Backtest Validation" click → `POST /api/backtest` (no body) → renders a Primary Results section, a separately-labelled Sensitivity Results section, and a per-month table tagging each row Primary/Sensitivity with its selected policy. "Cancel Backtest" → `POST /api/backtest/cancel`
 - **Statistics flow:** auto-loaded on app init (default landing tab) via seeded `loadedTabs.add('stats'); loadStatistics()` in `initializeTabs()` → `GET /api/stats` → renders dataset summary, data completeness section, practice definitions
 - **Data completeness section:** headline shows "Overall completeness: X%" (computed as `(total_observations * num_practices - total_missing) / (total_observations * num_practices)`). If one practice accounts for ≥80% of missing values an outlier note appears: "X% of missing values come from a single practice (Name); all others ≤ Y%". Practice list shows "not recorded in N of M months" (from `Object.keys(info.by_month).length` vs `data.num_months`) instead of raw counts.
@@ -33,13 +33,13 @@ Frontend-only single-page application served as static files by FastAPI. Four ta
 
 ## Domain Validation Rules and Business Logic
 
-- Team dropdown only shows teams returned by `GET /api/teams`; month dropdown only shows months returned by `GET /api/teams/{team}/months` (valid-prediction-month filtering happens server-side via `PolicyEngine.prediction_months()`)
+- Team dropdown only shows teams returned by `GET /api/teams`; the month dropdown receives valid prediction months from `GET /api/teams/{team}/months` and uses the team metadata to display the immediately preceding team snapshot as the current month
 - `top_n` is hardcoded to `2` in `api.js`'s `getRecommendations()` - there is no user-facing control for it in the web interface
 - Cancel button for the backtest (`#cancel-backtest-btn`) shown only while a `POST /api/backtest` request is pending, via `.classList` toggling of `.hidden` (not `.results.hidden` - a plain button needs the `.btn.hidden` CSS rule)
 - Accuracy displayed as "-" when `accuracy` is `null` in the response (no improvements in validation window); the same "not enough completed months" fallback appears in `renderScopeSummary()` when a backtest scope's `months_included` is 0
 - Teams loaded with timeout guard (`loadTeamsWithTimeout`) - if the fetch exceeds the timeout, a fallback error state is shown and other tabs remain usable
 - Per-month results table column headers each carry a `tip()` tooltip (ⓘ icon, pure-CSS bubble) explaining what the column measures and any exclusion rules
-- **Tooltip clipping fix:** `.results-table` has `overflow: visible` (no clipping). Tables are wrapped in `<div class="table-outer">` which holds `overflow: hidden; border-radius; box-shadow` for corner rounding - never put `overflow: hidden` directly on `.results-table` or tooltip bubbles will be clipped
+- **Results-table scrolling:** `.results-table` has `overflow: visible` (no clipping) and a readable minimum width. Its `.table-outer` wrapper owns the border radius, shadow, and horizontal scrolling on narrow screens.
 - **Backtest accuracy-comparison boxes:** one box per scope (Primary/Sensitivity) for Blend vs Random and Blend vs Time-Aware Popularity, using `formatFactor()` to render `—` when a baseline is zero or the scope has no qualifying months
 
 ## Cross-references

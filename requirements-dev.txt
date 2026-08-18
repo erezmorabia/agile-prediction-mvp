@@ -18,3 +18,5 @@ pydocstyle>=6.0.0
 # UI / browser testing
 pytest-playwright>=0.4.0
 
+# FastAPI / Starlette TestClient dependency for API-route tests
+httpx2>=0.28.1

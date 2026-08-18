@@ -28,7 +28,7 @@ Press `CTRL+C` to stop.
 
 | Tab | What it does |
 |-----|-------------|
-| **Recommendations** | Select a team + month → get likely next practices with explanations |
+| **Recommendations** | Select a team and a displayed current-month → prediction-month pair → get likely next practices with explanations |
 | **Backtest** | Replay the historical policy and view primary and sensitivity metrics (58.0% primary Hit Rate@2; exploratory, not a per-team guarantee) |
 | **Statistics** | Dataset overview: 87 teams, 35 practices, 10 months |
 | **Sequences** | Learned practice transition patterns between consecutive improvement-bearing steps |

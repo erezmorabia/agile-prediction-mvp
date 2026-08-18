@@ -6,18 +6,18 @@ description: Team + month selection → exactly two practice recommendations fro
 # UC-01: Get Recommendations
 
 ## Summary
-User selects a team and a prediction month; the system returns exactly two recommended practices to improve, using that month's globally selected blend policy (similarity / sequence / time-aware popularity), each with a confidence score, current maturity level, explanation, and validation against actual historical improvements. There is no per-request tuning - peer count, factor weights, and popularity recency are all chosen by the monthly policy, not by the caller. The CLI's "Get Recommendations" option produces identical output (same two practices, same order, same policy) for the same team and month, since both call the same `PolicyEngine`.
+The web UI selects a team's current snapshot and explicitly shows the next recorded month it will predict; the request sends that prediction month. The system returns exactly two recommended practices using that month's globally selected blend policy (similarity / sequence / time-aware popularity), with scores, current maturity level, explanation, and validation against actual historical improvements. There is no per-request tuning - peer count, factor weights, and popularity recency are all chosen by the monthly policy, not by the caller. The CLI accepts a prediction month directly and produces identical output for the same team and prediction month.
 
 ## Actor & Preconditions
 - **Actor:** Analyst (web UI or CLI)
 - **Preconditions:** Server running with data loaded; target team has a usable baseline snapshot before the selected month; selected month is a valid prediction month (`PolicyEngine.prediction_months()`, global index 3+)
 
 ## Trigger
-User opens the Recommendations tab (default on page load), selects a team from the dropdown, selects a prediction month, and clicks "Get Recommendations". (Or, in the CLI, selects menu option 1.)
+User opens the Recommendations tab (default on page load), selects a team, chooses a displayed `Current → Predict` pair, and clicks "Get Recommendations". (Or, in the CLI, selects menu option 1 and enters a prediction month.)
 
 ## Main Flow
 1. Page loads → `GET /api/teams` populates the team dropdown (teams sorted by number of months, most history first)
-2. User selects a team → `GET /api/teams/{team_name}/months` populates the month dropdown with valid prediction months (team must have a usable baseline before that month)
+2. User selects a team → `GET /api/teams/{team_name}/months` supplies valid prediction months; the UI displays each as the team's immediately preceding current snapshot and its prediction month
 3. "Get Recommendations" button enables once both selections are made
 4. User clicks button → `POST /api/recommendations` with `{ team, month, top_n: 2 }` (`top_n` must be exactly 2 - any other value is rejected by Pydantic validation, not silently substituted)
 5. Server: `APIService.get_recommendations()` → `RecommendationEngine.recommend()` → `PolicyEngine.recommend()` selects that month's policy and scores the team's candidate practices
