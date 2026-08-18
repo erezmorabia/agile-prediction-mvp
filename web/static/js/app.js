@@ -666,12 +666,7 @@ function displayRecommendations(data) {
                         <ul>
                             <li>The system learns patterns from <strong>ALL teams' improvement history</strong></li>
                             <li>It identifies which practices typically follow others at the next improvement-bearing step</li>
-                            <li><strong>Example patterns learned:</strong>
-                                <ul>
-                                    <li>Teams that improved 'CI/CD' → often improve 'Test Automation' next (60% of cases)</li>
-                                    <li>Teams that improved 'DoD' → often improve 'Code Review' next (55% of cases)</li>
-                                </ul>
-                            </li>
+                            <li><strong>Evidence:</strong> Open the Sequences tab to inspect the observed transition counts and conditional frequencies for the currently loaded organizational dataset</li>
                             <li>If your team improved a practice in the <strong>last 3 months</strong> (default), related practices get boosted</li>
                             <li><strong>Why this helps:</strong> Observed transition patterns add organizational context to the recommendation score.</li>
                         </ul>
@@ -693,10 +688,10 @@ function displayRecommendations(data) {
                     <div class="explanation-section">
                         <h5>Why This Hybrid Approach Works</h5>
                         <ul>
-                            <li><strong>Similarity alone:</strong> "Teams like you improved X" (good but can be rigid)</li>
-                            <li><strong>Transition patterns alone:</strong> "X often followed Y at the next improvement-bearing step" (useful but too generic on its own)</li>
-                            <li><strong>Combined:</strong> "Teams like you improved X, AND it fits your natural next step"</li>
-                            <li>This gives you both <strong>peer validation</strong> AND <strong>logical progression</strong></li>
+                            <li><strong>Core idea:</strong> Learn from observed organizational behavior to identify likely next practices for a specific team.</li>
+                            <li><strong>Similarity evidence:</strong> "Teams like you improved X"</li>
+                            <li><strong>Transition evidence:</strong> "X often followed Y at the next improvement-bearing step"</li>
+                            <li><strong>Combined:</strong> Both evidence sources turn organizational history into team-specific guidance.</li>
                         </ul>
                     </div>
                 </div>
@@ -2212,7 +2207,7 @@ function displaySequences(data) {
             
             <div class="stats-grid" style="margin-bottom: 20px;">
                 <div class="stat-item">
-                    <strong>Total Transition Patterns:</strong>${tip('Number of unique practice-A → practice-B pairs learned from consecutive improvement-bearing steps. Same-step improvements do not create an ordered transition.')} ${stats.num_transition_types || 0}
+                    <strong>Source Practices With Transitions:</strong>${tip('Number of practices with at least one observed outgoing transition from a consecutive improvement-bearing step. Same-step improvements do not create an ordered transition.')} ${stats.num_transition_types || 0}
                 </div>
                 <div class="stat-item">
                     <strong>Total Transitions Observed:</strong>${tip('Raw practice-to-practice transition count summed across all teams and consecutive improvement-bearing steps. More observations provide more evidence for the displayed conditional frequencies.')} ${stats.total_transitions || 0}
@@ -2221,7 +2216,7 @@ function displaySequences(data) {
                     <strong>Practices That Improved:</strong> ${stats.practices_that_improved || 0}
                 </div>
                 <div class="stat-item">
-                    <strong>Total Transition Records:</strong> ${data.total_sequences || 0}
+                    <strong>Unique Transition Pairs:</strong>${tip('Number of distinct practice-A → practice-B pairs observed in the currently loaded dataset.')} ${data.total_sequences || 0}
                 </div>
             </div>
             

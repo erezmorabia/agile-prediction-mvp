@@ -1,8 +1,8 @@
 # Agile Practice Recommendation MVP
 
-**Minimum Viable Product using Collaborative Filtering + Sequence Learning**
+**Empirical Organizational Learning for Likely Next Agile Practices**
 
-A machine learning system that recommends agile practices for teams based on organizational patterns and sequence learning.
+A recommendation system whose core innovation is empirically learning organizational improvement behavior to identify likely next practices. It derives team-specific guidance from observed peer-team maturity histories and practice-transition behavior; collaborative filtering and the Practice Transition Model are the implementation tools behind that approach.
 
 ---
 
@@ -54,20 +54,21 @@ Poor choices lead to:
 
 ### **The Solution**
 
-This MVP recommends which **agile practices** each team should focus on next (default: top 2, configurable), based on:
+This MVP’s core innovation is an empirical approach to learning organizational improvement behavior. It recommends which **agile practices** each team should focus on next (default: top 2, configurable) by turning observed team histories into team-specific guidance. The following implementation tools support that approach:
 
 1. **What similar teams did successfully** 
    - Uses collaborative filtering to find teams like yours
    - Learns what they improved and how they progressed
 
-2. **Natural improvement sequences**
+2. **Observed improvement transitions**
    - Identifies which practices typically follow others
    - Uses a Practice Transition Model to learn organizational transition patterns
    - Ensures recommendations make logical sense
 
 3. **Real organizational data**
    - Built on actual data from 87 teams
-   - 10 months of improvement history (655 observations)
+   - 10 months of improvement history (655 team-month observations)
+   - Coverage varies because teams joined or left the recorded population at different points: 48 teams have all 10 recorded months and 39 have 1–9 months
    - 35 different agile practices tracked
 
 ### **Business Value**
@@ -178,22 +179,34 @@ sequence_mapper.get_typical_next_practices(practice, top_n=5)
 
 **What it does:**
 - Looks at ALL 87 teams' improvement history
-- When a team improved CI/CD last month, what did they improve THIS month?
-- Builds a pattern: CI/CD → Test Automation → TDD
-- Learns natural sequences of improvements
+- Links each improvement-bearing step to that team's next improvement-bearing step
+- Counts the practice-to-practice transitions observed across the organization
+- Learns empirical transition patterns; the next step may occur after one or more recorded months
 
 **Why this matters:**
-- Practices don't improve in random order
-- There's a logical flow (you need CI/CD before test automation)
-- Prevents recommending practices teams aren't ready for
-- Makes the path forward feel natural
+- It adds organizational context to peer-based recommendations
+- It gives more weight to practices that were observed after a team's recent improvements
+- It does not assume a universal or causal order of practice adoption
 
-**Example from data:**
-```
-If CI/CD improved → Test Automation was subsequently observed to improve (60% of observed transitions)
-If DoD improved → Code Review was subsequently observed to improve (55% of observed transitions)
-If TDD improved → Refactoring was subsequently observed to improve (45% of observed transitions)
-```
+**Most frequent transitions in the checked-in organizational dataset:**
+
+| From practice | To practice | Observed count | All transitions from source | Conditional frequency |
+| --- | --- | ---: | ---: | ---: |
+| Unified backlog | Product Owner | 7 | 24 | 29.2% |
+| Scrum Master | Tech debt strategy | 7 | 28 | 25.0% |
+| Tech debt strategy | Product Owner | 6 | 47 | 12.8% |
+| Reducing WIP | Tech debt strategy | 5 | 15 | 33.3% |
+| Scrum Master | Unified backlog | 5 | 28 | 17.9% |
+| DoR | Reducing WIP | 5 | 30 | 16.7% |
+| Retro | Scrum Master | 5 | 38 | 13.2% |
+| Tech debt strategy | Tech debt strategy | 5 | 47 | 10.6% |
+| DoR | Tech debt strategy | 4 | 30 | 13.3% |
+| DoD | Tech debt strategy | 4 | 32 | 12.5% |
+
+These figures were calculated by the application from `combined_dataset.xlsx`: 471 observed
+transitions among 30 practices retained after missing-data filtering. The conditional frequency is
+`count(A → B) / all observed transitions from A`, so it describes this organization's history; it
+does not establish causation or guarantee an individual team's next improvement.
 
 ---
 
@@ -208,7 +221,7 @@ recommendations = recommender.recommend(team, current_month, top_n=2)  # Default
 ```
 For each practice:
   similarity_score = How many similar teams improved this?
-  sequence_score = Does this fit the natural improvement sequence?
+  sequence_score = Do observed transition patterns support this candidate?
   final_score = (similarity_score × 0.7) + (sequence_score × 0.3)
 
 Rank by final_score
@@ -218,8 +231,8 @@ Return top N (default: 2)
 
 **Why this works:**
 - Similarity alone: "Teams like you improved CI/CD" (good but rigid)
-- Sequences alone: "CI/CD usually comes before TDD" (good but generic)
-- Combined: "Teams like you improved CI/CD, and it naturally leads to your next step"
+- Transitions alone: "The organization has observed certain practices after recent improvements" (useful but general)
+- Combined: "Similar teams and observed organizational transitions both support this candidate"
 
 ---
 
@@ -331,7 +344,7 @@ The system answers: **"What did successful peers do next?"**
 | `processor.py` | Prepare data | "Normalize scores 0-3 → 0-1" |
 | `validator.py` | Verify quality | "Check no missing data" |
 | `similarity.py` | Find peers | "Find 5 teams like Avengers" |
-| `sequences.py` | Learn patterns | "CI/CD usually leads to Test Automation" |
+| `sequences.py` | Learn patterns | "Count observed transitions between improvement-bearing steps" |
 | `recommender.py` | Make decision | "Recommend: Test Automation" |
 | `backtest.py` | Prove it works | "68% accuracy on historical data" |
 | `cli.py` | Present results | "Show menu to manager" |
@@ -702,7 +715,7 @@ Code quality checks run automatically on push/PR via GitHub Actions (`.github/wo
 With the implemented codebase:
 
 - **MVP Timeline**: 1-2 days
-- **Data Coverage**: 87 teams, 35 practices, 10 months
+- **Data Coverage**: 87 teams, 35 practices, 10 months; 655 team-month observations with variable per-team coverage
 - **Backtest Accuracy**: 50.3% aggregate accuracy (validated on historical data; not a per-team guarantee)
 - **vs Random Baseline**: 2.14x better than random baseline
 

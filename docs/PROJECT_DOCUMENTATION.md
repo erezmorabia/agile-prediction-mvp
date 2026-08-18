@@ -10,7 +10,7 @@
 
 ## Abstract
 
-This project addresses the critical challenge of large-scale agile transformation in organizations by developing a machine learning system that recommends likely next agile practices for teams based on organizational history. The system uses collaborative filtering combined with a Practice Transition Model to analyze patterns from 87 teams, 35 practices, and 10 months of historical data. Validation through backtesting demonstrates that recommendations align with later improvements in 50.3% of evaluated cases, representing a 2.14x improvement over the random baseline (23.5%). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
+This project addresses the critical challenge of large-scale agile transformation in organizations by developing a system that recommends likely next agile practices from organizational history. Its core innovation is empirically learning organizational improvement behavior to identify likely next practices: it derives team-specific guidance from observed peer-team maturity histories and observed practice-transition behavior within the organization. Collaborative filtering and the Practice Transition Model operationalize this empirical approach across 87 teams, 35 practices, and 10 months of historical data. Validation through backtesting demonstrates that recommendations align with later improvements in 50.3% of evaluated cases, representing a 2.14x improvement over the random baseline (23.5%). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
 
 ---
 
@@ -22,7 +22,7 @@ Large organizations implementing agile transformation face a critical decision-m
 
 ### The Approach
 
-This project developed a machine learning system that addresses this challenge through a hybrid recommendation approach:
+The project’s core innovation is not a new machine learning algorithm. It is the empirical approach of learning organizational improvement behavior from observed team histories, then using that evidence to identify likely next practices for an individual team. Collaborative filtering and the Practice Transition Model are the implementation tools that operationalize this approach:
 
 **1. Collaborative Filtering**
 - Analyzes organizational patterns from historical data (87 teams, 35 practices, 10 months)
@@ -92,6 +92,7 @@ The system successfully addresses the original proposal's objective of providing
 5. [Implementation](#5-implementation)
 6. [Evaluation and Results](#6-evaluation-and-results)
    - [6.8 Learned Improvement Sequences](#68-learned-improvement-sequences)
+   - [6.9 Maximum-Maturity Analysis](#69-maximum-maturity-analysis)
 7. [Discussion](#7-discussion)
 8. [Conclusions and Future Work](#8-conclusions-and-future-work)
 9. [Technical Documentation](#9-technical-documentation)
@@ -121,7 +122,7 @@ The primary objective of this project is to build software capable of recommendi
 Specific objectives include:
 
 1. **Automated Recommendations**: Generate ranked lists of recommended practices for each team based on organizational patterns
-2. **Machine Learning Application**: Apply collaborative filtering and sequence learning algorithms to analyze large-scale organizational data
+2. **Empirical Organizational Learning**: Learn team-specific guidance from observed peer maturity histories and practice-transition behavior, using collaborative filtering and the Practice Transition Model as implementation tools
 3. **Validation**: Validate recommendations against historical data using backtesting methodology
 4. **Practical Deployment**: Create a system ready for real-world testing with selected teams
 
@@ -310,9 +311,10 @@ The sequence learning algorithm learns transition patterns from historical data:
   between them — simultaneous improvements carry no ordering information, so asserting a
   direction between them would be arbitrary (this was a known limitation of an earlier version,
   which ordered same-step improvements by their column position in the source spreadsheet)
-- Build transition matrix: P(B | A improved) = count(A→B) / count(A improved), where count(A→B)
-  is the number of times a practice in some team's improvement-bearing step contained A and the
-  team's *next* improvement-bearing step contained B
+- Build transition matrix: P(B | A improved) = count(A→B) / Σ<sub>X</sub> count(A→X), where
+  count(A→B) is the number of times a practice in some team's improvement-bearing step contained
+  A and the team's *next* improvement-bearing step contained B. The denominator is every observed
+  transition originating from A.
 
 **Step 2: Time-Limited Learning**
 - Only learn from months < current_month (prevent data leakage)
@@ -546,76 +548,13 @@ Team AADS actually improved Test Automation from Level 0 to Level 1 in month 200
 
 #### Example 2: Sequence-Based Recommendation
 
-**Scenario:**
-Team "Strikers" at month 200107 (July 2020) needs recommendations. This team recently improved CI/CD.
-
-**Step 1: Current Team State**
-Team Strikers's practice maturity profile at month 200107:
-- CI/CD: Level 2 (0.67 normalized) - **recently improved from Level 1**
-- Test Automation: Level 0 (0.00 normalized)
-- DoD: Level 2 (0.67 normalized)
-- Code Review: Level 1 (0.33 normalized)
-- TDD: Level 0 (0.00 normalized)
-- ... (other practices)
-
-**Step 2: Check Recent Improvements**
-Team Strikers improved CI/CD from Level 1 to Level 2 in the last month (month 200106 → 200107). This triggers sequence pattern analysis.
-
-**Step 3: Find Similar Teams**
-The system finds similar teams, but in this example, few similar teams improved practices that Strikers hasn't already improved. Similarity scores are low.
-
-**Step 4: Learn Sequence Patterns**
-The system learns sequences from all teams' improvement history (months < 200107). It discovers:
-
-**Learned Patterns:**
-- When teams improved "CI/CD" → "Test Automation" improved next in 60% of cases
-- When teams improved "CI/CD" → "TDD" improved next in 35% of cases
-- When teams improved "DoD" → "Code Review" improved next in 55% of cases
-
-**Step 5: Apply Sequence Boost**
-Since Strikers recently improved CI/CD, practices that typically follow CI/CD get boosted:
-
-**Test Automation:**
-- Transition probability: P(Test Automation | CI/CD improved) = 0.60
-- Sequence score: 0.60
-
-**TDD:**
-- Transition probability: P(TDD | CI/CD improved) = 0.35
-- Sequence score: 0.35
-
-**Step 6: Calculate Similarity Scores**
-Similar teams didn't provide strong signals in this case:
-- Test Automation: similarity score = 0.150 (low)
-- TDD: similarity score = 0.100 (low)
-
-**Step 7: Normalize and Combine**
-- Normalize similarity scores (max = 0.150):
-  - Test Automation: 0.150 / 0.150 = 1.000
-  - TDD: 0.100 / 0.150 = 0.667
-- Normalize sequence scores (max = 0.60):
-  - Test Automation: 0.60 / 0.60 = 1.000
-  - TDD: 0.35 / 0.60 = 0.583
-- Combined scores (similarity_weight = 0.7):
-  - Test Automation: (1.000 × 0.7) + (1.000 × 0.3) = 1.000
-  - TDD: (0.667 × 0.7) + (0.583 × 0.3) = 0.642
-- Final normalization (normalize combined scores, max = 1.000):
-  - Test Automation: 1.000 / 1.000 = 1.000
-  - TDD: 0.642 / 1.000 = 0.642
-
-**Step 8: Filter and Rank**
-- Filter out practices at max level
-- Rank by final normalized score:
-  1. **Test Automation**: 1.000
-  2. **TDD**: 0.642
-
-**Recommendation:**
-- **Top Recommendation**: Test Automation (score: 1.000)
-  - Why: "Recommended based on improvement sequences"
-  - Sequence pattern: Teams that improved CI/CD typically improve Test Automation next (60% probability)
-  - This makes logical sense: CI/CD enables automated testing, so Test Automation naturally follows
-
-**Validation Result:**
-Team Strikers actually improved Test Automation from Level 0 to Level 1 in month 200108, confirming the sequence-based recommendation was successful.
+The Practice Transition Model does not encode a preselected agile-practice pathway. For a team with
+recent observed improvements, it retrieves the practices that most often improved at the next
+improvement-bearing step in the organization’s history, then combines those conditional frequencies
+with similarity-based scores. The empirical transition table in §6.8 shows the current full-data
+evidence; during backtesting, the same calculation is learned only from data before the evaluation
+month. A transition frequency is organizational evidence, not a causal rule or a guarantee for an
+individual team.
 
 **Key Insights from Examples:**
 
@@ -627,7 +566,7 @@ Team Strikers actually improved Test Automation from Level 0 to Level 1 in month
 2. **Sequence-Based Recommendations** work best when:
    - Team recently improved practices
    - Strong sequence patterns exist in organizational data
-   - Logical progression makes sense (e.g., CI/CD → Test Automation)
+   - Transition evidence is considered alongside the team's current maturity profile
 
 3. **Hybrid Approach** combines both signals:
    - When both similarity and sequence agree, confidence is high
@@ -865,6 +804,25 @@ The system was evaluated on real organizational data:
 - **Observations**: 655 total observations (team-month combinations)
 - **Data Format**: Excel matrices with teams × practices × maturity levels (0-3)
 
+The 655 observations do not represent uniform coverage for every team: 48 teams have all 10
+recorded months, while 39 teams have partial coverage ranging from 1 to 9 months. This variation
+occurs because teams joined or left the recorded population at different points during the
+ten-month period. Analyses use each team's available chronological history and do not assume that
+every team is observed in every month.
+
+| Recorded months per team | Teams |
+| --- | ---: |
+| 1 | 2 |
+| 2 | 7 |
+| 3 | 8 |
+| 4 | 5 |
+| 5 | 3 |
+| 6 | 5 |
+| 7 | 5 |
+| 8 | 1 |
+| 9 | 3 |
+| 10 | 48 |
+
 This dataset aligns with the proposal's scale (70+ teams, 30+ practices) and represents a realistic large-scale agile transformation scenario.
 
 ### 6.2 Evaluation Metrics
@@ -1028,60 +986,55 @@ The system is ready for real-world testing as proposed in the original project t
 
 ### 6.8 Learned Improvement Sequences
 
-This section presents the improvement sequences learned from analysis of all months in the dataset. These sequences represent organizational patterns discovered across all 87 teams and 10 months of data, providing insights into natural improvement pathways.
+This section presents the observed improvement transitions learned from all available months in the
+dataset. They are descriptive organizational patterns, not prescribed adoption pathways.
 
 **Analysis Methodology:**
 - Sequences learned from all teams' improvement history across all months
-- Transition matrix built from consecutive month improvements
-- Probabilities calculated as: P(B | A improved) = count(A→B) / count(A improved)
-- Sequences sorted by frequency and probability
+- The model retains the 30 practices that pass the project's missing-data filter
+- Transition matrix built from consecutive improvement-bearing steps; same-step improvements are
+  not assigned an order
+- Probabilities calculated as: P(B | A improved) = count(A→B) / Σ<sub>X</sub> count(A→X)
+- Rows sorted by observed transition count
 
-**Top Improvement Sequences:**
+**Top Observed Transitions:**
 
-The following sequences represent the most common practice improvement transitions observed across the organization:
+The following table was recomputed from `combined_dataset.xlsx` with the production loader,
+missing-data filter, processor, and Practice Transition Model. It lists the ten highest-count
+transitions among 471 observed transitions and 310 unique practice pairs.
 
-| From Practice | To Practice | Frequency | Probability | Interpretation |
-|---------------|-------------|-----------|-------------|----------------|
-| CI/CD | Test Automation | 45 | 0.60 | 60% of teams that improved CI/CD next improved Test Automation |
-| DoD (Definition of Done) | Code Review | 38 | 0.55 | 55% of teams that improved DoD next improved Code Review |
-| CI/CD | TDD | 26 | 0.35 | 35% of teams that improved CI/CD next improved TDD |
-| Code Review | Refactoring | 22 | 0.48 | 48% of teams that improved Code Review next improved Refactoring |
-| Test Automation | TDD | 20 | 0.44 | 44% of teams that improved Test Automation next improved TDD |
-| Sprint Planning | Daily Standups | 18 | 0.52 | 52% of teams that improved Sprint Planning next improved Daily Standups |
-| Daily Standups | Retrospectives | 16 | 0.47 | 47% of teams that improved Daily Standups next improved Retrospectives |
-| DoD | CI/CD | 15 | 0.22 | 22% of teams that improved DoD next improved CI/CD |
+| From Practice | To Practice | Observed Count | All Transitions from Source | Conditional Frequency |
+|---------------|-------------|---------------:|----------------------------:|----------------------:|
+| Unified backlog | Product Owner | 7 | 24 | 29.2% |
+| Scrum Master | Tech debt strategy | 7 | 28 | 25.0% |
+| Tech debt strategy | Product Owner | 6 | 47 | 12.8% |
+| Reducing WIP | Tech debt strategy | 5 | 15 | 33.3% |
+| Scrum Master | Unified backlog | 5 | 28 | 17.9% |
+| DoR | Reducing WIP | 5 | 30 | 16.7% |
+| Retro | Scrum Master | 5 | 38 | 13.2% |
+| Tech debt strategy | Tech debt strategy | 5 | 47 | 10.6% |
+| DoR | Tech debt strategy | 4 | 30 | 13.3% |
+| DoD | Tech debt strategy | 4 | 32 | 12.5% |
 
-*Note: Frequencies and probabilities are examples based on typical organizational patterns. Actual values depend on the specific dataset.*
-
-**Sequence Pattern Analysis:**
-
-**Strong Sequences (High Probability):**
-1. **CI/CD → Test Automation (60%)**: The strongest pattern, indicating that teams typically implement automated testing after establishing CI/CD pipelines. This makes logical sense as CI/CD enables and encourages automated testing.
-
-2. **DoD → Code Review (55%)**: Teams that establish clear Definition of Done criteria often next focus on code review processes to ensure quality standards are met.
-
-3. **Sprint Planning → Daily Standups (52%)**: Teams improving sprint planning typically next improve daily standups, suggesting a focus on execution and communication.
-
-**Moderate Sequences (30-50% Probability):**
-- **Code Review → Refactoring (48%)**: Code reviews often reveal opportunities for refactoring.
-- **Daily Standups → Retrospectives (47%)**: Teams improving daily communication next focus on continuous improvement through retrospectives.
-- **Test Automation → TDD (44%)**: Automated testing enables and encourages test-driven development.
+The denominator is shown because a high percentage based on a small number of outgoing transitions
+is not necessarily stronger evidence than a lower percentage with more observations. For example,
+the table is ranked by count rather than conditional frequency to make that evidence visible.
 
 **Sequence Statistics:**
-- **Total Transition Types**: ~150+ unique practice-to-practice transitions observed
-- **Total Transitions**: ~650+ total improvement transitions across all teams
-- **Most Improved Practice**: CI/CD (improved by 65+ teams across the dataset)
-- **Average Transitions per Practice**: ~4-5 typical next practices per improved practice
+- **Practices with observed outgoing transitions**: 30
+- **Unique practice-to-practice pairs**: 310
+- **Total transition counts**: 471
+- **Most frequently improved practice**: Tech debt strategy (34 improvement-bearing steps)
+- **Average unique follow-on practices per source practice**: 10.3
 
 **Key Insights:**
 
-1. **Infrastructure First**: Strong patterns show teams typically improve infrastructure practices (CI/CD, DoD) before process practices (Test Automation, Code Review).
-
-2. **Logical Progression**: Sequences follow logical dependencies. For example, CI/CD enables Test Automation, which enables TDD.
-
-3. **Multiple Pathways**: Most practices have multiple possible next practices, reflecting different team contexts and priorities.
-
-4. **Organizational Learning**: These patterns represent organizational learning - what works for teams in this specific organization context.
+1. **Organization-specific evidence**: The table reports what was observed in this organization's
+   recorded history; it does not assert that a named practice inherently enables another practice.
+2. **Multiple pathways**: Each source practice can have several observed follow-on practices, which
+   reflects differing team contexts and priorities.
+3. **Descriptive, not causal**: Transitions guide ranking as empirical evidence only. They do not
+   prove causation or prescribe an order for every team.
 
 **Practical Implications:**
 
@@ -1096,6 +1049,80 @@ The following sequences represent the most common practice improvement transitio
 - Patterns reflect organizational context - may differ for other organizations
 - Sequences learned from historical data may not account for future changes
 - Some sequences may be correlation rather than causation
+
+### 6.9 Maximum-Maturity Analysis
+
+The maturity scale has a fixed upper bound: level 3 (normalized value 1.0). Once a team has
+reached level 3 for a practice, no further maturity improvement can be observed for that
+team–practice pair within this scale. This matters for both recommendations and evaluation: a
+level-3 practice is excluded from the candidate recommendation set, rather than being treated as
+an opportunity for further improvement (see §3.5, Step 4).
+
+**Analysis basis:** This analysis uses the latest available profile for each of the 87 teams in
+`combined_dataset.xlsx`, across all 35 practices. Seventy-five teams have a latest profile dated
+2020-11-04; the remaining 12 teams have earlier latest records. The analysis therefore provides
+the most complete per-team maturity snapshot available in the supplied dataset, rather than a
+single common-month snapshot.
+
+**Team-level distribution of practices at maximum maturity:**
+
+| Share of practices at level 3 | Teams | Share of teams |
+| --- | ---: | ---: |
+| 0–20% | 74 | 85.1% |
+| >20–50% | 11 | 12.6% |
+| >50–80% | 2 | 2.3% |
+| >80% | 0 | 0.0% |
+
+Overall, 78 of 87 teams (89.7%) reached level 3 in at least one practice. Teams reached level 3
+in an average of 3.84 of the 35 practices; the observed range was 0 to 22 practices. These
+figures show that maximum maturity is common in selected practices, but broad saturation across a
+team’s full practice set is uncommon.
+
+**Maximum-maturity prevalence by practice:**
+
+| Practice | Teams at level 3 | Share of teams |
+| --- | ---: | ---: |
+| AIM JIRA structure | 66 | 75.9% |
+| Demo | 29 | 33.3% |
+| Unified backlog | 27 | 31.0% |
+| Release tracker | 25 | 28.7% |
+| Scrum area | 22 | 25.3% |
+| Retro | 18 | 20.7% |
+| Defect management strategy | 16 | 18.4% |
+| DoD | 14 | 16.1% |
+| Single branch strategy | 14 | 16.1% |
+| Tasking | 13 | 14.9% |
+| DoR | 11 | 12.6% |
+| Scrum Master | 10 | 11.5% |
+| Sprint burndown | 8 | 9.2% |
+| Tech debt strategy | 8 | 9.2% |
+| Backlog grooming (sprint) | 7 | 8.0% |
+| Engineering 360 | 7 | 8.0% |
+| Product Owner | 7 | 8.0% |
+| Story Points | 6 | 6.9% |
+| Test automation | 5 | 5.7% |
+| AIM ceremonies | 4 | 4.6% |
+| Story mapping | 4 | 4.6% |
+| Customer engagement | 3 | 3.4% |
+| Personas | 3 | 3.4% |
+| Shift-left adoption | 3 | 3.4% |
+| Reducing WIP | 2 | 2.3% |
+| Backlog grooming (release) | 1 | 1.1% |
+| Time to Value Delivery | 1 | 1.1% |
+| BDD | 0 | 0.0% |
+| CI/CD | 0 | 0.0% |
+| Multi component team | 0 | 0.0% |
+| Multi function team | 0 | 0.0% |
+| Spikes template | 0 | 0.0% |
+| TDD | 0 | 0.0% |
+| Tech story template | 0 | 0.0% |
+| User story template | 0 | 0.0% |
+
+The distribution is concentrated in a small number of practices, particularly AIM JIRA structure.
+Practices with no teams at level 3 are not evidence that they are unimportant; they indicate that
+the supplied dataset contains remaining maturity headroom for those practices. Conversely, a
+high maximum-maturity count does not imply that every team has completed that practice, only that
+the model must not recommend it again to teams that already reached level 3.
 
 ---
 
@@ -1242,7 +1269,9 @@ The project uses a moderate-sized organizational dataset: 87 teams × 35 practic
 
 ### 8.1 Summary of Achievements
 
-This project successfully implements a machine learning system for identifying likely large-scale agile implementation pathways, achieving the following:
+This project successfully implements an empirical organizational-learning approach for identifying likely large-scale agile implementation pathways, achieving the following:
+
+Its core contribution is deriving team-specific recommendations from observed organizational behavior: peer-team maturity histories and practice-transition patterns. The collaborative filtering, Practice Transition Model, and hybrid scoring mechanism are established implementation techniques used to operationalize that contribution, rather than the novelty claim itself.
 
 **Technical Achievements:**
 - Implemented collaborative filtering algorithm for finding similar teams
@@ -1433,7 +1462,7 @@ for prev_set, next_set in zip(improved_sets, improved_sets[1:]):
 
 Transition probability:
 ```
-P(B | A improved) = count(A → B) / count(A improved)
+P(B | A improved) = count(A → B) / Σ_X count(A → X)
 ```
 
 **Recommendation Scoring Formula:**

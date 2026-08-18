@@ -1168,7 +1168,7 @@ class CLIInterface:
 
             seq_stats = self.recommender.sequence_mapper.get_sequence_stats()
             print("\nSequence Mapper:")
-            print(f"   Transition Types: {seq_stats.get('num_transition_types', 0)}")
+            print(f"   Source Practices With Transitions: {seq_stats.get('num_transition_types', 0)}")
             print(f"   Practices Improved: {seq_stats.get('practices_that_improved', 0)}")
 
             # Show missing values details if available
@@ -1238,7 +1238,7 @@ class CLIInterface:
             stats = sequence_mapper.get_sequence_stats()
 
             print("\nSequence Learning Overview:")
-            print(f"   Total Transition Patterns: {stats.get('num_transition_types', 0)}")
+            print(f"   Source Practices With Transitions: {stats.get('num_transition_types', 0)}")
             print(f"   Total Transitions Observed: {stats.get('total_transitions', 0)}")
             print(f"   Practices That Improved: {stats.get('practices_that_improved', 0)}")
 

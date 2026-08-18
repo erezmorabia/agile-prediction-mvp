@@ -49,9 +49,9 @@ flowchart TD
   separate step, whenever something actually asks "what usually comes after practice A?" (this is
   outside the diagram above, which only covers building up the counts). The percentage for each
   "next" practice is just its count divided by the total of everything ever seen following practice
-  A — not compared against the whole dataset. For example, if CI/CD followed Test Automation 6
-  times, Code Review followed it 3 times, and Pair Programming followed it once, then CI/CD's
-  likelihood is 6 out of 10 (60%), Code Review's is 30%, and Pair Programming's is 10%. If nothing
-  was ever observed following a practice, no percentages are produced for it at all.
+  A — not compared against the whole dataset. For example, if practice B followed practice A 6
+  times, practice C followed it 3 times, and practice D followed it once, their conditional
+  frequencies are 6 out of 10 (60%), 30%, and 10%, respectively. If nothing was ever observed
+  following a practice, no percentages are produced for it at all.
 
 Citations current as of this session; re-verify against `sequences.py` if the implementation changes.

@@ -99,3 +99,58 @@ The following edits were made in `docs/PROJECT_DOCUMENTATION.md`:
 | **§3.3 Collaborative Filtering Algorithm and §3.7 Worked Examples** | Replaced “improved in the next 1–3 months” with “subsequent observed improvement within a 1–3-month window.” |
 | **§10.6 Understanding Results** | Replaced “next month, month after, month after that” with a subsequent observed-improvement window covering the target month and the following two recorded months. |
 | `README.md` | Rephrased transition examples to describe subsequent observed improvements rather than presumed next-month outcomes. |
+
+## 6. Document maximum maturity
+
+**Professor comment:** Include a note or data analysis showing how many teams reached the highest maturity level and in which practices, acknowledging that improvement is impossible once the maximum is reached.
+
+**Decision applied:** Added a report-only maximum-maturity analysis using each team’s latest available profile. It explains that level 3 is the scale maximum and that the recommender excludes level-3 practices from further recommendations.
+
+### Project documentation changes
+
+| Section | Exact change |
+| --- | --- |
+| **§6.9 Maximum-Maturity Analysis** | Added the analysis basis, the distribution of team-level level-3 saturation, summary statistics, and a complete 35-practice table of level-3 team counts and percentages. The section notes that latest record dates vary for 12 teams and cross-references the existing maximum-maturity recommendation filter. |
+
+## 7. Document variable team observation coverage
+
+**Professor comment:** Explicitly mention that the number of observations varies because teams joined or left at different points during the ten-month period.
+
+**Decision applied:** Documentation now explains that the 655 team-month observations reflect variable team coverage rather than complete ten-month coverage for every team.
+
+### Project documentation changes
+
+| Section | Exact change |
+| --- | --- |
+| **§6.1 Dataset Description** | Added the full distribution of recorded months per team: 48 teams have all 10 months and 39 have 1–9 months. The section explicitly attributes the variation to teams joining or leaving the recorded population and explains that analyses use each team's available chronological history. |
+| `README.md` | Added a concise dataset-coverage note next to the 655 team-month observation summary. |
+
+## 8. Identify the core innovation
+
+**Professor comment:** Frame the novelty as the empirical approach to learning organizational behavior for prediction, rather than the specific machine learning algorithms used.
+
+**Decision applied:** The project’s core innovation is now stated as empirically learning organizational improvement behavior to identify likely next practices. Collaborative filtering, the Practice Transition Model, and hybrid scoring are presented as established implementation tools that operationalize this contribution.
+
+### Project documentation changes
+
+| Section | Exact change |
+| --- | --- |
+| **Abstract** | Added the canonical core-innovation statement and clarified that the implementation tools operationalize the empirical approach. |
+| **Executive Summary → The Approach** | Reframed the approach around empirical organizational learning before introducing the algorithmic components. |
+| **§1.2 Project Objectives** | Replaced the algorithm-first objective with **Empirical Organizational Learning**. |
+| **§8.1 Summary of Achievements** | Added a contribution statement distinguishing the novel empirical framing from the established algorithmic techniques. |
+| `README.md` | Reframed the project summary and solution overview around empirical organizational learning. |
+
+## 9. Include empirical practice-transition tables
+
+**Professor comment:** Replace synthetic or typical examples of practice relationships with tables showing actual probabilities derived from the organizational data.
+
+**Decision applied:** Documentation now reports observed transition counts and conditional frequencies calculated from the checked-in organizational dataset, rather than illustrative CI/CD, testing, or code-review pathways. The values are presented as descriptive evidence, not causal or universal adoption rules.
+
+### Project documentation changes
+
+| Location | Exact change |
+| --- | --- |
+| **§3.4, §3.7, §6.8, and §9.2** in `docs/PROJECT_DOCUMENTATION.md` | Corrected the conditional-probability denominator to all observed transitions originating from the source practice; replaced the synthetic sequence example and the 60%/55%/45% table with the top 10 observed transitions, including count, source-transition denominator, and conditional frequency. Added the associated 471-transition, 310-pair dataset summary and removed causal dependency claims. |
+| `README.md` | Replaced hard-coded CI/CD/DoD/TDD relationship examples with the same top-10 empirical table and explained its calculation, sample-size context, and non-causal interpretation. |
+| `docs/flowcharts/learn-sequences-up-to-month.md` | Replaced named hypothetical practice relationships in the probability illustration with generic practices A–D. |
