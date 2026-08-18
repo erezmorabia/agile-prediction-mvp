@@ -20,7 +20,13 @@ class SimilarityEngine:
         # look up any team's scores at any month whenever needed.
         self.processor = processor
 
-    def find_similar_teams(self, target_team: str, target_month: int, k: int = 5, min_similarity: float = 0.0) -> list:
+    def find_similar_teams(
+        self,
+        target_team: str,
+        target_month: int,
+        k: int = 5,
+        min_similarity: float = 0.0,
+    ) -> list[tuple[str, float, int]]:
         """
         Find K most similar teams to a target team at a specific month.
 
@@ -62,7 +68,7 @@ class SimilarityEngine:
 
         # Starts empty. Will hold one (team_name, similarity_score, historical_month) tuple
         # per team/month comparison that passed the threshold - the same team can repeat.
-        all_similarities = []
+        all_similarities: list[tuple[str, float, int]] = []
 
         # Look at every past month, one at a time, to see which teams were similar to
         # the target team at that month.
@@ -97,7 +103,7 @@ class SimilarityEngine:
 
         # Deduplicate by team name - keep only the entry with highest similarity for each team
         # This ensures we get K different teams, not the same team at different months
-        team_best_similarity = {}
+        team_best_similarity: dict[str, tuple[str, float, int]] = {}
         for team, similarity, historical_month in all_similarities:
             if team not in team_best_similarity or similarity > team_best_similarity[team][1]:
                 team_best_similarity[team] = (team, similarity, historical_month)
