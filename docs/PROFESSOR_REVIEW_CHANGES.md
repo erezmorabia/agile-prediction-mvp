@@ -154,3 +154,17 @@ The following edits were made in `docs/PROJECT_DOCUMENTATION.md`:
 | **§3.4, §3.7, §6.8, and §9.2** in `docs/PROJECT_DOCUMENTATION.md` | Corrected the conditional-probability denominator to all observed transitions originating from the source practice; replaced the synthetic sequence example and the 60%/55%/45% table with the top 10 observed transitions, including count, source-transition denominator, and conditional frequency. Added the associated 471-transition, 310-pair dataset summary and removed causal dependency claims. |
 | `README.md` | Replaced hard-coded CI/CD/DoD/TDD relationship examples with the same top-10 empirical table and explained its calculation, sample-size context, and non-causal interpretation. |
 | `docs/flowcharts/learn-sequences-up-to-month.md` | Replaced named hypothetical practice relationships in the probability illustration with generic practices A–D. |
+
+## 10. Address optimization bias with walk-forward policy selection
+
+**Professor comment:** Avoid tuning hyperparameters and evaluating them on the same dataset; use an earlier training portion to select parameters before applying them to later observations.
+
+**Decision applied:** Replaced static all-history optimization with a stricter walk-forward protocol. For each prediction month, one global policy is selected only from earlier prediction months whose complete three-snapshot outcome windows had already closed. The target month and all later outcomes are excluded from selection. This produces an out-of-time evaluation for every reported month rather than reusing the evaluation outcome to select its policy.
+
+### Project documentation changes
+
+| Location | Exact change |
+| --- | --- |
+| **Abstract; Executive Summary; §§3.5–3.6; §6.3; §6.5; §9.2; §9.3; §10.4–10.6; §11.2–11.3** in `docs/PROJECT_DOCUMENTATION.md` | Documented the global monthly policy, fixed two-snapshot component windows, 675-policy selection grid, bootstrap policy, no-future-outcome boundary, and removal of the static all-history optimizer. Replaced the prior single aggregate result with separate primary results (five complete-outcome months) and sensitivity results (all seven months), including per-month policies and the independently selected time-aware-popularity comparison on the same evaluable cases. The 58.0% primary result is explicitly framed as exploratory, not proof of superiority over popularity or a per-team guarantee. |
+| `README.md` | Updated the user-facing description, configuration guidance, and backtest example to explain automatic month-specific policy selection, fixed windows, the primary/sensitivity split, and the exploratory 58.0% primary result. |
+| `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md` | Recorded the complete implementation protocol: the fixed component windows, recommendable and evaluable cohorts, the walk-forward selection boundary, bootstrap behavior, comparison arm, and acceptance criteria. |
