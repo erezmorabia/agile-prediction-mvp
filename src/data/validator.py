@@ -72,7 +72,7 @@ class DataValidator:
 
     def _check_data_types(self) -> None:
         """Check that data types are correct."""
-        if "Team Name" in self.df.columns and self.df["Team Name"].dtype != "object":
+        if "Team Name" in self.df.columns and not pd.api.types.is_string_dtype(self.df["Team Name"]):
             self.issues.append("Team Name should be string type")
 
         if "Month" in self.df.columns and not pd.api.types.is_numeric_dtype(self.df["Month"]):
