@@ -74,7 +74,7 @@ time_aware_popularity_accuracy = mean(per_month popularity-arm hit-rate)
 blend_minus_popularity = accuracy - time_aware_popularity_accuracy
 ```
 
-On the reference dataset (primary, 5 full-outcome-window months): blend 57.98% vs time-aware popularity 55.66% (+2.31pp) — see `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md` for the full reproduction table and its caveats (exploratory, not a claim of proven superiority; three of the five primary months run on the bootstrap policy, where the blend IS the popularity arm and the two tie exactly).
+On the reference dataset (primary, 5 full-outcome-window months): blend 57.98% vs time-aware popularity 55.66% (+2.31pp). `tests/test_blend_reproduction.py` pins the per-month and aggregate reproduction values. This is exploratory, not a claim of proven superiority; three of the five primary months run on the bootstrap policy, where the blend is the popularity arm and the two tie exactly.
 
 **Determinism note:** `PolicyEngine.top_practices()`'s final ranking is tie-broken deterministically by practice name, and `_preference_key()`'s monthly-policy-selection tie-break is a strict total order — both are reproducible across runs regardless of hash seed.
 

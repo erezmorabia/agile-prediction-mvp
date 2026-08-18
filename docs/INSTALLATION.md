@@ -87,7 +87,7 @@ python -c "import pandas, numpy, sklearn, fastapi; print('All dependencies insta
 **Solution:** Install pip or use `python -m pip` instead
 
 ### Issue: "Permission denied" errors
-**Solution:** Use `pip install --user -r requirements.txt` or run with administrator/sudo privileges
+**Solution:** Install into an activated virtual environment. Avoid `sudo pip`; it can conflict with system-managed Python packages.
 
 ### Issue: "No module named 'openpyxl'"
 **Solution:** Make sure you activated your virtual environment and ran `pip install -r requirements.txt`
@@ -100,8 +100,8 @@ python -c "import pandas, numpy, sklearn, fastapi; print('All dependencies insta
 
 ### Issue: Port 8000 already in use
 **Solution:** 
-- Close any other applications using port 8000
-- Or modify `src/web_main.py` to use a different port (change `uvicorn.run(..., port=8000)` to another port)
+- Stop the process using port 8000, then run the app again. The supplied startup scripts already attempt to free that port before starting.
+- If you start `src/web_main.py` directly, change the `port` passed to `uvicorn.run()` and browse to the matching URL.
 
 ## Next Steps
 

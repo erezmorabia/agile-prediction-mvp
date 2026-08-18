@@ -2,7 +2,7 @@
 
 ## Domain Story
 
-The system analyzes improvement histories from 87 engineering teams tracked across 10 months. For any team at any given month, it asks: *"Which teams were in a similar position, what did they improve next, what practice transitions typically follow, and what is the organization improving right now?"* It blends all three signals into exactly two ranked recommendations, using one policy selected per prediction month from prior completed outcomes - never tuned on the month being predicted or on the team's own future. A backtest of this walk-forward policy shows it outperforming a properly time-aware popularity comparison arm on the same evaluable cases (see `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md` for the current figures and their caveats - this remains an exploratory result, not a claim of proven superiority over popularity alone).
+The system analyzes improvement histories from 87 engineering teams tracked across 10 months. For any team at any given month, it asks: *"Which teams were in a similar position, what did they improve next, what practice transitions typically follow, and what is the organization improving right now?"* It blends all three signals into exactly two ranked recommendations, using one policy selected per prediction month from prior completed outcomes - never tuned on the month being predicted or on the team's own future. A backtest of this walk-forward policy shows a higher primary aggregate than a properly time-aware popularity comparison arm on the same evaluable cases (see `tests/test_blend_reproduction.py` for the pinned figures and caveats; this remains exploratory, not a claim of proven superiority over popularity alone).
 
 ## Core Domain Concepts
 
@@ -11,11 +11,11 @@ The system analyzes improvement histories from 87 engineering teams tracked acro
 | **Team** | An engineering/delivery team tracked over time; identified by name string |
 | **Practice** | An agile capability (e.g., CI/CD, Test Automation); each team has a score per practice per month |
 | **Maturity Level** | Practice score: 0 = not implemented, 1 = basic, 2 = intermediate, 3 = mature |
-| **Month** | A snapshot timestamp in yyyymmdd format; the fundamental time unit |
+| **Month** | A numeric snapshot timestamp in the project's YYMMDD-style encoding (for example, `200101`); the fundamental time unit |
 | **Improvement** | A practice score increase from one month to the next (any positive delta) |
 | **Recommendation** | A predicted practice to improve next, with a confidence score 0–1; the primary flow always returns exactly two |
 | **Similarity Score** | Cosine similarity between two practice maturity vectors; range 0–1 |
-| **Sequence** | A Markov transition: "practice A improved → practice B typically follows" |
+| **Sequence** | An empirical transition: a practice improved in one improvement-bearing step and another improved in the next such step |
 | **Popularity** | Organization-wide practice-improvement frequency; time-aware popularity blends all-time counts with the single most recent transition |
 | **Policy** | One combination of peer count, similarity threshold, similarity/sequence/popularity weights, and popularity recency weight; selected once per prediction month, not per team |
 | **Bootstrap Policy** | The fallback policy (100% popularity, 50/50 recency) used when no prior prediction month yet has a completed 3-snapshot outcome window |

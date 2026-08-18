@@ -1,12 +1,12 @@
 ---
 name: domain-ml
-description: ML engine - collaborative filtering (cosine similarity), Markov chain sequences, time-aware popularity, and the global two-month adaptive blend policy. Use when modifying recommendation logic, similarity search, sequence learning, popularity scoring, or monthly policy selection.
+description: ML engine - collaborative filtering (cosine similarity), empirical practice transitions, time-aware popularity, and the global two-month adaptive blend policy. Use when modifying recommendation logic, similarity search, sequence learning, popularity scoring, or monthly policy selection.
 ---
 
 # Domain: ML
 
 ## Summary
-Four components produce practice recommendations. `SimilarityEngine` finds peers via cosine similarity. `SequenceMapper` learns Markov transitions between improvements and also tracks organization-wide practice-improvement counts (popularity). `PolicyEngine` (`src/ml/policy.py`) owns the global two-month adaptive blend: it selects one policy per prediction month from prior completed outcomes and scores similarity/sequence/time-aware-popularity evidence under it. `RecommendationEngine` is now a thin compatibility wrapper that constructs and delegates to a `PolicyEngine`.
+Three evidence components produce practice recommendations. `SimilarityEngine` finds peers via cosine similarity. `SequenceMapper` learns empirical transitions between consecutive improvement-bearing steps and also tracks organization-wide practice-improvement counts (popularity). `PolicyEngine` (`src/ml/policy.py`) owns the global two-month adaptive blend: it selects one policy per prediction month from prior completed outcomes and scores similarity/sequence/time-aware-popularity evidence under it. `RecommendationEngine` is a thin compatibility wrapper that constructs and delegates to a `PolicyEngine`.
 
 ## Data Flows
 
@@ -21,11 +21,11 @@ Four components produce practice recommendations. `SimilarityEngine` finds peers
 - Only data from months **< baseline_month** is used for sequence learning, popularity, and similarity matching (data leakage prevention)
 - Similar teams deduplicated by team name — only the highest-similarity historical snapshot is kept per team
 - Practices at normalized score ≥ 1.0 are excluded from the candidate set (already at max maturity)
-- **Fixed component windows, never tunable:** `FIXED_LOOKAHEAD_SNAPSHOTS = 2` (similarity: peer's observed snapshots after it looked similar) and `FIXED_RECENCY_SNAPSHOTS = 2` (sequence: target team's own preceding observed snapshots) — see `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md`
+- **Fixed component windows, never tunable:** `FIXED_LOOKAHEAD_SNAPSHOTS = 2` (similarity: peer's observed snapshots after it looked similar) and `FIXED_RECENCY_SNAPSHOTS = 2` (sequence: target team's own preceding observed snapshots); see `src/ml/policy.py`.
 - **Baseline** for a (team, prediction_month) case = the team's own most recent observed snapshot strictly before `prediction_month` (`PolicyEngine.baseline_month_for`), not necessarily the prior *global* month — generalizes correctly if a team has data gaps (none exist in the current dataset, verified)
 - **Recommendable** (no outcome required, used by the live flow): baseline exists AND ≥2 candidate practices. **Evaluable** (used by cohorts/backtest): recommendable AND at least one observed improvement in the 3-snapshot outcome window after baseline
 - A missing/empty peer list is not an error: `PolicyEngine._compute_components` catches `ValueError` from `find_similar_teams` and sets `no_similar_teams_found=True`; similarity contributes 0 and the blend still returns 2 recommendations from sequence + popularity
-- Sequence transitions are still first-order Markov exactly as before (see `SequenceMapper`); no change to `learn_sequences()` / `learn_sequences_up_to_month()` / `_learn_team_transitions()`
+- Sequence transitions are empirical cross-products between consecutive improvement-bearing steps; simultaneous improvements have no directed edge (see `SequenceMapper._learn_team_transitions()`)
 
 ## Formulas / Scoring / Calculation Logic
 
@@ -36,7 +36,7 @@ popularity   = recency_weight × recent_popularity_norm + (1 - recency_weight) �
 ```
 - The three factor weights are one of 15 combinations of `(0, 0.25, 0.5, 0.75, 1.0)` summing to exactly 1.0 (`WEIGHT_TRIPLES`)
 - `recency_weight` ∈ `(0.0, 0.25, 0.5, 0.75, 1.0)`, `peer_count` ∈ `(5, 10, 19)`, `min_similarity` ∈ `(0.0, 0.5, 0.75)` — full grid is `POLICY_GRID`, 675 combinations
-- **Normalization scope differs by component (research-exact, not the literal spec wording — see the plan/spec deviation note)**:
+- **Normalization scope differs by component:**
   | Component | Scope |
   |---|---|
   | Similarity | normalize over all evidence (may include maxed-out practices) → mask to candidates |

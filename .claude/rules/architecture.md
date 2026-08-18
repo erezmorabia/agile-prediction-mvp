@@ -38,7 +38,7 @@ src/
 │   └── practice_definitions.py  # PracticeDefinitionsLoader: level descriptions
 ├── ml/
 │   ├── similarity.py        # SimilarityEngine: cosine similarity, K-NN lookup
-│   ├── sequences.py         # SequenceMapper: Markov transition matrix + cache
+│   ├── sequences.py         # SequenceMapper: empirical transition matrix + cache
 │   ├── policy.py            # PolicyEngine: 675-policy grid, monthly selection, blend scoring
 │   └── recommender.py       # RecommendationEngine: thin wrapper delegating to PolicyEngine
 ├── validation/
@@ -61,7 +61,7 @@ web/
     └── css/style.css
 tests/                       # pytest files
 data/raw/                    # Excel data files (gitignored)
-results/                     # Research-script output JSON files (see docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md)
+results/                     # Research-script output JSON files (reproduced by tests/test_blend_reproduction.py)
 ```
 
 ## Functional Domains

@@ -10,7 +10,7 @@
 
 ## Abstract
 
-This project addresses the critical challenge of large-scale agile transformation in organizations by developing a system that recommends likely next agile practices from organizational history. Its core innovation is empirically learning organizational improvement behavior to identify likely next practices: it derives team-specific guidance from observed peer-team maturity histories, observed practice-transition behavior, and organization-wide practice-improvement trends within the organization. Collaborative filtering, the Practice Transition Model, and time-aware popularity are blended under one policy selected automatically for each prediction month — never tuned on the month it predicts — across 87 teams, 35 practices, and 10 months of historical data. Walk-forward backtesting on the five prediction months with a complete outcome window shows this blend aligning with later improvements in 58.0% of evaluated cases, 2.2x the random baseline (26.0%), and 2.3 percentage points ahead of an equally walk-forward-selected time-aware-popularity comparison arm (55.7%) on the same cases; across all seven prediction months (including two with a truncated outcome window) the figures are 50.9% vs. 47.5%. This result is exploratory, not a claim of proven superiority over popularity alone (see §6.3 and §6.5, and `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md`). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
+This project addresses the critical challenge of large-scale agile transformation in organizations by developing a system that recommends likely next agile practices from organizational history. Its core innovation is empirically learning organizational improvement behavior to identify likely next practices: it derives team-specific guidance from observed peer-team maturity histories, observed practice-transition behavior, and organization-wide practice-improvement trends within the organization. Collaborative filtering, the Practice Transition Model, and time-aware popularity are blended under one policy selected automatically for each prediction month — never tuned on the month it predicts — across 87 teams, 35 practices, and 10 months of historical data. Walk-forward backtesting on the five prediction months with a complete outcome window shows this blend aligning with later improvements in 58.0% of evaluated cases, 2.2x the random baseline (26.0%), and 2.3 percentage points ahead of an equally walk-forward-selected time-aware-popularity comparison arm (55.7%) on the same cases; across all seven prediction months (including two with a truncated outcome window) the figures are 50.9% vs. 47.5%. This result is exploratory, not a claim of proven superiority over popularity alone (see §6.3, §6.5, and `src/ml/policy.py`). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
 
 ---
 
@@ -141,7 +141,7 @@ Specific objectives include:
 
 **Limitations:**
 - Recommendations are based on historical patterns and may not account for external factors
-- System requires at least 2 months of historical data to generate recommendations
+- A live request must use a valid global prediction month (the fourth recorded global month or later), have a team baseline snapshot strictly before it, and retain at least two non-maxed practices
 - Accuracy depends on data quality and completeness
 - Recommendations are probabilistic, not deterministic guarantees
 
@@ -151,7 +151,7 @@ This implementation directly addresses the original proposal's objectives:
 
 - **Input Format**: Accepts Excel matrices with teams × practices × maturity levels (0-3), as specified in the proposal
 - **Processing**: Receives team name as input and processes using machine learning algorithms
-- **Output**: Provides ranked list of recommended practices (top 2-5, configurable)
+- **Output**: Provides exactly two ranked practices when at least two non-maxed candidates remain; callers cannot configure the count
 - **Validation**: Uses historical backtesting methodology (train on past months, test on future months) as proposed
 - **Practical Application**: System is ready for real-world testing with selected teams, as planned for May-July timeline
 
@@ -403,7 +403,7 @@ The validation methodology follows the original proposal's approach:
   are improving most (subject only to the per-team maxed-out filter)
 - Because it is selected under the same monthly rule as the blend (rather than being a single
   fixed heuristic), it replaces the earlier static popularity baseline used in early research —
-  see §6.5 and `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md`
+  see §6.5, `src/ml/policy.py`, and `tests/test_blend_reproduction.py`
 - Formula: accuracy = correct_predictions_popularity / total_predictions, computed per month
   (same per-month-averaging convention as the primary Accuracy metric) and compared against the
   blend's actual accuracy via the same gap/improvement-factor framing used for the random
@@ -753,18 +753,17 @@ The web interface is built with vanilla HTML/CSS/JavaScript using a Dark Academi
 
 **3. Sliding Window Validation:**
 - Rolling window approach: train on past, test on future
-- Starts from month 4 (need at least 2 months history)
-- Validates against 3-month window (test_month, test_month+1, test_month+2)
+- Uses global prediction months starting at the fourth recorded month; each team uses its latest available baseline strictly before that month
+- Validates against the baseline's next three observed snapshots
 
 **4. Data Leakage Prevention:**
-- All algorithms only use data from months <= current_month
+- Recommendation evidence is bounded at the team's baseline: comparable snapshots and sequence history are strictly earlier, and peer look-ahead cannot pass that baseline
 - Future months used only for validation, never to generate recommendations
 - Explicit checks prevent using future data in recommendations
 
 **5. Normalization Strategy:**
-- Normalize similarity and sequence scores separately before combining
-- Ensures both signals contribute proportionally regardless of magnitude
-- Final scores normalized to [0, 1] range for consistency
+- Normalize similarity and sequence evidence before masking to candidates; historical popularity is masked then normalized, while recent popularity is normalized organization-wide then masked
+- Combine the three components with the selected policy weights; final blended scores are ranking values and are not re-normalized
 
 ### 5.3 Code Organization
 
@@ -937,8 +936,8 @@ the smaller remaining margin shown above, not the larger margin over random chan
 comparisons are reported because they answer different questions: random baseline establishes the
 problem isn't trivial to solve by chance; the time-aware-popularity arm establishes how much value
 personalization specifically adds on top of a properly time-aware "know the organization's
-current trends" heuristic. See `docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md`
-for the full protocol and its caveats.
+current trends" heuristic. The executable policy and its reproducible reference assertions are in
+`src/ml/policy.py` and `tests/test_blend_reproduction.py`.
 
 ### 6.4 Validation Methodology Results
 
@@ -954,8 +953,8 @@ Results demonstrate that the system identifies likely next practices with meanin
 
 There is no static, all-history parameter optimizer. An earlier version of the system had one
 (`OptimizationEngine`, a grid search over fixed default parameters selected once from *all*
-historical months), but `docs/POPULARITY_BASELINE_INVESTIGATION.md` found that its headline
-figures were selected on the same data they were measured on: a legitimate walk-forward search
+historical months), but an early popularity-baseline investigation found that its headline figures
+were selected on the same data they were measured on: a legitimate walk-forward search
 over the same parameter space actually landed at 40.8-42.6% accuracy, below a plain organization-
 wide popularity baseline (44.5%). That optimizer, its three `/api/optimize*` endpoints, its web
 controls, and its CLI menu options were removed entirely, not hidden.
@@ -1159,9 +1158,9 @@ the model must not recommend it again to teams that already reached level 3.
 The implemented system successfully addresses all objectives stated in the original proposal:
 
 **1. Automated Recommendations:**
-- Generates ranked lists of recommended practices for each team
+- Generates exactly two ranked practices for each eligible team
 - Based on organizational history up to current point in time
-- Configurable number of recommendations (top 2-5)
+- The recommendation count is fixed; the monthly policy chooses model settings, not callers
 
 **2. Machine Learning Application:**
 - Applies collaborative filtering to find similar teams
@@ -1188,14 +1187,14 @@ The implemented system successfully addresses all objectives stated in the origi
 
 **Practical Strengths:**
 - **User-Friendly Interface**: Web interface makes system accessible to non-technical users
-- **Flexible Configuration**: Parameters can be tuned for specific organizational contexts
+- **Auditable monthly selection**: The response exposes the automatically selected policy and the completed months that informed it
 - **Real-World Ready**: Excel format matches organizational data collection methods
 - **Validation Framework**: Comprehensive backtesting validates approach
 
 ### 7.3 Limitations
 
 **Data Limitations:**
-- Requires at least 2 months of historical data to generate recommendations
+- A team needs a usable baseline before a valid global prediction month and at least two non-maxed candidate practices
 - Accuracy depends on data quality and completeness
 - May not account for external factors (organizational changes, market conditions)
 
@@ -1207,7 +1206,7 @@ The implemented system successfully addresses all objectives stated in the origi
 **Practical Limitations:**
 - Requires regular data updates (monthly) to maintain accuracy
 - Initial setup requires data collection and validation
-- May need parameter tuning for different organizational contexts
+- The current policy grid and tie-break rule are fixed in code; adapting them to another organization requires an evaluated implementation change
 
 **Production-Readiness Limitations:**
 
@@ -1559,7 +1558,7 @@ recommendations = recommendations[:top_n]
 }
 ```
 
-**3. POST /api/recommendations**
+**4. POST /api/recommendations**
 - **Description**: Get recommendations for a team, using that prediction month's globally selected policy. `top_n` is pinned to 2 - any other value is rejected with a validation error rather than silently honored, and there is no `k_similar` (peer count is chosen by the policy, not the caller)
 - **Request Body**:
 ```json
@@ -1576,24 +1575,20 @@ recommendations = recommendations[:top_n]
   "team": "AADS",
   "month": 200105,
   "recommendations": [
-    {
-      "practice": "CI/CD",
-      "score": 0.85,
-      "current_level": 0.33,
-      "why": "5 similar team(s) improved this practice"
-    }
+    {"practice": "CI/CD", "score": 0.85, "current_level": 0.33, "why": "..."},
+    {"practice": "Test automation", "score": 0.72, "current_level": 0.00, "why": "..."}
   ],
   "validation": {...},
   "selected_policy": {
     "is_bootstrap": false,
-    "peer_count": 19,
-    "min_similarity": 0.0,
+    "peer_count": 10,
+    "min_similarity": 0.75,
     "similarity_weight": 0.25,
-    "sequence_weight": 0.0,
-    "popularity_weight": 0.75,
-    "popularity_recency_weight": 1.0,
-    "completed_prior_months": [200103, 200104],
-    "mean_prior_hit_rate": 0.52
+    "sequence_weight": 0.25,
+    "popularity_weight": 0.5,
+    "popularity_recency_weight": 0.0,
+    "completed_prior_months": [20200503],
+    "mean_prior_hit_rate": 0.5714285714285714
   },
   "no_similar_teams_found": false,
   "message": null
@@ -1651,7 +1646,7 @@ Strikers  | 200101  | 3     | 2   | 3   | 3          | ...
 
 **Data Validation Rules:**
 - Team Name: Non-empty string
-- Month: Integer in YYMMDD format
+- Month: Numeric integer in the project's YYMMDD-style encoding (for example, `200101`)
 - Practice scores: Integer in range [0, 3]
 - Missing values: Filled with 0, normalized to 0.0
 
@@ -1761,7 +1756,7 @@ python src/main.py data/raw/combined_dataset.xlsx
 ```
 Select option: 1
 Enter team name: AADS
-Enter month (yyyymmdd): 200105
+Enter month (YYMMDD-style integer): 200105
 [Shows recommendations]
 ```
 
@@ -1810,7 +1805,7 @@ Enter month (yyyymmdd): 200105
 
 **No recommendations shown:**
 - Check that team has data for selected month
-- Verify team has at least 2 months of history
+- Choose a valid global prediction month and a team with a baseline snapshot before it
 - Check that team has improvements in validation window
 
 **Backtest takes too long:**
@@ -1947,8 +1942,7 @@ agile-prediction-mvp/
 - `get_system_stats()`: Returns system statistics
 
 **models.py** - Pydantic models:
-- Request models: RecommendationRequest, BacktestRequest, etc.
-- Response models: RecommendationResponse, BacktestResponse, etc.
+- Request and response models, including `RecommendationRequest`, `RecommendationResponse`, and `BacktestResponse`
 - Ensures type safety and validation
 
 ### 11.3 Key Classes and Functions

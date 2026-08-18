@@ -29,7 +29,7 @@ Press `CTRL+C` to stop.
 | Tab | What it does |
 |-----|-------------|
 | **Recommendations** | Select a team + month → get likely next practices with explanations |
-| **Backtest** | Validate aggregate historical accuracy (~49%, 2.0× better than random; not a per-team guarantee) |
+| **Backtest** | Replay the historical policy and view primary and sensitivity metrics (58.0% primary Hit Rate@2; exploratory, not a per-team guarantee) |
 | **Statistics** | Dataset overview: 87 teams, 35 practices, 10 months |
 | **Sequences** | Learned practice transition patterns between consecutive improvement-bearing steps |
 
@@ -37,7 +37,7 @@ Press `CTRL+C` to stop.
 1. **Statistics** — understand the dataset
 2. **Sequences** — see learned improvement patterns
 3. **Recommendations** — pick any team (e.g. "AADS") and any month, click "Get Recommendations"
-4. **Backtest** → click "Run Backtest Validation" to see live accuracy metrics (~1–2 min)
+4. **Backtest** → click "Run Backtest Validation" to see the selected monthly policies and aggregate metrics. The first run can take up to a couple of minutes; later runs reuse cached evidence.
 
 ---
 

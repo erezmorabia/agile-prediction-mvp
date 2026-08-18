@@ -17,9 +17,9 @@ Loads agile metrics from Excel, validates quality, normalizes scores to 0–1, a
 
 ## Domain Validation Rules and Business Logic
 
-- Required Excel columns: `Team Name` (str), `Month` (int, yyyymmdd format); all other columns treated as practices
+- Required Excel columns: `Team Name` (string-like), `Month` (numeric integer in the project's YYMMDD-style encoding); all other columns treated as practices
 - Practice values expected 0–3; NaN filled with 0 before normalization
-- Practices with > 90% missing values excluded before model building; `practices` list is mutated in-place in `web_main.py`
+- Practices with > 90% missing values are excluded before model building; `web_main.py` replaces its active practices list with the filtered result
 - `DataProcessor.process()` modifies the DataFrame in-place (NaN fill + normalization)
 
 ## Entity Schemas

@@ -68,7 +68,7 @@ pip install -r requirements-dev.txt
 - Full rules in `.cursor/rules/` — enforced by `make check-all`
 
 ### Data leakage prevention — CRITICAL
-Never use future data in predictions. All algorithms must gate on `months < current_month` or `months <= current_month`.
+Never use outcome data after the recommendation baseline. Comparable snapshots and sequence learning must use months strictly before the baseline; peer look-ahead must stop at the baseline.
 After any change to `src/ml/` or `src/validation/`, run:
 ```bash
 make test-file FILE=test_temporal_boundaries.py
@@ -82,7 +82,7 @@ make test-file FILE=test_temporal_boundaries.py
 ### Common pitfalls
 - **Import errors:** always run from project root
 - **Test failures:** verify `data/raw/combined_dataset.xlsx` exists
-- **Recommendation issues:** team must exist and have ≥ 2 months of history
+- **Recommendation issues:** request a valid global prediction month (fourth recorded month or later); the team needs a baseline snapshot before it and at least two non-maxed practices
 - **Backtest requires ≥ 4 months** of data for rolling window to start
 - **PyInstaller paths:** use `get_resource_path()` in `web_main.py`; never hardcode paths
 

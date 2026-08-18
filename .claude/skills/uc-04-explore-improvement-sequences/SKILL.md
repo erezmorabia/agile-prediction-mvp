@@ -1,12 +1,12 @@
 ---
 name: uc-04-explore-improvement-sequences
-description: View learned Markov transition patterns between agile practices. Use when modifying the Sequences tab, sequence grouping/display, or the GET /api/sequences response format.
+description: View learned empirical practice-transition patterns between consecutive improvement-bearing steps. Use when modifying the Sequences tab, sequence grouping/display, or the GET /api/sequences response format.
 ---
 
 # UC-04: Explore Improvement Sequences
 
 ## Summary
-User browses the Markov chain transition patterns learned from historical data, seeing which practices tend to follow which, and with what frequency and probability.
+User browses empirical transition patterns learned from historical data, seeing which practices tend to follow which, and with what frequency and conditional probability.
 
 ## Actor & Preconditions
 - **Actor:** Analyst
@@ -27,4 +27,4 @@ User clicks the "Sequences" tab.
 
 ## Cross-references
 - **Related Domain Skills:** `/domain-ml` (SequenceMapper, transition matrix, `get_all_sequences()`), `/domain-api` (`GET /api/sequences` handler, `get_improvement_sequences()` service method), `/domain-frontend` (sequences tab rendering)
-- **Related Use Case Skills:** `/uc-01-get-recommendations` (sequences contribute 40% of recommendation score), `/uc-05-view-system-statistics` (complementary data overview)
+- **Related Use Case Skills:** `/uc-01-get-recommendations` (sequence evidence is one input to the monthly selected blend), `/uc-05-view-system-statistics` (complementary data overview)
