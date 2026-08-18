@@ -1,79 +1,59 @@
 # Flow 2 — Run Backtest Validation
 
-Measures how accurate the recommendation model actually is by replaying history: for every past
-month it generates likely next-practice recommendations the same way Flow 1 does, then checks them against what teams
-really improved. This is UC-02, the analyst's way of validating the model before trusting it.
+Replays the global two-month blend month by month and compares it with a separately selected,
+time-aware-popularity-only arm. There are no user-supplied optimization settings.
 
-**Trigger**: user configures parameters (or uses defaults) on the Backtest tab, clicks "Run Backtest."
-
-**Participants**: `Browser` (stands in for the click → app.js → api.js → FastAPI Route →
-APIService request/response round trip, collapsed out of this diagram — see notes), plus two
-backend modules: `BacktestEngine`, and `Recommendation Engine` — a grouping of
-`RecommendationEngine` and `SequenceMapper`, the same pair `BacktestEngine` drives together on
-every test month (see notes; this is the same recommendation process Flow 1 uses).
+**Trigger**: the user clicks **Run Backtest Validation** on the Backtest tab.
 
 ```mermaid
 sequenceDiagram
     participant Browser
+    participant Route as FastAPI route
+    participant Worker as Backtest worker
     participant Backtest as BacktestEngine
-    participant Rec as Recommendation Engine
+    participant Policy as PolicyEngine
 
-    Browser->>Backtest: run_backtest(train_ratio, config)
-    Note right of Browser: kicks off the rolling-window validation
-
-    loop for each test month (starting at month index 3)
-        Backtest->>Rec: learn sequences up to this month
-        Note right of Backtest: leakage guard -<br/>only uses months before the test month
-        loop for each team
-            Backtest->>Backtest: compute actual improvements in the 3-month window,<br/>skip case if none
-            Backtest->>Rec: recommend(team, prev_month, ...)
-            Note right of Backtest: same hybrid scoring Flow 1 uses
-            Rec-->>Backtest: recommendations
-            Backtest->>Backtest: hit-check, accumulate accuracy / popularity baseline /<br/>precision / recall / MRR
+    Browser->>Route: POST /api/backtest
+    Route->>Worker: run service.run_backtest()
+    Worker->>Backtest: run_backtest()
+    loop each global prediction month
+        Backtest->>Policy: evaluable_cases(month)
+        Policy-->>Backtest: fixed policy-independent cohort
+        Backtest->>Policy: select_policy(month)
+        Policy-->>Backtest: selected blend policy (or bootstrap)
+        Backtest->>Policy: select_popularity_arm(month)
+        Policy-->>Backtest: independent pure-popularity policy
+        loop each evaluable team-month case
+            Backtest->>Policy: top_practices(case, blend policy)
+            Policy-->>Backtest: two practices
+            Backtest->>Policy: top_practices(case, popularity policy)
+            Policy-->>Backtest: two practices
+            Backtest->>Backtest: score both against observed outcome window
         end
-        Backtest->>Backtest: finalize this month's results
+        Backtest->>Backtest: record monthly metrics and policy audit
     end
+    Backtest->>Backtest: aggregate complete-window primary results
+    Backtest->>Backtest: aggregate all-month sensitivity results
+    Backtest-->>Worker: per-month rows, both aggregates, cancelled flag
+    Worker-->>Route: result
+    Route-->>Browser: backtest response
+    Browser->>Browser: render primary, sensitivity, and per-month results
 
-    Backtest->>Backtest: compute overall_accuracy and random_baseline<br/>(both macro-averaged across months)
-    Backtest-->>Browser: results (overall accuracy, random baseline, per-month breakdown)
-    Browser->>Browser: render per-month table + summary
+    opt user cancels while request is running
+        Browser->>Route: POST /api/backtest/cancel
+        Route->>Backtest: cancel()
+        Backtest-->>Worker: completed-month results + cancelled: true
+    end
 ```
 
 ## Notes
 
-- **Why transition patterns are learned once per month, but recommendations happen once per team**: the
-  transition-model step asks a question about the whole dataset — "looking at every team's history up to
-  this month, what does a team usually improve next after improving X?" That answer is the same
-  for every team being evaluated this month, since it only depends on how much history is
-  available so far, not on which team you're looking at. So it's worked out once per month and
-  then reused. Recommending, on the other hand, is always about one specific team — it needs that
-  team's current practice levels, its closest peer teams, and what it personally improved
-  recently — so that part has to run separately for each team, using the shared, once-per-month
-  answer as one of its ingredients.
-- **What "Browser" really stands for**: it's a stand-in for everything that happens between the
-  analyst clicking "Run Backtest" and the request actually reaching the backend — the button's
-  click handler, the settings getting bundled up, and the request being routed to the right
-  backend code. None of that changes how the backtest itself behaves, so it's folded into one box
-  to keep the diagram focused on the actual validation logic.
-- **Why "Recommendation Engine" is shown as one box, not two**: behind the scenes there are really
-  two pieces working together — one that learns "what usually comes next" patterns, and one that
-  turns those patterns (plus peer comparisons) into an actual recommendation. They're always used
-  together, in the same order, every single time recommendations are needed, so splitting them into
-  two boxes wouldn't show any real difference in how they're used — it would just make the diagram
-  busier.
-- **The two nested loops (months, then teams within each month) are the whole point of this
-  diagram** — don't read it as one flat sequence of steps. For every past month being tested,
-  every team is checked one by one before moving on to the next month. That nesting is exactly why
-  a full backtest can take a while to run: it's re-testing the model many times over, once per
-  team per month.
-- **The "popularity baseline" comparison is calculated for free** alongside the real recommendations —
-  while each team's recommendation is being checked for a hit, the same information is reused to also
-  work out how well a much simpler strategy ("just recommend whatever's popular") would have done.
-  No separate pass is needed to compute this comparison.
-- **After each month finishes, its results are summarized before moving to the next month.** Once
-  every month has been tested, the overall accuracy score and a "random guessing" baseline are
-  calculated by averaging across all tested months — these are the two headline numbers shown to
-  the analyst at the end.
-
-This description reflects how the backtest currently works — if the underlying logic changes
-significantly, this diagram may need to be revisited.
+- The route uses a worker thread so the event loop can accept `POST /api/backtest/cancel` while the
+  calculation is running.
+- `evaluable_cases()` establishes the same cohort for all 675 blend candidates and for the
+  popularity arm. A policy never controls which cases are counted.
+- The blend policy maximizes mean monthly HR@2 across completed earlier months. The comparison arm
+  follows the same rule but is restricted to 100% popularity and independently selects only its
+  recency weight.
+- The result exposes per-month HR@2 for both arms, their difference, supporting rank-aware metrics,
+  and separately labelled primary and sensitivity aggregates.

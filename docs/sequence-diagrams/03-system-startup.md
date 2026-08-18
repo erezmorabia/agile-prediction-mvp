@@ -1,8 +1,8 @@
-# Flow 4 — System Startup
+# Flow 3 — System Startup
 
 Loads the Excel dataset, validates and filters it, and builds the ML engines the app depends on,
 all before the web server starts accepting requests. It isn't a user-triggered use case, but it
-explains why Flows 1-3 can run quickly — the expensive setup work already happened here.
+explains how the recommendation, backtest, and sequence-exploration flows are initialized.
 
 **Trigger**: none — runs once when `web_main.py` starts.
 
@@ -10,8 +10,8 @@ explains why Flows 1-3 can run quickly — the expensive setup work already happ
 three flows), plus two grouped backend stages:
 - `Data Pipeline` — groups `DataLoader`, `DataValidator`, and `DataProcessor`, which run one after
   another to turn the raw Excel file into a clean, per-team practice-history dataset.
-- `ML Engines` — groups `SimilarityEngine`, `SequenceMapper`, and `RecommendationEngine`, the three
-  models built from that dataset.
+- `ML Engines` — groups `SimilarityEngine`, `SequenceMapper`, and `RecommendationEngine` (which
+  owns a `PolicyEngine`), built from that dataset.
 
 ```mermaid
 sequenceDiagram
@@ -31,8 +31,8 @@ sequenceDiagram
     Note right of ML: enables cosine-similarity lookups between teams
     WebMain->>ML: build the transition model, learn practice transitions
     Note right of ML: learns practice-transition probabilities from<br/>the full history, done eagerly here so the Practice Transitions tab<br/>(UC-04) has data immediately - Flows 1-2 later overwrite<br/>this same matrix in place, scoped to a recommendation month
-    WebMain->>ML: build the recommendation engine
-    Note right of ML: wires the two prebuilt engines together —<br/>construction itself does no computation,<br/>hybrid scoring runs later, per request, in Flows 1-3
+    WebMain->>ML: build the recommendation engine and PolicyEngine
+    Note right of ML: wires the engines together<br/>construction does no policy selection<br/>the global blend is selected lazily per prediction month
 
     WebMain->>WebMain: wire up the API layer and start the web server
     Note right of WebMain: builds APIService around the recommender,<br/>then starts listening for requests on port 8000
@@ -51,27 +51,21 @@ sequenceDiagram
   place — it returns a new, filtered list, and `web_main.py` reassigns its local variable to that.
 - **Practice-transition learning is eager here, lazy everywhere else — and gets overwritten in place**:
   `SequenceMapper.learn_sequences()` runs once at startup across the full history, populating
-  `self.transition_matrix`/`self.practice_popularity`. The Practice Transitions tab (UC-04,
-  `GET /api/sequences`) reads those two attributes directly with no re-learning call
-  (`sequences.py:258`), so at startup it shows the org-wide view. Flows 1-2 instead call
-  `learn_sequences_up_to_month(max_month)`, which clears and rebuilds those **same** attributes on
-  the **same** `SequenceMapper` instance, scoped to months `< max_month` — there's no separate copy.
-  So the first recommendation or backtest call after startup overwrites the full-history matrix in
-  place, and the Practice Transitions tab then reflects whatever `max_month` was last requested rather than the
-  org-wide view it's meant to show, until the process restarts. Backtest (Flow 2) calls this **once
-  per test month** as it walks the rolling window (`backtest.py:253`); results per `max_month` are
-  cached (`_sequence_cache`) so repeat calls for the same month are free, but nothing restores the
-  full-history state afterward.
+  `self.transition_matrix`/`self.practice_popularity`. `PolicyEngine` later calls
+  `learn_sequences_up_to_month(max_month)`, which rebuilds those same attributes using only
+  observations before the recommendation baseline. The Practice Transitions tab deliberately
+  restores the all-history view before reading it: `APIService.get_improvement_sequences()` calls
+  `learn_sequences()` on every request. Cutoff-specific sequence results are cached in
+  `_sequence_cache` for repeated policy evaluation.
 - **"Building" the recommendation engine is just wiring**: `RecommendationEngine.__init__`
   (`src/ml/recommender.py:11-23`) only stores references to the already-built `similarity_engine`,
   `sequence_mapper`, and `practices` (plus `processor`, pulled off `similarity_engine`) — no
   computation happens here. It still gets its own step in this diagram because `RecommendationEngine`
   is a named lifeline in Flows 1-2 (see `01-get-recommendations.md`, `02-run-backtest.md`); this is
-  where that object comes into existence before those flows call it. The actual hybrid-scoring
-  combination happens later, per request, inside `recommend()` / `get_recommendation_explanation()`.
+  where that object comes into existence before those flows call it. The actual three-factor
+  scoring and monthly policy selection happen later, per request, inside `PolicyEngine`.
 - `DataValidator.validate()`'s pass/fail result is discarded by `web_main.py` — a failed check only
   produces warning log lines, it never blocks startup.
 
-Citations current as of this session (`web_main.py:173-252`, `src/data/validator.py:27-57,182-218`,
-`src/ml/sequences.py:27,121`, `src/validation/backtest.py:253`, `src/ml/recommender.py:11-23`);
-re-verify against the code if the implementation changes.
+References: `web_main.py`, `src/data/validator.py`, `src/ml/sequences.py`,
+`src/api/service.py`, `src/ml/recommender.py`, and `src/ml/policy.py`.

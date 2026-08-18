@@ -1,9 +1,8 @@
 # Flowchart — `SimilarityEngine.find_similar_teams`
 
 Finds the K teams most similar to a target team at a given month, by comparing practice-maturity
-vectors via cosine similarity. Used by `RecommendationEngine.recommend()` (and
-`get_recommendation_explanation()`) as one half of the hybrid scoring signal — the other being
-`SequenceMapper`.
+vectors via cosine similarity. `PolicyEngine` uses it to prepare the similarity component for the
+global three-factor blend; it is not a standalone recommendation policy.
 
 **Location**: `src/ml/similarity.py:21`
 

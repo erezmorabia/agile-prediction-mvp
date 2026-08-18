@@ -35,7 +35,7 @@ The following edits were made specifically in `docs/PROJECT_DOCUMENTATION.md`:
 | `docs/INSTALLATION.md` | Changed the displayed system name to **Agile Practice Recommendation System**. |
 | `docs/flowcharts/run-backtest.md` | Reworded backtest descriptions and labels from live predictions to likely next-practice recommendations and recommendation evaluation. |
 | `docs/flowcharts/learn-sequences-up-to-month.md` and `docs/flowcharts/ranked-similar-teams.md` | Reworded data-leakage explanations to refer to recommendation evaluation. |
-| `docs/sequence-diagrams/01-get-recommendations.md`, `02-run-backtest.md`, and `04-system-startup.md` | Reworded flow explanations from prediction terminology to recommendation terminology. |
+| `docs/sequence-diagrams/01-get-recommendations.md`, `02-run-backtest.md`, and `03-system-startup.md` | Reworded flow explanations from prediction terminology to recommendation terminology. |
 
 Repository and executable names were intentionally retained where they appear in the documentation.
 

@@ -2,15 +2,15 @@
 
 Learns first-order practice transition patterns (practice A improved → practice B typically follows)
 using only months strictly before `max_month`, so no learned transition can straddle the boundary
-being evaluated. Called from `RecommendationEngine.recommend()` /
-`get_recommendation_explanation()` and from `BacktestEngine` before scoring each test month — it is
+being evaluated. Called by `PolicyEngine` while preparing component evidence and explanations; the
+backtest reaches it through that same policy engine — it is
 the time-limited counterpart to `learn_sequences()`, which uses all available history.
 
 **Location**: `src/ml/sequences.py:121`
 
 > Simplified for clarity: the real implementation also memoizes results per `max_month` in
 > `self._sequence_cache` (a pure performance optimization, since this method is called repeatedly
-> with the same `max_month` during backtesting/optimization). This diagram shows the always-fresh
+> with the same `max_month` during recommendation generation and backtesting). This diagram shows the always-fresh
 > computation path — see `sequences.py:133-141, 170-176` for the caching wrapper around it.
 
 ```mermaid
