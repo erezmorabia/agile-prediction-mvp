@@ -42,11 +42,11 @@ src/
 │   ├── policy.py            # PolicyEngine: 675-policy grid, monthly selection, blend scoring
 │   └── recommender.py       # RecommendationEngine: thin wrapper delegating to PolicyEngine
 ├── validation/
-│   ├── backtest.py          # BacktestEngine: rolling window validation of the blend, cancellation
+│   ├── backtest.py          # BacktestEngine: rolling window validation of the blend
 │   └── metrics.py           # Accuracy calculations, random baseline
 ├── api/
 │   ├── main.py              # create_app(): FastAPI app factory
-│   ├── routes.py            # create_routes(): all 10 API route handlers
+│   ├── routes.py            # create_routes(): all 9 API route handlers
 │   ├── service.py           # APIService: bridges routes ↔ ML components
 │   └── models.py            # Pydantic request/response models
 └── interface/
@@ -70,8 +70,8 @@ results/                     # Research-script output JSON files (reproduced by 
 |---|---|---|---|
 | data | Load Excel, normalize scores, validate data, filter practices | `DataLoader`, `DataProcessor`, `DataValidator`, `PracticeDefinitionsLoader` | `load()`, `process()`, `validate()`, `filter_high_missing_practices()` |
 | ml | Similarity search, sequence learning, global two-month adaptive blend policy | `SimilarityEngine`, `SequenceMapper`, `PolicyEngine`, `RecommendationEngine` | `find_similar_teams()`, `learn_sequences_up_to_month()`, `PolicyEngine.recommend()`, `select_policy()`, `explain_practice()` |
-| validation | Rolling window backtest of the blend, primary/sensitivity aggregation, accuracy metrics | `BacktestEngine` | `run_backtest()`, `cancel()`, `reset_cancellation()` |
-| api | FastAPI routes, service orchestration, request/response models | `APIService`, route handlers, Pydantic models | `create_routes()`, `get_recommendations()`, `run_backtest()`, `cancel_backtest()` |
+| validation | Rolling window backtest of the blend, primary/sensitivity aggregation, accuracy metrics | `BacktestEngine` | `run_backtest()` |
+| api | FastAPI routes, service orchestration, request/response models | `APIService`, route handlers, Pydantic models | `create_routes()`, `get_recommendations()`, `run_backtest()` |
 | frontend | Single-page web app, 4-tab UI, API client | `index.html`, `app.js`, `api.js`, `style.css` | `initializeRecommendations()`, `initializeBacktest()`, `initializeStats()`, `initializeSequences()` |
 
 For detailed domain information, see `/domain-data`, `/domain-ml`, `/domain-validation`, `/domain-api`, `/domain-frontend`.
@@ -87,7 +87,6 @@ For detailed domain information, see `/domain-data`, `/domain-ml`, `/domain-vali
 | POST | `/api/backtest` | Run rolling window backtest |
 | GET | `/api/stats` | System statistics |
 | GET | `/api/sequences` | Learned improvement sequences |
-| POST | `/api/backtest/cancel` | Cancel in-progress backtest |
 | GET | `/api/example-data` | Serve raw Excel dataset file (Statistics tab modal) |
 | GET | `/api/docs` | Serve PROJECT_DOCUMENTATION.md as plain text (About modal) |
 
@@ -110,8 +109,7 @@ web_main.py
 - **Temporal ordering (CRITICAL):** All ML algorithms must only access data from months strictly before the baseline they're scoring. Future data must never influence predictions or monthly policy selection. Enforced by `test_temporal_boundaries.py`.
 - **Practice filtering at startup:** Practices with >90% missing values are excluded before model building; `practices` list updated in-place.
 - **Single configuration authority:** The global two-month adaptive blend policy (`PolicyEngine`, `/domain-ml`) selected per prediction month is the only configuration authority for the primary recommendation flow, the CLI, and the backtest. There is no static all-history optimizer and no per-request or per-team tunable parameters.
-- **Thread pool for the backtest:** `POST /api/backtest` runs in a `ThreadPoolExecutor(max_workers=1)` so the event loop stays free to process `POST /api/backtest/cancel`. Repointed from the deleted optimizer's identical pattern.
-- **Cancellation pattern:** `BacktestEngine._cancelled` flag is polled inside the per-month/per-case loop (every 10 cases and at each month boundary); set via `cancel()` → `POST /api/backtest/cancel`. `run_backtest()` resets it at the top of every call so a stale prior cancellation can't silently cancel a fresh run.
+- **Thread pool for the backtest:** `POST /api/backtest` runs in a `ThreadPoolExecutor(max_workers=1)` so the event loop stays free while the run completes. Repointed from the deleted optimizer's identical pattern.
 - **PyInstaller path resolution:** `get_resource_path()` in `web_main.py` checks `sys._MEIPASS` first (frozen) then project root (dev).
 - **Run from project root:** All imports assume project root is in `sys.path`.
 

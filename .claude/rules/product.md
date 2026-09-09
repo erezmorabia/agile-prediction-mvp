@@ -57,4 +57,3 @@ There is no static all-history parameter optimizer (UC-03 was removed - the mont
 - **Validation/outcome window:** Checks improvements in a 3-snapshot window (baseline's prediction month, the next observed snapshot, and the one after that) to account for adoption timelines
 - **Evaluable cohort fixed before scoring:** A team-month's evaluable status never depends on which policy is being scored, and is identical across all 675 candidate policies and both reported comparison arms
 - **Primary vs sensitivity:** Backtest aggregates split into primary (prediction months with a complete 3-snapshot outcome window against the dataset's end) and sensitivity (all prediction months) - never mixed together
-- **Backtest cancellation:** `_cancelled` flag on `BacktestEngine` is polled every 10 cases and at each month boundary; a fresh `run_backtest()` call always resets it first so a stale prior cancellation can't silently cancel a new run

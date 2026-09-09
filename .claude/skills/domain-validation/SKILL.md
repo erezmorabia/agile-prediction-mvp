@@ -1,18 +1,17 @@
 ---
 name: domain-validation
-description: Rolling window backtest of the global two-month adaptive blend, primary/sensitivity aggregation, rank-aware metrics, cancellation. Use when modifying backtest logic, the evaluable cohort, random/popularity baseline formulas, or the cancel mechanism.
+description: Rolling window backtest of the global two-month adaptive blend, primary/sensitivity aggregation, rank-aware metrics. Use when modifying backtest logic, the evaluable cohort, or random/popularity baseline formulas.
 ---
 
 # Domain: Validation
 
 ## Summary
-`BacktestEngine` validates the global two-month adaptive blend (owned by `PolicyEngine`, see `/domain-ml`) using a rolling window over every prediction month. There is no static parameter optimizer — it was removed entirely (engine, endpoints, web/CLI controls, skill) because the monthly policy selection is now the sole configuration authority. `BacktestEngine` keeps its own `_cancelled` flag / `cancel()` / `reset_cancellation()`, moved over from the deleted optimizer.
+`BacktestEngine` validates the global two-month adaptive blend (owned by `PolicyEngine`, see `/domain-ml`) using a rolling window over every prediction month. There is no static parameter optimizer — it was removed entirely (engine, endpoints, web/CLI controls, skill) because the monthly policy selection is now the sole configuration authority.
 
 ## Data Flows
 
-- **Backtest:** `BacktestEngine.run_backtest()` → resets `_cancelled` (a prior `cancel()` call must not silently cancel a fresh run) → for each month in `PolicyEngine.prediction_months()`: `evaluable_cases(month)` (fixed cohort, before any policy scoring) → `select_policy(month)` (the blend) and `select_popularity_arm(month)` (independent comparison arm) → scores every case under both policies → accumulates accuracy, precision@N, recall@N, MRR per month
+- **Backtest:** `BacktestEngine.run_backtest()` → for each month in `PolicyEngine.prediction_months()`: `evaluable_cases(month)` (fixed cohort, before any policy scoring) → `select_policy(month)` (the blend) and `select_popularity_arm(month)` (independent comparison arm) → scores every case under both policies → accumulates accuracy, precision@N, recall@N, MRR per month
 - **Primary vs sensitivity split:** `per_month_results` covers every prediction month; `primary` aggregates only months where `PolicyEngine.full_outcome_window(month)` is true (complete 3-snapshot outcome window against the dataset's end); `sensitivity` aggregates all months. The two are never mixed
-- **Cancellation:** `cancellation_check` callable (or `self._cancelled` if none passed) is polled at the top of each month and every 10 cases within a month; on trip, the in-progress month is dropped entirely (not partially included) and the run returns with `cancelled: True`. `POST /api/backtest/cancel` → `APIService.cancel_backtest()` → `BacktestEngine.cancel()`
 - **No results persistence:** unlike the deleted optimizer, backtest results are not saved to `results/*.json` — they are returned directly in the API response
 
 ## Domain Validation Rules and Business Logic
@@ -21,7 +20,6 @@ description: Rolling window backtest of the global two-month adaptive blend, pri
 - Evaluable cohort per month is fixed **before** any policy is scored, and is identical for every one of the 675 candidate policies and both reported arms (blend and popularity) — see `PolicyEngine.evaluable_cases()` in `/domain-ml`
 - A case is evaluable when: it is recommendable (baseline exists, ≥2 candidate practices) AND at least one practice improved in the 3-snapshot outcome window after baseline
 - Since every evaluable case is by construction recommendable, `BacktestEngine` never needs to catch a "can't recommend" exception per case — `PolicyEngine.recommend()`/`top_practices()` cannot raise for a cohort member
-- `cancellation_check` is polled every 10 cases within a month's team loop, and once at the start of each month
 
 ## Formulas / Scoring / Calculation Logic
 
@@ -83,13 +81,12 @@ On the reference dataset (primary, 5 full-outcome-window months): blend 57.98% v
 | Class / Method | File | Called from | Key params / returns |
 |---|---|---|---|
 | `BacktestEngine.__init__()` | `src/validation/backtest.py` | `APIService`, CLI | `recommender_engine, processor` → also stores `self.policy_engine = recommender_engine.policy_engine` |
-| `BacktestEngine.run_backtest()` | `src/validation/backtest.py` | `APIService.run_backtest()`, CLI `_validate_recommendations()` | `cancellation_check: Callable \| None` → `{status, per_month_results, primary, sensitivity, cancelled}` — no config dict, no `train_ratio` |
-| `BacktestEngine.cancel()` / `reset_cancellation()` | `src/validation/backtest.py` | `APIService.cancel_backtest()`; internally at the top of `run_backtest()` | moved here from the deleted `OptimizationEngine` |
-| `BacktestEngine._score_month()` | `src/validation/backtest.py` | `run_backtest()` | one prediction month → `(row, improvements_per_case, expected_mrr_per_case, was_cancelled)` |
-| `BacktestEngine._aggregate_scope()` | `src/validation/backtest.py` | `run_backtest()` (primary and sensitivity, and any cancelled/empty scope) | replaces the old duplicated `_build_partial_results()` — one aggregation function used for every scope, complete or partial |
+| `BacktestEngine.run_backtest()` | `src/validation/backtest.py` | `APIService.run_backtest()`, CLI `_validate_recommendations()` | no params → `{status, per_month_results, primary, sensitivity}` — no config dict, no `train_ratio` |
+| `BacktestEngine._score_month()` | `src/validation/backtest.py` | `run_backtest()` | one prediction month → `(row, improvements_per_case, expected_mrr_per_case)` |
+| `BacktestEngine._aggregate_scope()` | `src/validation/backtest.py` | `run_backtest()` (primary and sensitivity, and any empty scope) | replaces the old duplicated `_build_partial_results()` — one aggregation function used for every scope |
 | `BacktestEngine._expected_random_mrr()` | `src/validation/backtest.py` | `_score_month()` (per case) | staticmethod; `n, k, top_n` → exact expected MRR under random selection |
 | `BacktestEngine._baseline_from_k_avg()` | `src/validation/backtest.py` | `_aggregate_scope()` | staticmethod; `k_avg, total_practices, top_n` → P(≥1 correct by chance) |
 
 ## Cross-references
 - **Related Use Case Skills:** `/uc-02-run-backtest-validation`
-- **Related Domain Skills:** `/domain-ml` (`PolicyEngine` owns the cohort, selection, and scoring that `BacktestEngine` replays), `/domain-api` (routes expose the backtest + cancel endpoints)
+- **Related Domain Skills:** `/domain-ml` (`PolicyEngine` owns the cohort, selection, and scoring that `BacktestEngine` replays), `/domain-api` (routes expose the backtest endpoint)
