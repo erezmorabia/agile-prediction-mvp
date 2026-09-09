@@ -523,6 +523,51 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary);
 }
 
+.rolling-window-details {
+    padding: 0;
+}
+
+.rolling-window-details summary {
+    cursor: pointer;
+    padding: 16px;
+    color: var(--text-primary);
+    font-weight: 700;
+    list-style: none;
+}
+
+.rolling-window-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.rolling-window-details summary::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 8px;
+    color: var(--info-500);
+    font-size: 0.7em;
+    transition: transform 0.15s ease;
+}
+
+.rolling-window-details[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.rolling-window-details summary span {
+    margin-left: 8px;
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    font-weight: 400;
+}
+
+.rolling-window-details > ul {
+    margin: 0 16px 16px 36px;
+}
+
+.rolling-window-details summary:focus-visible {
+    outline: 2px solid var(--info-500);
+    outline-offset: -4px;
+}
+
 /* ============================================
    RECOMMENDATION ITEMS
    ============================================ */

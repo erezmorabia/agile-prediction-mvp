@@ -29,8 +29,8 @@ def test_recommendations_golden_path(page: Page, base_url: str):
 
     # Pick the first available month
     first_month = month_select.locator("option").nth(0)
-    expect(first_month).to_contain_text("Current:")
-    expect(first_month).to_contain_text("Predict:")
+    expect(first_month).to_contain_text("Baseline:")
+    expect(first_month).to_contain_text("Recommend for:")
     month_value = first_month.get_attribute("value")
     month_select.select_option(value=month_value)
 
