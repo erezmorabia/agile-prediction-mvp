@@ -1,11 +1,15 @@
-# Identifying Likely Large-Scale Agile Implementation Pathways
-
-**Advanced Computer Science Project Documentation**
-
-**Student:** Erez Morabia  
-**Advisor:** Professor Shmuel Tishbrovitz  
-**University:** Open University, Israel
-
+---
+title: "Identifying Likely Large-Scale Agile Implementation Pathways"
+report-type: "Advanced Project Report"
+institution: "The Open University of Israel"
+department: "Department of Mathematics and Computer Science"
+course: "Advanced Project in Computer Science (22997)"
+degree: "M.Sc."
+author: "Erez Morabia"
+supervisor: "Prof. Shmuel Tyszberowicz"
+date: "September 2026"
+logo: "web/static/ou-logo.png"
+lang: "en"
 ---
 
 ## Abstract
@@ -86,25 +90,6 @@ The system demonstrates strong performance and practical value:
 - Enables faster transformation by focusing teams on practices with highest success probability
 
 The system successfully addresses the original proposal's objective of providing data-driven recommendations for agile adoption pathways, demonstrating that machine learning can effectively solve the large-scale agile transformation challenge.
-
----
-
-## Table of Contents
-
-1. [Introduction](#1-introduction)
-2. [Background and Related Work](#2-background-and-related-work)
-3. [Methodology](#3-methodology)
-   - [3.7 Worked Examples](#37-worked-examples)
-4. [System Design and Architecture](#4-system-design-and-architecture)
-5. [Implementation](#5-implementation)
-6. [Evaluation and Results](#6-evaluation-and-results)
-   - [6.8 Learned Improvement Sequences](#68-learned-improvement-sequences)
-   - [6.9 Maximum-Maturity Analysis](#69-maximum-maturity-analysis)
-7. [Discussion](#7-discussion)
-8. [Conclusions and Future Work](#8-conclusions-and-future-work)
-9. [Technical Documentation](#9-technical-documentation)
-10. [User Manual](#10-user-manual)
-11. [Code Documentation](#11-code-documentation)
 
 ---
 
@@ -2065,34 +2050,7 @@ uvicorn.run(app, host="0.0.0.0", port=8000)
 
 ---
 
-## Appendix A: Converting to Word Format
-
-This markdown document can be converted to Microsoft Word (.docx) format using several methods:
-
-**Method 1: Pandoc (Recommended)**
-```bash
-pandoc PROJECT_DOCUMENTATION.md -o PROJECT_DOCUMENTATION.docx
-```
-
-**Method 2: Online Converters**
-- Upload to CloudConvert (https://cloudconvert.com/md-to-docx)
-- Upload to Dillinger (https://dillinger.io/) and export as Word
-- Use Markdown to Word converters available online
-
-**Method 3: Microsoft Word**
-1. Open Microsoft Word
-2. File → Open → Select PROJECT_DOCUMENTATION.md
-3. Word will convert automatically
-4. File → Save As → Choose .docx format
-
-**Method 4: Google Docs**
-1. Upload markdown file to Google Drive
-2. Open with Google Docs
-3. Download as Microsoft Word (.docx)
-
----
-
-## Appendix B: File Locations
+## Appendix A: File Locations
 
 **Source Code:**
 - Main code: `src/` directory

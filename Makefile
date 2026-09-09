@@ -1,4 +1,4 @@
-.PHONY: help type-check lint format check-docs check-all fix install-dev clean test test-cov test-file test-ui
+.PHONY: help type-check lint format check-docs check-all fix install-dev clean test test-cov test-file test-ui project-pdf
 
 # Default target
 help:
@@ -13,6 +13,7 @@ help:
 	@echo "  make test           - Run unit/integration test suite"
 	@echo "  make test-ui        - Run Playwright UI tests (requires data file + server)"
 	@echo "  make test-cov       - Run tests with coverage report"
+	@echo "  make project-pdf    - Build the formal project report PDF from Markdown"
 	@echo "  make clean          - Remove Python cache files"
 
 # Install development dependencies
@@ -65,6 +66,11 @@ test-ui:
 	@echo "Running UI tests (Playwright)..."
 	python -m pytest tests/ui/ -v --tb=short
 
+# Build the grading report while keeping Markdown as the canonical source.
+project-pdf:
+	@PDF_PYTHON="$$(if [ -x .venv/bin/python ]; then printf '%s' .venv/bin/python; else printf '%s' python3; fi)"; \
+	"$$PDF_PYTHON" scripts/build_project_pdf.py
+
 # Run tests with coverage
 test-cov:
 	@echo "Running tests with coverage..."
@@ -87,4 +93,3 @@ clean:
 	find . -type d -name "htmlcov" -exec rm -r {} + 2>/dev/null || true
 	find . -type f -name ".coverage" -delete 2>/dev/null || true
 	@echo "Clean complete"
-

@@ -1,0 +1,318 @@
+@page {
+  size: A4;
+  margin: 22mm 22mm 20mm;
+}
+
+:root {
+  --ink: #17202a;
+  --muted: #53616d;
+  --accent: #185b73;
+  --accent-soft: #eaf2f5;
+  --rule: #b8c7ce;
+  --paper: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color: var(--ink);
+  background: var(--paper);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10.5pt;
+  line-height: 1.48;
+  hyphens: auto;
+}
+
+body {
+  margin: 0;
+}
+
+#title-page {
+  min-height: 250mm;
+  break-after: page;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4mm 7mm 0;
+}
+
+.institution-logo {
+  width: 98mm;
+  height: auto;
+  margin: 0 auto 13mm;
+}
+
+.institution {
+  font-size: 18pt;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.department {
+  color: var(--muted);
+  font-size: 12pt;
+  margin-top: 2mm;
+}
+
+.title-rule {
+  width: 35mm;
+  border-top: 1.5pt solid var(--accent);
+  margin: 17mm 0 13mm;
+}
+
+.report-title {
+  color: var(--ink);
+  font-size: 25pt;
+  line-height: 1.17;
+  margin: 0;
+  max-width: 155mm;
+}
+
+.report-type {
+  color: var(--accent);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13pt;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  margin-top: 9mm;
+  text-transform: uppercase;
+}
+
+.course {
+  color: var(--muted);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10.5pt;
+  margin-top: 2mm;
+}
+
+.submission-statement {
+  margin: 15mm 0 13mm;
+  max-width: 135mm;
+}
+
+.title-details {
+  display: grid;
+  gap: 6mm;
+  width: 135mm;
+}
+
+.title-details div {
+  display: grid;
+  gap: 1mm;
+}
+
+.title-details span {
+  color: var(--muted);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9.5pt;
+}
+
+.title-details strong {
+  font-size: 12pt;
+}
+
+.report-date {
+  color: var(--muted);
+  font-family: Arial, Helvetica, sans-serif;
+  margin-top: auto;
+}
+
+#TOC {
+  break-after: page;
+  font-size: 9.5pt;
+}
+
+#TOC h2 {
+  break-before: avoid;
+}
+
+#TOC ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+}
+
+#TOC ul ul {
+  margin: 0.5mm 0 1mm 5mm;
+}
+
+#TOC li {
+  break-inside: avoid;
+  margin: 0.55mm 0;
+}
+
+#TOC a {
+  align-items: baseline;
+  color: var(--ink);
+  display: flex;
+  gap: 1.5mm;
+  text-decoration: none;
+}
+
+#TOC ul ul a {
+  color: var(--muted);
+  font-size: 8.8pt;
+}
+
+.toc-label {
+  flex: 0 1 auto;
+}
+
+.toc-dots {
+  border-bottom: 0.6pt dotted #87959c;
+  flex: 1 1 8mm;
+  min-width: 5mm;
+}
+
+.toc-page {
+  color: var(--muted);
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+main > section.level2 {
+  break-before: page;
+}
+
+h2,
+h3,
+h4 {
+  break-after: avoid;
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.2;
+}
+
+h2 {
+  border-bottom: 1.5pt solid var(--accent);
+  color: var(--accent);
+  font-size: 19pt;
+  margin: 0 0 8mm;
+  padding-bottom: 2.5mm;
+}
+
+h3 {
+  font-size: 14pt;
+  margin: 9mm 0 3mm;
+}
+
+h4 {
+  font-size: 11.5pt;
+  margin: 7mm 0 2mm;
+}
+
+p {
+  margin: 0 0 3.2mm;
+  orphans: 3;
+  widows: 3;
+}
+
+ul,
+ol {
+  margin: 1.5mm 0 4mm;
+  padding-left: 7mm;
+}
+
+li {
+  margin-bottom: 1.2mm;
+}
+
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+hr {
+  border: 0;
+  border-top: 0.6pt solid var(--rule);
+  margin: 7mm 0;
+}
+
+blockquote {
+  border-left: 3pt solid var(--accent);
+  color: var(--muted);
+  margin: 5mm 0;
+  padding: 1mm 0 1mm 5mm;
+}
+
+code,
+pre {
+  font-family: Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+code {
+  background: var(--accent-soft);
+  border-radius: 2pt;
+  font-size: 8.6pt;
+  padding: 0.3mm 0.8mm;
+}
+
+pre {
+  background: #f4f7f8;
+  border: 0.5pt solid #d7e0e4;
+  border-radius: 3pt;
+  break-inside: auto;
+  font-size: 7.7pt;
+  line-height: 1.35;
+  margin: 4mm 0;
+  overflow-wrap: anywhere;
+  padding: 3.5mm;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+}
+
+table {
+  border-collapse: collapse;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 8.4pt;
+  margin: 5mm auto 7mm;
+  width: 100%;
+}
+
+thead {
+  display: table-header-group;
+}
+
+tr {
+  break-inside: avoid;
+}
+
+th,
+td {
+  border: 0.5pt solid #c9d5da;
+  padding: 1.8mm 2mm;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: var(--accent-soft);
+  color: #133f50;
+  font-weight: 700;
+}
+
+img,
+svg {
+  height: auto;
+  max-width: 100%;
+}
+
+.footnotes {
+  color: var(--muted);
+  font-size: 8.5pt;
+}
+
+@media print {
+  a {
+    text-decoration: none;
+  }
+}

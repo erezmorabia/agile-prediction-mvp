@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="$lang$">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>$title$</title>
+$for(css)$
+  <link rel="stylesheet" href="$css$">
+$endfor$
+</head>
+<body>
+  <header id="title-page">
+$if(logo)$
+    <img class="institution-logo" src="$logo$" alt="$institution$ logo">
+$endif$
+    <div class="institution">$institution$</div>
+    <div class="department">$department$</div>
+
+    <div class="title-rule"></div>
+    <h1 class="report-title">$title$</h1>
+    <div class="report-type">$report-type$</div>
+    <div class="course">$course$</div>
+
+    <p class="submission-statement">
+      Advanced project submitted as partial fulfillment of the requirements<br>
+      towards an $degree$ degree in Computer Science at The Open University of Israel
+    </p>
+
+    <div class="title-details">
+      <div><span>Submitted by</span><strong>$author$</strong></div>
+      <div><span>Prepared under the supervision of</span><strong>$supervisor$</strong></div>
+    </div>
+
+    <div class="report-date">$date$</div>
+  </header>
+
+$if(toc)$
+  <nav id="$idprefix$TOC" role="doc-toc">
+    <h2 id="toc-title">Table of Contents</h2>
+$table-of-contents$
+  </nav>
+$endif$
+
+  <main>
+$body$
+  </main>
+</body>
+</html>

@@ -37,6 +37,20 @@ The policy is not configured by the user. Each month it selects from 675 candida
 
 The full algorithm and API contract are documented in [Project Documentation](docs/PROJECT_DOCUMENTATION.md). The implementation flowcharts are in [docs/flowcharts](docs/flowcharts), and the request flows are in [docs/sequence-diagrams](docs/sequence-diagrams).
 
+## Build the project report PDF
+
+The Markdown file remains the canonical report source. To create the formal A4 submission PDF with its title page,
+generated table of contents with page references, PDF outline, and `Page X of Y` footer:
+
+```bash
+make project-pdf
+```
+
+The build requires Pandoc and the Playwright Chromium browser. Install the Python development dependencies with
+`pip install -r requirements-dev.txt`, install Pandoc with your operating-system package manager, and run
+`playwright install chromium` if Playwright reports that its browser is missing. The generated file is written to
+`output/pdf/PROJECT_DOCUMENTATION.pdf`.
+
 ## Historical backtest
 
 The backtest replays the policy that would have been available at each historical prediction month. It scores a case as a hit when either of the two recommendations appears among practices that improved between the baseline and its next three recorded snapshots. The cohort is fixed before any policy is scored: a case needs a usable baseline, at least two eligible practices, and at least one observed improvement in its outcome window.
