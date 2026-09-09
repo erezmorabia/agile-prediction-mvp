@@ -5,7 +5,7 @@ This guide will help you set up the Agile Practice Recommendation System on your
 ## Prerequisites
 
 ### Python Version
-- **Python 3.8 or higher** is required
+- **Python 3.10 or higher** is required
 - Check your Python version: `python --version` or `python3 --version`
 
 ### Operating System
@@ -73,9 +73,9 @@ If the file doesn't exist, check for alternative files:
 
 ### Step 5: Verify Installation
 
-Test that everything is installed correctly:
+Test that the interpreter version and dependencies are installed correctly:
 ```bash
-python -c "import pandas, numpy, sklearn, fastapi; print('All dependencies installed successfully!')"
+python -c "import sys; assert sys.version_info >= (3, 10); import pandas, numpy, sklearn, fastapi; print('Python version and dependencies are ready!')"
 ```
 
 ## Troubleshooting
@@ -116,7 +116,7 @@ Once installation is complete, see **QUICK_START.md** for instructions on runnin
 ## Support
 
 If you encounter any issues not covered here, please check:
-1. Python version compatibility (3.8+)
+1. Python version compatibility (3.10+)
 2. All dependencies are installed correctly
 3. You're running commands from the project root directory
 4. Data files are present in `data/raw/` directory

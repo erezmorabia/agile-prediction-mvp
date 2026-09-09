@@ -11,6 +11,15 @@ Example:
 import os
 import sys
 
+MINIMUM_PYTHON_VERSION = (3, 10)
+
+
+def _python_version_supported(version_info=None) -> bool:
+    """Return whether ``version_info`` satisfies the supported Python minimum."""
+    candidate = sys.version_info if version_info is None else version_info
+    return tuple(candidate[:2]) >= MINIMUM_PYTHON_VERSION
+
+
 # Add project root to Python path to enable absolute imports
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
@@ -62,6 +71,10 @@ def main() -> int:
         - Data is normalized from 0-3 scale to 0-1 for ML algorithms
         - The CLI provides interactive menu for recommendations, validation, and analysis
     """
+
+    if not _python_version_supported():
+        print("Error: Python 3.10 or newer is required.")
+        return 1
 
     # Setup path
     if len(sys.argv) > 1:

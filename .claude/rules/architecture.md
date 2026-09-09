@@ -17,6 +17,7 @@
 
 | Layer | Technology |
 |---|---|
+| Runtime | Python 3.10+ |
 | Web framework | FastAPI + uvicorn |
 | Data processing | pandas, numpy, openpyxl |
 | ML algorithms | scikit-learn (`cosine_similarity`), scipy (`comb`) |
@@ -94,6 +95,7 @@ For detailed domain information, see `/domain-data`, `/domain-ml`, `/domain-vali
 
 ```
 web_main.py
+  → reject Python versions below 3.10
   → DataLoader.load()
   → DataValidator.validate() + filter_high_missing_practices(threshold=90%)
   → DataProcessor.process()
@@ -107,6 +109,7 @@ web_main.py
 ## Architectural Constraints
 
 - **Temporal ordering (CRITICAL):** All ML algorithms must only access data from months strictly before the baseline they're scoring. Future data must never influence predictions or monthly policy selection. Enforced by `test_temporal_boundaries.py`.
+- **Runtime minimum:** Both entry points and both platform startup scripts reject Python versions below 3.10 before application imports or dependency installation.
 - **Practice filtering at startup:** Practices with >90% missing values are excluded before model building; `practices` list updated in-place.
 - **Single configuration authority:** The global two-month adaptive blend policy (`PolicyEngine`, `/domain-ml`) selected per prediction month is the only configuration authority for the primary recommendation flow, the CLI, and the backtest. There is no static all-history optimizer and no per-request or per-team tunable parameters.
 - **Thread pool for the backtest:** `POST /api/backtest` runs in a `ThreadPoolExecutor(max_workers=1)` so the event loop stays free while the run completes. Repointed from the deleted optimizer's identical pattern.

@@ -2,6 +2,8 @@
 
 ML-powered recommendation system that identifies likely next agile practices using collaborative filtering and a Practice Transition Model learned from historical data from 87 teams across 10 months.
 
+Python 3.10 or newer is required.
+
 ---
 
 ## CRITICAL — Skill Loading Gate (BLOCKING PREREQUISITE)
@@ -82,7 +84,7 @@ make test-file FILE=test_temporal_boundaries.py
 ### Common pitfalls
 - **Import errors:** always run from project root
 - **Test failures:** verify `data/raw/combined_dataset.xlsx` exists
-- **Recommendation issues:** request a valid global prediction month (fourth recorded month or later); the team needs a baseline snapshot before it and at least two non-maxed practices
+- **Recommendation issues:** request a valid global prediction month (fourth recorded month or later); the public flow requires a team snapshot in that month, a baseline snapshot before it, and at least two non-maxed practices
 - **Backtest requires ≥ 4 months** of data for rolling window to start
 - **PyInstaller paths:** use `get_resource_path()` in `web_main.py`; never hardcode paths
 
@@ -111,7 +113,7 @@ make test-file FILE=test_temporal_boundaries.py
 
 | Skill | Topic | Load when... |
 |---|---|---|
-| `/uc-01-get-recommendations` | Team + month → exactly two practice recommendations from that month's selected policy, with explanation | Changing recommendation request/response flow or UI rendering |
+| `/uc-01-get-recommendations` | Team + month → exactly two recommendations when eligible, or an explanatory empty result | Changing recommendation request/response flow or UI rendering |
 | `/uc-02-run-backtest-validation` | Rolling window validation of the global two-month adaptive blend, primary/sensitivity split | Changing backtest trigger or display |
 | `/uc-04-explore-improvement-sequences` | View learned practice transition patterns | Changing the Sequences tab or sequence data display |
 | `/uc-05-view-system-statistics` | System stats overview tab | Changing Statistics tab or the stats data model |

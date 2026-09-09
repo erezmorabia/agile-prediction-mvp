@@ -4,7 +4,7 @@ An exploratory recommendation system that identifies likely next agile practices
 
 ## Run the web app
 
-Python 3.8+ is required.
+Python 3.10+ is required.
 
 ```bash
 git clone https://github.com/erezmorabia/agile-prediction-mvp.git
@@ -24,7 +24,7 @@ For manual setup and troubleshooting, see [Installation](docs/INSTALLATION.md). 
 
 ## What it does
 
-For an eligible team and prediction month, the system:
+For a team with a recorded snapshot in an eligible prediction month, the system:
 
 1. Uses the team's latest snapshot strictly before that month as its baseline.
 2. Scores practices that have not reached maturity level 3 using three evidence sources:
@@ -55,7 +55,11 @@ The remaining two prediction months are reported separately as sensitivity resul
 
 ## Data and interfaces
 
-The checked-in input dataset has 87 teams, 35 practices, 10 recorded months, and 655 team-month rows. Scores are integer maturity levels from 0 through 3; the processor normalizes them to 0 through 1. Team coverage varies by month, so a recommendation only requires that the team has a baseline before a valid global prediction month.
+The checked-in input dataset has 87 teams, 35 practices, 10 recorded months, and 655 team-month
+rows (22,925 team-practice cells before missing-data filtering). Scores are integer maturity levels
+from 0 through 3; the processor normalizes them to 0 through 1. Team coverage varies by month, so
+the public web/API flow requires both a team snapshot in the requested valid global prediction
+month and a usable earlier baseline.
 
 The application provides:
 

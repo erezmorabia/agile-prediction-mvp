@@ -61,7 +61,7 @@ match-dir = "(?!tests|test).*"
 [tool.mypy]
 # This section is for reference - actual config is in mypy.ini
 # But pyproject.toml can also be used if preferred
-python_version = "3.8"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
@@ -78,4 +78,3 @@ module = [
     "starlette.*",
 ]
 ignore_missing_imports = true
-

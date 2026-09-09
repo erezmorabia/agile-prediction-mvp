@@ -41,9 +41,14 @@ Repository and executable names were intentionally retained where they appear in
 
 ## 2. Remove "Big Data" terminology
 
-**Professor comment:** Remove the term “Big Data”; a dataset of approximately 30,000 observations (87 teams × 35 practices × 10 months) is not considered big by modern data-science standards.
+**Professor comment:** Remove the term “Big Data”; even the theoretical complete grid of 30,450
+team-practice cells (87 teams × 35 practices × 10 months) is not considered big by modern
+data-science standards.
 
-**Decision applied:** The documentation now describes the dataset as a **moderate-sized organizational dataset** of approximately 30,000 practice-level maturity values. It discusses processing efficiency and future scalability without claiming Big Data capability.
+**Decision applied:** The documentation now describes the dataset as a **moderate-sized
+organizational dataset** with 22,925 team-practice cells across the 655 recorded team-month rows,
+while distinguishing that actual coverage from the 30,450-cell theoretical complete grid. It
+discusses processing efficiency and future scalability without claiming Big Data capability.
 
 ### Project documentation changes
 
@@ -55,7 +60,7 @@ The following edits were made in `docs/PROJECT_DOCUMENTATION.md`:
 | **§5.4 Performance Considerations** | Renamed **Big Data Handling** to **Performance and Scalability**. |
 | **§7.1 How Implementation Addresses Proposal Objectives** | Replaced the large-scale-data claim with “Processes the project dataset efficiently.” |
 | **§7.2 Strengths** | Replaced the claim that the algorithms handle large datasets with a forward-looking scalability statement tied to growth beyond the current project dataset. |
-| **§7.6 Dataset Scale and Efficiency** | Renamed **Big Data Handling Capabilities** to **Dataset Scale and Efficiency** and added an explicit description of the dataset as moderate-sized (87 teams × 35 practices × 10 months; approximately 30,000 practice-level maturity values). |
+| **§7.6 Dataset Scale and Efficiency** | Renamed **Big Data Handling Capabilities** to **Dataset Scale and Efficiency** and added an explicit description of the dataset as moderate-sized (22,925 cells across 655 recorded team-month rows; 30,450 cells only for a theoretical complete grid). |
 
 ## 3. Clarify the popularity-baseline improvement claim
 
@@ -96,7 +101,7 @@ The following edits were made in `docs/PROJECT_DOCUMENTATION.md`:
 
 | Section | Exact change |
 | --- | --- |
-| **§3.3 Collaborative Filtering Algorithm and §3.7 Worked Examples** | Replaced “improved in the next 1–3 months” with “subsequent observed improvement within a 1–3-month window.” |
+| **§3.3 Collaborative Filtering Algorithm and §3.7 Worked Examples** | Clarified that peer evidence checks the next two recorded snapshots, subject to the recommendation baseline boundary. |
 | **§10.6 Understanding Results** | Replaced “next month, month after, month after that” with a subsequent observed-improvement window covering the target month and the following two recorded months. |
 | `README.md` | Rephrased transition examples to describe subsequent observed improvements rather than presumed next-month outcomes. |
 

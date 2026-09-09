@@ -1,6 +1,6 @@
 # Quick Start
 
-> **Requirement:** Python 3.8+ installed. That's it.
+> **Requirement:** Python 3.10+ installed. That's it.
 
 ## Clone and run
 

@@ -1,8 +1,9 @@
 # Flow 1 — Get Recommendations
 
-Generates exactly two ranked practices for one team and prediction month. The request has no
-model-tuning parameters: `PolicyEngine` is the single configuration authority and selects the
-same global policy for every eligible team in that prediction month.
+Generates exactly two ranked practices for an eligible team and prediction month. The request has
+no model-tuning parameters: `PolicyEngine` is the single configuration authority and selects the
+same global policy for every eligible team in that prediction month. If fewer than two eligible
+practices remain, the response is empty and includes an explanatory message.
 
 **Trigger**: the user selects a team and month on the Recommendations tab and clicks **Get
 Recommendations**.

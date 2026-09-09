@@ -19,6 +19,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+MINIMUM_PYTHON_VERSION = (3, 10)
+
+
+def _python_version_supported(version_info=None) -> bool:
+    """Return whether ``version_info`` satisfies the supported Python minimum."""
+    candidate = sys.version_info if version_info is None else version_info
+    return tuple(candidate[:2]) >= MINIMUM_PYTHON_VERSION
+
+
 _UVICORN_LOG_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -64,13 +73,13 @@ if project_root not in sys.path:
 def get_resource_path(relative_path: str) -> str:
     """
     Get absolute path to resource, works for dev and for PyInstaller.
-    
+
     When running as PyInstaller executable, resources are extracted to a temp folder
     and the path is stored in sys._MEIPASS. In development mode, use project root.
-    
+
     Args:
         relative_path: Path relative to project root (e.g., 'data/raw/combined_dataset.xlsx')
-        
+
     Returns:
         Absolute path to the resource
     """
@@ -132,6 +141,10 @@ def main() -> int:
         - Server uses extended timeouts (5 min keep-alive) for long-running optimization requests
     """
 
+    if not _python_version_supported():
+        logger.error("Python 3.10 or newer is required.")
+        return 1
+
     # Setup path
     if len(sys.argv) > 1:
         excel_file = sys.argv[1]
@@ -160,6 +173,7 @@ def main() -> int:
     # Import components
     import time
     import webbrowser
+
     import uvicorn
 
     from src.api import APIService
@@ -227,7 +241,7 @@ def main() -> int:
         # Start server with increased timeout settings for long-running requests
         # Use threading to allow browser opening after server starts
         import threading
-        
+
         def open_browser_after_delay():
             """Open browser after server has had time to start"""
             time.sleep(2.0)  # Wait for server to be ready
@@ -236,11 +250,11 @@ def main() -> int:
             except Exception:
                 # Browser opening failed, but continue anyway
                 pass
-        
+
         # Start browser opener in background thread
         browser_thread = threading.Thread(target=open_browser_after_delay, daemon=True)
         browser_thread.start()
-        
+
         # Start server (this will block until Ctrl+C)
         uvicorn.run(
             app,

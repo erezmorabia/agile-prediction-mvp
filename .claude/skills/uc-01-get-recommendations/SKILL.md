@@ -1,16 +1,16 @@
 ---
 name: uc-01-get-recommendations
-description: Team + month selection → exactly two practice recommendations from that month's globally selected policy, with scores, explanations, policy audit, and validation. Use when modifying the recommendations tab, request/response flow, or how results are rendered.
+description: Team + month selection → exactly two practice recommendations when eligible, or an explanatory empty result, with scores, explanations, policy audit, and validation. Use when modifying the recommendations tab, request/response flow, or how results are rendered.
 ---
 
 # UC-01: Get Recommendations
 
 ## Summary
-The web UI selects a team's current snapshot and explicitly shows the next recorded month it will predict; the request sends that prediction month. The system returns exactly two recommended practices using that month's globally selected blend policy (similarity / sequence / time-aware popularity), with scores, current maturity level, explanation, and validation against actual historical improvements. There is no per-request tuning - peer count, factor weights, and popularity recency are all chosen by the monthly policy, not by the caller. The CLI accepts a prediction month directly and produces identical output for the same team and prediction month.
+The web UI selects a team's current snapshot and explicitly shows the next recorded month it will predict; the request sends that prediction month. For an eligible team-month, the system returns exactly two recommended practices using that month's globally selected blend policy (similarity / sequence / time-aware popularity), with scores, current maturity level, explanation, and validation against actual historical improvements. If fewer than two practices remain eligible, it returns an explanatory empty result. There is no per-request tuning - peer count, factor weights, and popularity recency are all chosen by the monthly policy, not by the caller. The CLI accepts a prediction month directly and produces identical output for the same team and prediction month.
 
 ## Actor & Preconditions
 - **Actor:** Analyst (web UI or CLI)
-- **Preconditions:** Server running with data loaded; target team has a usable baseline snapshot before the selected month; selected month is a valid prediction month (`PolicyEngine.prediction_months()`, global index 3+)
+- **Preconditions:** Server running with data loaded; target team has a recorded snapshot in the selected month and a usable baseline snapshot before it; selected month is a valid prediction month (`PolicyEngine.prediction_months()`, global index 3+)
 
 ## Trigger
 User opens the Recommendations tab (default on page load), selects a team, chooses a displayed `Current → Predict` pair, and clicks "Get Recommendations". (Or, in the CLI, selects menu option 1 and enters a prediction month.)

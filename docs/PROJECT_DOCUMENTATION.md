@@ -45,7 +45,8 @@ The project’s core innovation is not a new machine learning algorithm. It is t
 - The month-specific policy (peer count, similarity threshold, the three factor weights, and the popularity recency weight) is chosen from a fixed grid of 675 combinations by maximizing accuracy on strictly earlier prediction months whose outcomes have already closed
 - Normalizes each component separately before combining
 - Filters out practices already at maximum maturity
-- Always returns exactly two recommendations tailored to each team's current state
+- Returns exactly two recommendations for an eligible team-month; when fewer than two
+  non-maxed practices remain, it returns an empty list with an explanatory message
 
 **5. Validation Methodology**
 - Uses historical backtesting: for each prediction month, replay the policy that would have been selected at that point in time, then validate against actual improvements
@@ -66,7 +67,8 @@ The system demonstrates strong performance and practical value:
 **How to interpret these results:** All accuracy and improvement figures are aggregate backtest results across the organization (macro-averaged across tested months), and the comparison against time-aware popularity is exploratory, not a proven claim of superiority — three of the five primary months still fall back to a bootstrap policy (100% popularity) because no prior month had a completed outcome window yet, so the blend and the popularity arm tie exactly in those months. They describe how the model performed on historical validation cases and do not guarantee an improvement, recommendation match, or maturity outcome for any individual team or month. See §6.3 for the full per-month breakdown and the sensitivity results across all seven prediction months.
 
 **System Capabilities:**
-- Processes the project dataset efficiently (87 teams × 35 practices × 10 months, approximately 30,000 practice-level maturity values)
+- Processes the project dataset efficiently (655 recorded team-month rows × 35 practices,
+  or 22,925 team-practice cells before missing-data filtering)
 - Working web interface for easy use by non-technical users (see §7.3 for what's still needed for full production deployment)
 - Real-time recommendations based on current organizational data
 - Global monthly policy selection replaces manual parameter tuning: each prediction month automatically re-selects its own blend from prior completed outcomes
@@ -141,7 +143,9 @@ Specific objectives include:
 
 **Limitations:**
 - Recommendations are based on historical patterns and may not account for external factors
-- A live request must use a valid global prediction month (the fourth recorded global month or later), have a team baseline snapshot strictly before it, and retain at least two non-maxed practices
+- A public web/API request must use a valid global prediction month (the fourth recorded global
+  month or later), have a team snapshot in that prediction month and a baseline snapshot strictly
+  before it, and retain at least two non-maxed practices
 - Accuracy depends on data quality and completeness
 - Recommendations are probabilistic, not deterministic guarantees
 
@@ -239,7 +243,9 @@ The system follows the input/processing/output architecture described in the ori
 
 **Input:**
 - Excel matrices containing agile adoption data collected monthly
-- Data collection spanning at least six consecutive months
+- The loader does not enforce a fixed minimum history. Recommendation months begin at the fourth
+  recorded global snapshot; at least six global snapshots are needed for the first prediction
+  month to have a complete 3-snapshot primary backtest outcome window
 - Each matrix defined by:
   - **Y-axis**: List of teams in the organization
   - **X-axis**: List of agile practices
@@ -369,8 +375,9 @@ no fixed default and no per-team or per-request override.
   (rather than by dict/set iteration order, which in Python depends on the process's hash seed
   and is not reproducible run-to-run) — this ensures the same inputs always produce the same
   ranked recommendations
-- Return the top 2 recommendations — the primary flow always returns exactly two; a request for
-  any other count is rejected rather than silently honored
+- Return the top 2 recommendations for an eligible team-month. A request for any other count is
+  rejected rather than silently honored; when fewer than two candidates remain, return an empty
+  list with an explanatory message
 
 ### 3.6 Validation Methodology (Backtesting)
 
@@ -510,7 +517,8 @@ The system compares AADS's profile against all teams at all past months (months 
 | ... | ... | ... | ... |
 
 **Step 3: Extract Improvement Patterns**
-For each similar team, the system checks which practices showed subsequent observed improvement within a 1–3-month window (but only using months ≤ 200105 to prevent data leakage):
+For each similar team, the system checks which practices showed subsequent observed improvement
+within the next two recorded snapshots (but only using snapshots ≤ 200105 to prevent data leakage):
 
 **Team B** (similarity: 0.92, at month 200103):
 - Improved "Test Automation" from 0 to 1 in month 200104 (improvement magnitude: 0.33)
@@ -719,7 +727,7 @@ The web interface is built with vanilla HTML/CSS/JavaScript using a Dark Academi
 
 ### 5.1 Technology Stack and Rationale
 
-**Python 3.8+** (vs. Java/C++/C# from proposal):
+**Python 3.10+** (vs. Java/C++/C# from proposal):
 - **Rationale**: Python was chosen over the languages mentioned in the proposal due to:
   - Rich ecosystem for data science and machine learning (pandas, numpy, scikit-learn)
   - Rapid prototyping capabilities
@@ -766,7 +774,7 @@ The web interface is built with vanilla HTML/CSS/JavaScript using a Dark Academi
 
 ### 5.3 Code Organization
 
-The codebase consists of approximately 5,600 lines across 23 Python files, organized into modules:
+The source code is organized across 23 Python modules:
 
 **Module Structure:**
 ```
@@ -1193,7 +1201,8 @@ The implemented system successfully addresses all objectives stated in the origi
 ### 7.3 Limitations
 
 **Data Limitations:**
-- A team needs a usable baseline before a valid global prediction month and at least two non-maxed candidate practices
+- A public web/API request needs a team snapshot in a valid global prediction month, a usable
+  baseline before it, and at least two non-maxed candidate practices
 - Accuracy depends on data quality and completeness
 - May not account for external factors (organizational changes, market conditions)
 
@@ -1269,10 +1278,15 @@ These are aggregate organizational backtest results, not guaranteed outcomes for
 
 ### 7.6 Dataset Scale and Efficiency
 
-The project uses a moderate-sized organizational dataset: 87 teams × 35 practices × 10 months, or approximately 30,000 practice-level maturity values. The system processes this dataset efficiently and can support future growth.
+The project uses a moderate-sized organizational dataset: 655 recorded team-month rows across 87
+teams and 10 global months, with 35 tracked practices. This yields 22,925 team-practice cells
+before missing-data filtering. A fully populated 87 × 35 × 10 rectangular grid would contain
+30,450 cells, but the supplied data is not rectangular because 39 teams have partial month
+coverage (§6.1). The system processes the recorded dataset efficiently and can support future
+growth.
 
 **Efficiency:**
-- Processes 87 teams × 35 practices × 10 months in seconds
+- Processes 655 recorded team-month rows × 35 raw practices in seconds
 - Memory-efficient data structures
 - Caching reduces redundant computations
 
@@ -1546,19 +1560,25 @@ recommendations = recommendations[:top_n]
 - **Response**: List of team-month pairs with improvement data
 
 **3. GET /api/teams/{team_name}/months**
-- **Description**: Get available months for a team
+- **Description**: Get valid prediction months that the team has recorded, with a usable earlier
+  baseline snapshot
 - **Parameters**: `team_name` (path parameter)
 - **Response**: Object with team name and months list
 - **Example Response**:
 ```json
 {
   "team": "AADS",
-  "months": [200101, 200102, 200103, ...]
+  "months": [200105, 200106, 200107, ...]
 }
 ```
 
 **4. POST /api/recommendations**
-- **Description**: Get recommendations for a team, using that prediction month's globally selected policy. `top_n` is pinned to 2 - any other value is rejected with a validation error rather than silently honored, and there is no `k_similar` (peer count is chosen by the policy, not the caller)
+- **Description**: Get recommendations for a team, using that prediction month's globally selected
+  policy. The team must have both a recorded snapshot in the requested prediction month and a
+  usable earlier baseline. `top_n` is pinned to 2 - any other value is rejected with a validation
+  error rather than silently honored, and there is no `k_similar` (peer count is chosen by the
+  policy, not the caller). If fewer than two non-maxed candidates remain, the response contains an
+  empty `recommendations` list and an explanatory `message`
 - **Request Body**:
 ```json
 {
@@ -1677,7 +1697,9 @@ values in effect are always visible even though they cannot be configured direct
 The Agile Practice Recommendation System is a web-based application that identifies likely next agile practices for teams based on organizational history. The system analyzes patterns from similar teams and improvement sequences to provide personalized recommendations.
 
 **Key Features:**
-- **Personalized Recommendations**: Get practice recommendations tailored to each team's current state, always exactly two, using that month's globally selected policy
+- **Personalized Recommendations**: Get exactly two practice recommendations for an eligible
+  team-month using that month's globally selected policy; if fewer than two practices remain, the
+  interface explains why no list can be returned
 - **Validation**: Run backtest validation to see how often recommendations align with later improvements, split into primary and sensitivity results
 - **Statistics**: View system statistics and practice definitions
 - **Sequences**: Explore learned improvement patterns
@@ -1687,7 +1709,7 @@ The Agile Practice Recommendation System is a web-based application that identif
 See **docs/INSTALLATION.md** for detailed installation instructions.
 
 **Quick Installation:**
-1. Install Python 3.8+
+1. Install Python 3.10+
 2. Install dependencies: `pip install -r requirements.txt`
 3. Start web server: `python src/web_main.py data/raw/combined_dataset.xlsx`
 4. Open browser: `http://localhost:8000`
@@ -1857,8 +1879,7 @@ agile-prediction-mvp/
 ├── data/
 │   └── raw/
 │       └── combined_dataset.xlsx  # Input data file
-├── tests/
-│   └── test_suite.py           # Unit tests
+├── tests/                       # Unit, integration, and browser tests
 ├── docs/
 │   ├── PROJECT_DOCUMENTATION.md # This file
 │   ├── INSTALLATION.md          # Installation guide
@@ -1906,7 +1927,8 @@ agile-prediction-mvp/
 - Uses caching to avoid recomputation
 
 **policy.py** - PolicyEngine class:
-- `recommend(team, prediction_month)`: Selects the month's policy and scores the team's candidates, always returning exactly two recommendations
+- `recommend(team, prediction_month)`: Selects the month's policy and returns exactly two scored
+  candidates when eligible, or an empty result marked `insufficient_practices`
 - `select_policy(prediction_month)` / `select_popularity_arm(prediction_month)`: Global monthly policy selection over the 675-combination grid
 - `evaluable_cases(prediction_month)`: Builds the fixed backtest cohort, independent of any policy
 - `explain_practice(team, prediction_month, practice)`: Explains why a practice was (or would be) recommended
@@ -2001,8 +2023,10 @@ similarity_engine = SimilarityEngine(processor)
 sequence_mapper = SequenceMapper(processor, loader.practices)
 recommender = RecommendationEngine(similarity_engine, sequence_mapper, loader.practices)
 
-# Get recommendations - always exactly two, using that month's selected policy
+# Get recommendations - exactly two when eligible, using that month's selected policy
 result = recommender.recommend("AADS", 200105)
+if result.insufficient_practices:
+    print("Fewer than two practices remain to improve")
 for practice in result.practices:
     print(f"{practice}: {result.scores[practice]:.2f} (current: {result.current_levels[practice]:.2f})")
 print(f"Selected policy: {result.selected_policy}")

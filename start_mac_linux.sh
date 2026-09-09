@@ -11,7 +11,12 @@ if command -v python3 &> /dev/null; then
 elif command -v python &> /dev/null; then
     PYTHON_CMD="python"
 else
-    echo "ERROR: Python not found. Install Python 3.8+ and try again."
+    echo "ERROR: Python not found. Install Python 3.10+ and try again."
+    exit 1
+fi
+
+if ! "$PYTHON_CMD" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+    echo "ERROR: Python 3.10 or newer is required."
     exit 1
 fi
 
@@ -26,9 +31,9 @@ if [ ! -f "$DATA_FILE" ]; then
 fi
 
 # Install dependencies automatically if needed
-if ! $PYTHON_CMD -c "import fastapi" 2>/dev/null; then
+if ! "$PYTHON_CMD" -c "import fastapi" 2>/dev/null; then
     echo "Installing dependencies (first run only)..."
-    $PYTHON_CMD -m pip install -r requirements.txt --quiet
+    "$PYTHON_CMD" -m pip install -r requirements.txt --quiet
 fi
 
 # Free port 8000 if something is already using it
@@ -38,5 +43,4 @@ echo "Starting server → http://localhost:8000"
 echo "Press CTRL+C to stop."
 echo ""
 
-$PYTHON_CMD src/web_main.py "$DATA_FILE"
-
+"$PYTHON_CMD" src/web_main.py "$DATA_FILE"
