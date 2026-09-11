@@ -247,8 +247,6 @@ class DataValidator:
                 - excluded_practices: List of practices that were excluded
         """
         missing_details = self.get_missing_values_details()
-        total_rows = len(self.df)
-
         filtered_practices = []
         excluded_practices = []
 

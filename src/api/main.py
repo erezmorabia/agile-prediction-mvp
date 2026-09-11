@@ -80,7 +80,7 @@ def create_app(service: APIService) -> FastAPI:
     except Exception:
         # Development mode: use relative path from project root
         web_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "web")
-    
+
     if os.path.exists(web_dir):
         app.mount("/static", StaticFiles(directory=os.path.join(web_dir, "static")), name="static")
 

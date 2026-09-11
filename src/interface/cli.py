@@ -147,7 +147,7 @@ class CLIInterface:
                 # Count improvements
                 improvements = []
                 # Compare this month's scores to the subsequent recorded month's, practice by practice.
-                for j, (curr, nxt) in enumerate(zip(current_vector, next_vector)):
+                for j, (curr, nxt) in enumerate(zip(current_vector, next_vector, strict=True)):
                     if nxt > curr:
                         improvements.append(self.recommender.practices[j])
 
@@ -244,7 +244,7 @@ class CLIInterface:
 
                 print(f"\nAvailable months to predict for {team_name} (with improvements):")
                 # Print one numbered line per selectable month.
-                for i, (month, next_month, num_imp) in enumerate(months_list):
+                for i, (month, _next_month, num_imp) in enumerate(months_list):
                     print(f"  {i + 1}. Month to predict: {month} ({num_imp} improvements occurred)")
 
                 month_choice = input("\nEnter month number or date (yyyymmdd): ").strip()
@@ -355,7 +355,7 @@ class CLIInterface:
             # Get what actually improved in the predicted month
             improvements_month1 = {}
             # Compare the baseline month to the predicted month, practice by practice.
-            for j, (prev, pred) in enumerate(zip(prev_vector, predicted_vector)):
+            for j, (prev, pred) in enumerate(zip(prev_vector, predicted_vector, strict=True)):
                 if pred > prev:
                     improvements_month1[self.recommender.practices[j]] = pred - prev
 
@@ -366,7 +366,7 @@ class CLIInterface:
                 month_after_vector = history[month_after]
 
                 # Same comparison, one month further out.
-                for j, (prev, after) in enumerate(zip(prev_vector, month_after_vector)):
+                for j, (prev, after) in enumerate(zip(prev_vector, month_after_vector, strict=True)):
                     if after > prev:
                         improvements_month2[self.recommender.practices[j]] = after - prev
 
@@ -377,7 +377,7 @@ class CLIInterface:
                 month_after_2_vector = history[month_after_2]
 
                 # Same comparison, two months further out.
-                for j, (prev, after2) in enumerate(zip(prev_vector, month_after_2_vector)):
+                for j, (prev, after2) in enumerate(zip(prev_vector, month_after_2_vector, strict=True)):
                     if after2 > prev:
                         improvements_month3[self.recommender.practices[j]] = after2 - prev
 
@@ -609,9 +609,6 @@ class CLIInterface:
         # Sort each practice's score into its maturity level bucket.
         for j, normalized_value in enumerate(practice_vector):
             practice_name = self.recommender.practices[j]
-            # Convert normalized (0-1) back to original scale (0-3)
-            original_value = normalized_value * 3
-
             # Group by level
             if normalized_value < 0.17:  # < 0.5 original
                 profile[0].append(practice_name)

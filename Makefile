@@ -1,5 +1,7 @@
 .PHONY: help type-check lint format check-docs check-all fix install-dev clean test test-cov test-file test-ui project-pdf
 
+PYTHON := $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
+
 # Default target
 help:
 	@echo "Available targets:"
@@ -8,7 +10,7 @@ help:
 	@echo "  make lint           - Run pylint and ruff linting"
 	@echo "  make format         - Format code with ruff"
 	@echo "  make check-docs     - Check docstring style with pydocstyle"
-	@echo "  make check-all      - Run all checks (type-check + lint + check-docs)"
+	@echo "  make check-all      - Run advisory static-analysis checks"
 	@echo "  make fix            - Auto-fix issues where possible"
 	@echo "  make test           - Run unit/integration test suite"
 	@echo "  make test-ui        - Run Playwright UI tests (requires data file + server)"
@@ -18,7 +20,7 @@ help:
 
 # Install development dependencies
 install-dev:
-	pip install -r requirements-dev.txt
+	$(PYTHON) -m pip install -r requirements-dev.txt
 
 # Type checking with mypy
 type-check:
@@ -44,10 +46,10 @@ check-docs:
 	@echo "Checking docstring style with pydocstyle..."
 	pydocstyle src/ || echo "Docstring check complete (some issues may exist)"
 
-# Run all checks
+# Run the advisory static-analysis audit. Individual tools may report known findings.
 check-all: type-check lint check-docs
 	@echo ""
-	@echo "All checks complete!"
+	@echo "Advisory quality audit complete; review the findings above."
 
 # Auto-fix issues where possible
 fix:
@@ -59,12 +61,12 @@ fix:
 # Run unit/integration tests (excludes UI tests)
 test:
 	@echo "Running test suite..."
-	python -m pytest tests/ --ignore=tests/ui -v
+	$(PYTHON) -m pytest tests/ --ignore=tests/ui -v
 
 # Run Playwright UI tests against a live server with real data
 test-ui:
 	@echo "Running UI tests (Playwright)..."
-	python -m pytest tests/ui/ -v --tb=short
+	$(PYTHON) -m pytest tests/ui/ -v --tb=short
 
 # Build the grading report while keeping Markdown as the canonical source.
 project-pdf:
@@ -74,7 +76,7 @@ project-pdf:
 # Run tests with coverage
 test-cov:
 	@echo "Running tests with coverage..."
-	pytest --cov=src --cov-report=html --cov-report=term tests/
+	$(PYTHON) -m pytest --cov=src --cov-report=html --cov-report=term tests/
 	@echo ""
 	@echo "Coverage report generated: htmlcov/index.html"
 
@@ -82,7 +84,7 @@ test-cov:
 test-file:
 	@echo "Usage: make test-file FILE=test_recommender.py"
 	@test -n "$(FILE)" || (echo "Error: FILE parameter required" && exit 1)
-	python -m pytest tests/$(FILE) -v
+	$(PYTHON) -m pytest tests/$(FILE) -v
 
 # Clean Python cache files
 clean:

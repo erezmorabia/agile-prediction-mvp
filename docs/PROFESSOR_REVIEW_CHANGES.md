@@ -882,3 +882,125 @@ contents, page numbering, and rendered page layout.
 
 No recommendation behavior, calculations, tests, API contract, report-generation code, or
 source-workbook data was changed for this item.
+
+## 43. Make zip length handling explicit
+
+**Submission-readiness review finding:** Ruff reported 15 `zip()` calls without an explicit
+`strict=` setting. Fourteen pair practice names or maturity-score vectors that are required to have
+equal lengths, where silent truncation could conceal malformed internal data. One pairs a sequence
+of improvement-bearing steps with its one-position offset and is intentionally unequal in length.
+
+**Issue classification:** Code-quality and defensive-implementation issue, not a documentation or
+algorithm-formula defect.
+
+**Decision applied:** Added `strict=True` to the fourteen equal-length comparisons and
+`strict=False` to the intentionally offset transition-step pairing.
+
+**Verification:** Ruff no longer reports B905 for the affected files. The complete non-UI suite
+passes with 181 tests passed and 12 skipped, and `git diff --check` is clean.
+
+No valid-data recommendation behavior, backtest calculations, API contract, reported results, or
+source-workbook data was changed for this item. Malformed unequal-length inputs now fail visibly
+instead of being silently truncated.
+
+## 44. Preserve causes when converting caught exceptions
+
+**Submission-readiness review finding:** Ruff reported eight caught exceptions that were replaced
+with new exceptions without explicit chaining. Seven API route handlers convert unexpected errors
+into generic HTTP 500 responses, and `DataLoader` converts an Excel-reading failure into a
+`ValueError`. Without `from e`, their causal relationship is less explicit in diagnostic
+tracebacks.
+
+**Issue classification:** Code-quality and diagnostic issue, not a documentation or functional
+behavior defect.
+
+**Decision applied:** Added `from e` to all eight replacement raises, preserving their original
+causes for internal diagnosis while retaining the existing public exception types and messages.
+
+**Verification:** Ruff no longer reports B904. The complete non-UI suite passes with 181 tests
+passed and 12 skipped, and `git diff --check` is clean.
+
+No recommendation behavior, calculations, API response body, HTTP status, reported results, or
+source-workbook data was changed for this item.
+
+## 45. Move API imports before module-level initialization
+
+**Submission-readiness review finding:** Ruff reported seven E402 violations because
+`src/api/routes.py` initialized its logger and thread-pool executor before local imports, while
+`src/api/service.py` initialized its logger before five project imports. The modules worked, but
+the ordering was surprising and failed the repository's source lint check.
+
+**Issue classification:** Code-quality and maintainability issue, not a documentation or runtime
+behavior defect.
+
+**Decision applied:** Grouped standard-library, third-party, and local imports before module-level
+logger and executor initialization in both API modules.
+
+**Verification:** Ruff reports no E402 or import-block-order finding in the affected files. The
+complete non-UI suite passes with 181 tests passed and 12 skipped, and `git diff --check` is clean.
+
+No imported dependency, executor configuration, API behavior, calculations, reported results, or
+source-workbook data was changed for this item.
+
+## 46. Clear the remaining mechanical source-lint findings
+
+**Submission-readiness review finding:** After the substantive lint categories were resolved,
+seven mechanical findings remained: two whitespace-only blank lines, one redundant read-mode
+argument, one unnecessary list conversion inside `sorted()`, two unused assignments, and one
+unused loop variable.
+
+**Issue classification:** Code-quality cleanup, not a documentation or functional behavior issue.
+
+**Decision applied:** Removed the blank-line whitespace, redundant `"r"` mode, unnecessary
+`list()` conversion, and unused assignments; renamed the unused loop value with an underscore
+prefix.
+
+**Verification:** Ruff passes across all files under `src/`. The complete non-UI suite passes with
+181 tests passed and 12 skipped.
+
+No recommendation behavior, calculations, API contract, reported results, or source-workbook data
+was changed for this item.
+
+## 47. Make test targets use the project Python interpreter
+
+**Submission-readiness review finding:** Several Makefile targets invoked bare `python`, `pip`,
+or `pytest`. On the review machine, `python` resolves to Python 2.7, so `make test-ui` failed before
+test collection even though the suite passed when invoked with the project's virtual-environment
+interpreter.
+
+**Issue classification:** Build and test-tooling implementation issue, not a documentation or
+application behavior defect.
+
+**Decision applied:** Added a `PYTHON` Make variable that prefers `.venv/bin/python` when the
+project virtual environment exists and otherwise falls back to `python3`. Routed dependency
+installation and all pytest-based Makefile targets through `$(PYTHON) -m ...`.
+
+**Verification:** `make test` selected `.venv/bin/python` and completed with 181 tests passed and
+12 skipped. `make test-ui` selected the same interpreter and completed with all 6 browser tests
+passed. Ruff passes across all files under `src/`, and `git diff --check` is clean.
+
+No recommendation behavior, calculations, API contract, reported results, or source-workbook data
+was changed for this item.
+
+## 48. Describe the static-analysis aggregate as an advisory audit
+
+**Submission-readiness review finding:** `make check-all` suppressed nonzero exit statuses from
+mypy, Pylint, Ruff, and pydocstyle, then printed `All checks complete!`. README recommended the
+target and CLAUDE.md described its rules as enforced, although the current audit reports 65 mypy
+errors in 11 files and additional Pylint and pydocstyle findings. Ruff passes.
+
+**Issue classification:** Build and quality-tooling implementation issue with a documentation-
+alignment consequence, not an algorithm or application behavior defect.
+
+**Decision applied:** Retained the existing checks as a non-blocking legacy-code audit, but made
+that status explicit in the Makefile help and completion message, README, and CLAUDE.md. The
+documentation now identifies the automated tests and Ruff as the currently enforced passing
+checks. This avoids misrepresenting known static-analysis debt as a successful quality gate.
+
+**Verification:** Makefile help identifies `make check-all` as advisory; its completion message
+instructs the reader to review reported findings. README and CLAUDE.md now use the same semantics,
+Ruff passes across `src/`, and `git diff --check` is clean.
+
+No static-analysis finding was suppressed in tool configuration, and no recommendation behavior,
+calculations, tests, API contract, reported results, or source-workbook data was changed for this
+item.

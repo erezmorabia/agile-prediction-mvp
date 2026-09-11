@@ -172,7 +172,7 @@ class DataProcessor:
         # Go through every team's history and collect the months it has data for
         for team_months in self.team_histories.values():
             all_months.update(team_months.keys())
-        return sorted(list(all_months))
+        return sorted(all_months)
 
     def get_statistics(self) -> dict:
         """

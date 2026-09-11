@@ -10,10 +10,6 @@ from concurrent.futures import ThreadPoolExecutor
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, PlainTextResponse
 
-logger = logging.getLogger(__name__)
-
-# Thread pool executor for running the backtest without blocking the event loop.
-_executor = ThreadPoolExecutor(max_workers=1)
 from .models import (
     BacktestResponse,
     ImprovementInfo,
@@ -23,6 +19,11 @@ from .models import (
     TeamInfo,
 )
 from .service import APIService
+
+logger = logging.getLogger(__name__)
+
+# Thread pool executor for running the backtest without blocking the event loop.
+_executor = ThreadPoolExecutor(max_workers=1)
 
 
 def create_routes(service: APIService) -> APIRouter:
@@ -67,7 +68,7 @@ def create_routes(service: APIService) -> APIRouter:
             return service.get_all_teams()
         except Exception as e:
             logger.error(f"get_teams: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.") from e
 
     @router.get("/api/teams/with-improvements", response_model=list[ImprovementInfo])
     async def get_teams_with_improvements():
@@ -76,7 +77,7 @@ def create_routes(service: APIService) -> APIRouter:
             return service.get_teams_with_improvements()
         except Exception as e:
             logger.error(f"get_teams_with_improvements: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.") from e
 
     @router.get("/api/teams/{team_name}/months")
     async def get_team_months(team_name: str):
@@ -90,7 +91,7 @@ def create_routes(service: APIService) -> APIRouter:
             raise
         except Exception as e:
             logger.error(f"get_team_months: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.") from e
 
     @router.post("/api/recommendations", response_model=RecommendationResponse)
     async def get_recommendations(request: RecommendationRequest):
@@ -106,7 +107,7 @@ def create_routes(service: APIService) -> APIRouter:
             raise
         except Exception as e:
             logger.error(f"get_recommendations: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.") from e
 
     @router.post("/api/backtest", response_model=BacktestResponse)
     async def run_backtest():
@@ -124,7 +125,7 @@ def create_routes(service: APIService) -> APIRouter:
             raise
         except Exception as e:
             logger.error(f"run_backtest: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.") from e
 
     @router.get("/api/stats", response_model=SystemStats)
     async def get_system_stats():
@@ -133,7 +134,7 @@ def create_routes(service: APIService) -> APIRouter:
             return service.get_system_stats()
         except Exception as e:
             logger.error(f"get_system_stats: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.") from e
 
     @router.get("/api/sequences")
     async def get_improvement_sequences():
@@ -142,7 +143,7 @@ def create_routes(service: APIService) -> APIRouter:
             return service.get_improvement_sequences()
         except Exception as e:
             logger.error(f"get_improvement_sequences: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.")
+            raise HTTPException(status_code=500, detail="An unexpected error occurred. Please try again.") from e
 
     @router.get("/api/example-data")
     async def get_example_data():
@@ -162,7 +163,7 @@ def create_routes(service: APIService) -> APIRouter:
         docs_path = getattr(service, "docs_path", None)
         if not docs_path or not os.path.exists(docs_path):
             raise HTTPException(status_code=404, detail="Documentation file not found")
-        with open(docs_path, "r", encoding="utf-8") as f:
+        with open(docs_path, encoding="utf-8") as f:
             return PlainTextResponse(f.read(), media_type="text/plain; charset=utf-8")
 
     return router

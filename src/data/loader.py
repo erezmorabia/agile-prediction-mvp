@@ -79,7 +79,7 @@ class DataLoader:
         try:
             self.df = pd.read_excel(self.file_path, sheet_name=0)
         except Exception as e:
-            raise ValueError(f"Failed to read Excel file: {str(e)}")
+            raise ValueError(f"Failed to read Excel file: {str(e)}") from e
 
         # Identify practice columns (all except Team Name and Month)
         self.practices = [col for col in self.df.columns if col not in ["Team Name", "Month"]]

@@ -102,5 +102,8 @@ make check-all
 ```
 
 `make test` excludes browser tests. Run `make test-ui` only with a live local server and the browser-test dependencies installed.
+`make check-all` is an advisory static-analysis audit: it reports known mypy, Pylint, and pydocstyle
+findings without acting as a pass/fail gate. The automated tests and `ruff check src/` are the
+currently enforced passing checks.
 
 Repository-oriented implementation guidance is in [CLAUDE.md](CLAUDE.md).

@@ -5,12 +5,13 @@ API Service Layer: Wraps ML components for web API.
 import logging
 from typing import Any
 
-logger = logging.getLogger(__name__)
 from src.data import DataProcessor
 from src.data.practice_definitions import PracticeDefinitionsLoader
 from src.ml import RecommendationEngine
 from src.ml.policy import policy_summary
 from src.validation import BacktestEngine
+
+logger = logging.getLogger(__name__)
 
 
 class APIService:
@@ -124,7 +125,7 @@ class APIService:
                 # Count improvements
                 improvements = []
                 # Compare the two months' scores, practice by practice.
-                for j, (prev, pred) in enumerate(zip(prev_vector, predicted_vector)):
+                for j, (prev, pred) in enumerate(zip(prev_vector, predicted_vector, strict=True)):
                     if pred > prev:
                         improvements.append(self.recommender.practices[j])
 
@@ -230,7 +231,7 @@ class APIService:
         # Get what actually improved in the predicted month
         improvements_month1 = {}
         # Compare the baseline month to the predicted month, practice by practice.
-        for j, (prev, pred) in enumerate(zip(prev_vector, predicted_vector)):
+        for j, (prev, pred) in enumerate(zip(prev_vector, predicted_vector, strict=True)):
             if pred > prev:
                 practice_name = self.recommender.practices[j]
                 improvement = pred - prev
@@ -247,7 +248,7 @@ class APIService:
             month_after_vector = history[month_after]
 
             # Same comparison, one month further out.
-            for j, (prev, after) in enumerate(zip(prev_vector, month_after_vector)):
+            for j, (prev, after) in enumerate(zip(prev_vector, month_after_vector, strict=True)):
                 if after > prev:
                     practice_name = self.recommender.practices[j]
                     improvement = after - prev
@@ -264,7 +265,7 @@ class APIService:
             month_after_2_vector = history[month_after_2]
 
             # Same comparison, two months further out.
-            for j, (prev, after2) in enumerate(zip(prev_vector, month_after_2_vector)):
+            for j, (prev, after2) in enumerate(zip(prev_vector, month_after_2_vector, strict=True)):
                 if after2 > prev:
                     practice_name = self.recommender.practices[j]
                     improvement = after2 - prev
@@ -469,7 +470,7 @@ class APIService:
                 raise ValueError("Data processor is not initialized")
             if not hasattr(self, 'recommender') or self.recommender is None:
                 raise ValueError("Recommendation engine is not initialized")
-            
+
             teams = self.processor.get_all_teams()
             months = sorted(self.processor.get_all_months())
 

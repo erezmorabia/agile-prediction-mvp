@@ -294,7 +294,7 @@ class PolicyEngine:
             if future_month > baseline_month:
                 break
             future_state = peer_history[future_month]
-            for j, (before, after) in enumerate(zip(hist_state, future_state)):
+            for j, (before, after) in enumerate(zip(hist_state, future_state, strict=True)):
                 if after > before:
                     practice = self.practices[j]
                     magnitude = after - before
@@ -321,7 +321,9 @@ class PolicyEngine:
             for team in self.processor.get_all_teams():
                 history = self.processor.get_team_history(team)
                 if previous_month in history and baseline_month in history:
-                    for j, (before, after) in enumerate(zip(history[previous_month], history[baseline_month])):
+                    for j, (before, after) in enumerate(
+                        zip(history[previous_month], history[baseline_month], strict=True)
+                    ):
                         if after > before:
                             counts[self.practices[j]] += 1
             recent = dict(counts)
@@ -333,7 +335,7 @@ class PolicyEngine:
     def _compute_components(self, team: str, baseline_month: int) -> CaseComponents:
         history = self.processor.get_team_history(team)
         current_scores = history[baseline_month]
-        current_levels = {p: float(v) for p, v in zip(self.practices, current_scores)}
+        current_levels = {p: float(v) for p, v in zip(self.practices, current_scores, strict=True)}
         candidates = tuple(p for p in self.practices if current_levels[p] < 1.0)
 
         try:
@@ -356,7 +358,7 @@ class PolicyEngine:
         recently_improved = set()
         for back in range(1, min(FIXED_RECENCY_SNAPSHOTS, baseline_idx) + 1):
             past_scores = history[team_months[baseline_idx - back]]
-            for j, (before, after) in enumerate(zip(past_scores, current_scores)):
+            for j, (before, after) in enumerate(zip(past_scores, current_scores, strict=True)):
                 if after > before:
                     recently_improved.add(self.practices[j])
 
@@ -417,7 +419,7 @@ class PolicyEngine:
             improved = set()
             for outcome_month in outcome_months:
                 future_vector = history[outcome_month]
-                for j, (before, after) in enumerate(zip(baseline_vector, future_vector)):
+                for j, (before, after) in enumerate(zip(baseline_vector, future_vector, strict=True)):
                     if after > before:
                         improved.add(self.practices[j])
 

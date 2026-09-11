@@ -126,7 +126,7 @@ class SequenceMapper:
             # Which practices actually went up between those two months
             improved = [
                 self.practices[j]
-                for j, (curr, nxt) in enumerate(zip(current_vector, next_vector))
+                for j, (curr, nxt) in enumerate(zip(current_vector, next_vector, strict=True))
                 if nxt > curr  # Improved
             ]
 
@@ -140,7 +140,7 @@ class SequenceMapper:
 
         # Full cross-product between each improvement-bearing step and the next one;
         # no edges within a step, since simultaneous improvements have no known order
-        for prev_set, next_set in zip(improved_sets, improved_sets[1:]):
+        for prev_set, next_set in zip(improved_sets, improved_sets[1:], strict=False):
             for prev_practice in prev_set:
                 for next_practice in next_set:
                     self.transition_matrix[prev_practice][next_practice] += 1

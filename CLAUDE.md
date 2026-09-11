@@ -45,7 +45,7 @@ python -m pytest tests/ -v          # direct pytest
 
 ### Code quality
 ```bash
-make check-all    # type-check + lint + check-docs
+make check-all    # advisory type-check + lint + docstring audit
 make lint         # pylint + ruff
 make format       # auto-format with ruff
 make fix          # ruff --fix + format
@@ -67,7 +67,9 @@ pip install -r requirements-dev.txt
 - Classes: `PascalCase`, functions/methods: `snake_case`, constants: `UPPER_SNAKE_CASE`, private: `_prefix`
 - Import order: stdlib → third-party → local (alphabetical within groups)
 - All public functions require type hints and Google-style docstrings
-- Full rules in `.cursor/rules/` — enforced by `make check-all`
+- Full rules are documented in `.cursor/rules/`. `make check-all` is an advisory audit because
+  legacy mypy, Pylint, and pydocstyle findings remain; automated tests and Ruff are the currently
+  enforced passing checks.
 
 ### Data leakage prevention — CRITICAL
 Never use outcome data after the recommendation baseline. Comparable snapshots and sequence learning must use months strictly before the baseline; peer look-ahead must stop at the baseline.
