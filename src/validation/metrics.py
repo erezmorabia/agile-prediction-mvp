@@ -9,16 +9,16 @@ class MetricsCalculator:
     """Calculate various metrics for evaluating recommendation quality."""
 
     @staticmethod
-    def calculate_hit_rate(recommendations: list, actual_improvements: set) -> float:
+    def calculate_precision_at_n(recommendations: list, actual_improvements: set) -> float:
         """
-        Calculate hit rate (how many recommendations were correct).
+        Calculate Precision@N (the share of recommendations that matched).
 
         Args:
             recommendations (list): List of recommended practice names
             actual_improvements (set): Set of practices that actually improved
 
         Returns:
-            float: Hit rate (0-1)
+            float: Precision@N (0-1)
         """
         if not recommendations:
             return 0.0

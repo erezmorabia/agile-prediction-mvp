@@ -59,21 +59,31 @@ On the checked-in dataset, the primary aggregate covers five prediction months w
 
 | Measure | Result |
 | --- | ---: |
-| Blend Hit Rate@2 | 58.0% |
-| Random baseline | 26.0% |
-| Improvement factor | 2.2x |
+| Mean monthly Blend Hit Rate@2 | 58.0% |
+| Pooled descriptive hit rate | 58.7% (71/121) |
+| Candidate-aware random baseline | 30.6% |
+| Improvement factor | 1.9x |
 | Time-aware popularity arm | 55.7% |
 | Blend minus popularity | +2.3 percentage points |
 
-The remaining two prediction months are reported separately as sensitivity results because their three-snapshot outcome windows are truncated. These are historical, aggregate, exploratory results—not a guarantee for an individual team or evidence of proven superiority to popularity alone.
+The random baseline is calculated exactly for each case using only that team's eligible, non-maxed
+candidate practices, then averaged within month and across months. The 58.0% headline similarly
+gives each prediction month equal weight; the 58.7% pooled figure gives each of the 121 cases equal
+weight and is descriptive rather than the basis for formal comparisons. The remaining two
+prediction months are reported separately as sensitivity results because their three-snapshot
+outcome windows are truncated (50.9% monthly macro-average; 81/151 = 53.6% pooled). These are
+historical, aggregate, exploratory results—not a guarantee for an individual team or evidence of
+proven superiority to popularity alone.
 
 ## Data and interfaces
 
-The checked-in input dataset has 87 teams, 35 practices, 10 recorded months, and 655 team-month
-rows (22,925 team-practice cells before missing-data filtering). Scores are integer maturity levels
-from 0 through 3; the processor normalizes them to 0 through 1. Team coverage varies by month, so
-the public web/API flow requires both a team snapshot in the requested valid global prediction
-month and a usable earlier baseline.
+The checked-in input dataset has 87 teams, 35 practices, 10 recorded months, and 655 raw source
+rows (22,925 source team-practice cells before missing-data filtering). One repeated team-month key
+is reported and resolved on an internal processing copy by retaining its final source occurrence,
+leaving 654 unique analytical observations; the source workbook is not modified. Scores are
+integer maturity levels from 0 through 3; the processor normalizes them to 0 through 1. Team
+coverage varies by month, so the public web/API flow requires both a team snapshot in the
+requested valid global prediction month and a usable earlier baseline.
 
 The application provides:
 

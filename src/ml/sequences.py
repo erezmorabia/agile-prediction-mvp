@@ -76,8 +76,8 @@ class SequenceMapper:
         Example:
             >>> mapper = SequenceMapper(processor, practices)
             >>> mapper.learn_sequences()
-            Learning improvement sequences...
-            Learned 45 transition patterns
+            >>> mapper.learned
+            True
         """
         self.transition_matrix = defaultdict(Counter)
         self.practice_popularity = Counter()

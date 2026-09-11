@@ -9,50 +9,50 @@ from src.validation.metrics import MetricsCalculator
 class TestMetricsCalculator:
     """Test MetricsCalculator functionality."""
     
-    def test_calculate_hit_rate_basic(self):
-        """Test calculate_hit_rate with basic inputs."""
+    def test_calculate_precision_at_n_basic(self):
+        """Test calculate_precision_at_n with basic inputs."""
         recommendations = ['Practice1', 'Practice2', 'Practice3']
         actual_improvements = {'Practice1', 'Practice3'}
         
-        hit_rate = MetricsCalculator.calculate_hit_rate(recommendations, actual_improvements)
+        precision = MetricsCalculator.calculate_precision_at_n(recommendations, actual_improvements)
         
-        assert hit_rate == pytest.approx(2/3, rel=1e-6)
+        assert precision == pytest.approx(2/3, rel=1e-6)
     
-    def test_calculate_hit_rate_perfect(self):
-        """Test calculate_hit_rate with perfect match."""
+    def test_calculate_precision_at_n_perfect(self):
+        """Test calculate_precision_at_n with perfect match."""
         recommendations = ['Practice1', 'Practice2']
         actual_improvements = {'Practice1', 'Practice2'}
         
-        hit_rate = MetricsCalculator.calculate_hit_rate(recommendations, actual_improvements)
+        precision = MetricsCalculator.calculate_precision_at_n(recommendations, actual_improvements)
         
-        assert hit_rate == 1.0
+        assert precision == 1.0
     
-    def test_calculate_hit_rate_zero(self):
-        """Test calculate_hit_rate with no matches."""
+    def test_calculate_precision_at_n_zero(self):
+        """Test calculate_precision_at_n with no matches."""
         recommendations = ['Practice1', 'Practice2']
         actual_improvements = {'Practice3', 'Practice4'}
         
-        hit_rate = MetricsCalculator.calculate_hit_rate(recommendations, actual_improvements)
+        precision = MetricsCalculator.calculate_precision_at_n(recommendations, actual_improvements)
         
-        assert hit_rate == 0.0
+        assert precision == 0.0
     
-    def test_calculate_hit_rate_empty_recommendations(self):
-        """Test calculate_hit_rate with empty recommendations."""
+    def test_calculate_precision_at_n_empty_recommendations(self):
+        """Test calculate_precision_at_n with empty recommendations."""
         recommendations = []
         actual_improvements = {'Practice1', 'Practice2'}
         
-        hit_rate = MetricsCalculator.calculate_hit_rate(recommendations, actual_improvements)
+        precision = MetricsCalculator.calculate_precision_at_n(recommendations, actual_improvements)
         
-        assert hit_rate == 0.0
+        assert precision == 0.0
     
-    def test_calculate_hit_rate_empty_actual(self):
-        """Test calculate_hit_rate with empty actual improvements."""
+    def test_calculate_precision_at_n_empty_actual(self):
+        """Test calculate_precision_at_n with empty actual improvements."""
         recommendations = ['Practice1', 'Practice2']
         actual_improvements = set()
         
-        hit_rate = MetricsCalculator.calculate_hit_rate(recommendations, actual_improvements)
+        precision = MetricsCalculator.calculate_precision_at_n(recommendations, actual_improvements)
         
-        assert hit_rate == 0.0
+        assert precision == 0.0
     
     def test_calculate_mrr_first_position(self):
         """Test calculate_mrr when first recommendation is correct."""
@@ -262,4 +262,3 @@ class TestMetricsCalculator:
         
         # Should handle negative gracefully (will be negative, but capped at 1.0)
         assert confidence <= 1.0
-

@@ -1,6 +1,4 @@
-"""
-ML module for recommendation engine using collaborative filtering and sequence learning.
-"""
+"""Adaptive recommendation engine blending similarity, sequence, and popularity evidence."""
 
 from .policy import PolicyEngine
 from .recommender import RecommendationEngine

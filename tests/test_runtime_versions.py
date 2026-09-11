@@ -32,3 +32,22 @@ def test_web_exits_before_startup_on_unsupported_python(monkeypatch, caplog):
 
     assert web_main.main() == 1
     assert "Python 3.10 or newer is required" in caplog.text
+
+
+def test_cli_missing_default_workbook_returns_failure(monkeypatch, capsys):
+    """A missing default workbook must produce a nonzero process result."""
+    monkeypatch.setattr(main.sys, "argv", ["main.py"])
+    monkeypatch.setattr(main.os.path, "exists", lambda _path: False)
+
+    assert main.main() == 1
+    assert "File not found" in capsys.readouterr().out
+
+
+def test_cli_missing_explicit_workbook_returns_failure(monkeypatch, capsys):
+    """A missing user-supplied workbook must produce a nonzero process result."""
+    missing_path = "data/raw/does-not-exist.xlsx"
+    monkeypatch.setattr(main.sys, "argv", ["main.py", missing_path])
+    monkeypatch.setattr(main.os.path, "exists", lambda _path: False)
+
+    assert main.main() == 1
+    assert missing_path in capsys.readouterr().out

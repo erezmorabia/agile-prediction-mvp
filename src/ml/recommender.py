@@ -1,7 +1,7 @@
 """
 RecommendationEngine: thin compatibility wrapper over PolicyEngine.
 
-The recommendation logic itself - the global two-month adaptive blend of similarity,
+The recommendation logic itself - the global monthly adaptive three-factor blend of similarity,
 sequence, and time-aware popularity evidence - lives in PolicyEngine (src/ml/policy.py),
 which is shared by the web API, the CLI, and the backtest so all three produce identical
 recommendations for the same team and month. This class keeps the existing constructor
@@ -14,7 +14,7 @@ from .policy import PolicyEngine
 
 
 class RecommendationEngine:
-    """Generate practice recommendations via the global two-month adaptive blend."""
+    """Generate practice recommendations via the global monthly adaptive three-factor blend."""
 
     def __init__(self, similarity_engine, sequence_mapper, practices):
         """

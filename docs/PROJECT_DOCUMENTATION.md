@@ -14,7 +14,7 @@ lang: "en"
 
 ## Abstract
 
-This project addresses the critical challenge of large-scale agile transformation in organizations by developing a system that recommends likely next agile practices from organizational history. Its core innovation is empirically learning organizational improvement behavior to identify likely next practices: it derives team-specific guidance from observed peer-team maturity histories, observed practice-transition behavior, and organization-wide practice-improvement trends within the organization. Collaborative filtering, the Practice Transition Model, and time-aware popularity are blended under one policy selected automatically for each prediction month — never tuned on the month it predicts — across 87 teams, 35 practices, and 10 months of historical data. Walk-forward backtesting on the five prediction months with a complete outcome window shows this blend aligning with later improvements in 58.0% of evaluated cases, 2.2x the random baseline (26.0%), and 2.3 percentage points ahead of an equally walk-forward-selected time-aware-popularity comparison arm (55.7%) on the same cases; across all seven prediction months (including two with a truncated outcome window) the figures are 50.9% vs. 47.5%. This result is exploratory, not a claim of proven superiority over popularity alone (see §6.3, §6.5, and `src/ml/policy.py`). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for pilot testing with selected teams, addressing the original proposal's objective of providing data-driven recommendations for agile adoption pathways. §7.3 details what would still be required to harden it for production use.
+This project addresses the critical challenge of large-scale agile transformation in organizations by developing a system that recommends likely next agile practices from organizational history. Its core innovation is empirically learning organizational improvement behavior to identify likely next practices: it derives team-specific guidance from observed peer-team maturity histories, observed practice-transition behavior, and organization-wide practice-improvement trends within the organization. Collaborative filtering, the Practice Transition Model, and time-aware popularity are blended under one policy selected automatically for each prediction month — never tuned on the month it predicts — across 87 teams, 35 practices, and 10 months of historical data. Walk-forward backtesting on an outcome-conditioned cohort — team-months in which at least one practice subsequently improved — produces a 58.0% mean monthly Conditional Hit Rate@2 over the five prediction months whose outcome window had closed globally, 1.9x the candidate-aware random baseline (30.6%), and 2.3 percentage points ahead of an equally walk-forward-selected time-aware-popularity comparison arm (55.7%); across all seven prediction months (including two with a truncated global outcome window) the blend and popularity figures are 50.9% vs. 47.5%. Of 298 otherwise eligible team-months with a complete three-snapshot team-level outcome window in the five primary months, 120 contained an improvement and 178 did not. Because the historical data do not record which practices teams attempted, the 178 no-improvement cases are evidence of the improvement opportunity, not observable outcomes of recommendations that were never deployed. The result is exploratory: it evaluates identification of practices associated with the next observed success, not whether the system causes faster adoption. The acceleration hypothesis requires prospective pilot testing (see §3.6, §6.3, and §7.3). The system is a functional prototype — a working web interface and API, not a hardened production deployment — and is ready for such supervised pilot testing. §7.3 details what would still be required to harden it for production use.
 
 ---
 
@@ -46,7 +46,7 @@ The project’s core innovation is not a new machine learning algorithm. It is t
 
 **4. Global Monthly Adaptive Blend**
 - Blends similarity, sequence, and time-aware popularity evidence with weights selected once per prediction month, not per team and not fixed in advance
-- The month-specific policy (peer count, similarity threshold, the three factor weights, and the popularity recency weight) is chosen from a fixed grid of 675 combinations by maximizing accuracy on strictly earlier prediction months whose outcomes have already closed
+- The month-specific policy (peer count, similarity threshold, the three factor weights, and the popularity recency weight) is chosen from a fixed grid of 675 combinations by maximizing Conditional Hit Rate@2 on strictly earlier outcome-bearing prediction-month cases whose outcomes have already closed
 - Normalizes each component separately before combining
 - Filters out practices already at maximum maturity
 - Returns exactly two recommendations for an eligible team-month; when fewer than two
@@ -56,40 +56,42 @@ The project’s core innovation is not a new machine learning algorithm. It is t
 - Uses historical backtesting: for each prediction month, replay the policy that would have been selected at that point in time, then validate against actual improvements
 - Rolling window approach: validates recommendations against actual improvements
 - Accounts for adoption timelines (validates across a 3-snapshot window)
-- Compares results against a random baseline and an independently-selected time-aware-popularity comparison arm, split into primary (complete outcome window) and sensitivity (all months) results
+- Compares results against a random baseline and an independently-selected time-aware-popularity comparison arm, split into primary (globally closed outcome window) and sensitivity (all months) results
 
 ### Successful Results
 
 The system demonstrates strong performance and practical value:
 
-**Recommendation Accuracy (primary: five prediction months with a complete outcome window):**
-- **58.0% alignment** between recommended practices and later team improvements
-- **2.2x improvement** over random baseline (26.0%)
+**Conditional recommendation alignment (primary: five prediction months whose outcome window closed globally):**
+- **58.0% mean monthly Conditional Hit Rate@2** between recommended practices and later team improvements, evaluated only where at least one practice subsequently improved
+- **1.9x the candidate-aware random baseline** (30.6%)
 - **2.3 percentage points ahead** of an independently, walk-forward-selected time-aware-popularity comparison arm on the same cases (55.7%)
-- **121 evaluable cases** across multiple teams and months
+- **121 outcome-bearing cases** across multiple teams and months; one has fewer than three subsequent team snapshots
+- In the stricter set of **298 cases with three subsequent team snapshots**, 120 contained at least one improvement and 178 contained none
 
-**How to interpret these results:** All accuracy and improvement figures are aggregate backtest results across the organization (macro-averaged across tested months), and the comparison against time-aware popularity is exploratory, not a proven claim of superiority — three of the five primary months still fall back to a bootstrap policy (100% popularity) because no prior month had a completed outcome window yet, so the blend and the popularity arm tie exactly in those months. They describe how the model performed on historical validation cases and do not guarantee an improvement, recommendation match, or maturity outcome for any individual team or month. See §6.3 for the full per-month breakdown and the sensitivity results across all seven prediction months.
+**How to interpret these results:** All reported hit rates and improvement figures are conditional on an observed improvement occurring in the outcome window and are macro-averaged across tested months. This evaluates whether the model identifies a practice associated with the team's next recorded success; it does not measure whether providing the recommendation would cause an otherwise unsuccessful team to improve or would shorten adoption time. The comparison against time-aware popularity is exploratory, not a proven claim of superiority — three of the five primary months still fall back to a bootstrap policy (100% popularity) because no prior month had a completed outcome window yet, so the blend and the popularity arm tie exactly in those months. See §3.6 and §6.3 for the cohort definition, full per-month breakdown, and sensitivity results.
 
 **System Capabilities:**
-- Processes the project dataset efficiently (655 recorded team-month rows × 35 practices,
-  or 22,925 team-practice cells before missing-data filtering)
+- Processes 655 raw source rows across 35 practices (22,925 source team-practice cells),
+  resolving one repeated team-month key into 654 unique analytical observations
 - Working web interface for easy use by non-technical users (see §7.3 for what's still needed for full production deployment)
-- Real-time recommendations based on current organizational data
+- On-demand recommendations based on the organizational dataset loaded at application startup
 - Global monthly policy selection replaces manual parameter tuning: each prediction month automatically re-selects its own blend from prior completed outcomes
 
 **Practical Readiness:**
 - System is ready for pilot deployment and testing with selected teams (not yet a hardened production deployment — see §7.3)
 - Excel data format matches organizational data collection methods
 - Comprehensive validation framework evaluates implementation results
-- Can serve all 70+ teams simultaneously (vs. 1-2 teams manually)
+- Applies one automated recommendation method across the submitted dataset's 87 teams;
+  operational recommendations are currently requested per team
 
 **Business Impact:**
 - Provides data-driven recommendations instead of intuition-based decisions
 - Estimated to eliminate 4-8 hours/month of manual analysis per team (practitioner estimate, not a measured result — see §7.4)
 - Standardizes approach across all teams for consistency
-- Enables faster transformation by focusing teams on practices with highest success probability
+- Tests the hypothesis that focusing teams on practices with stronger organizational evidence can reduce unsuccessful effort and accelerate transformation
 
-The system successfully addresses the original proposal's objective of providing data-driven recommendations for agile adoption pathways, demonstrating that machine learning can effectively solve the large-scale agile transformation challenge.
+The system addresses the original proposal's objective of providing data-driven recommendations for agile adoption pathways and establishes a functional basis for prospectively testing whether those recommendations improve adoption outcomes.
 
 ---
 
@@ -132,7 +134,7 @@ Specific objectives include:
   month or later), have a team snapshot in that prediction month and a baseline snapshot strictly
   before it, and retain at least two non-maxed practices
 - Accuracy depends on data quality and completeness
-- Recommendations are probabilistic, not deterministic guarantees
+- Recommendations are evidence-based rankings, not calibrated success probabilities or guarantees
 
 ### 1.4 Connection to Original Proposal
 
@@ -150,10 +152,16 @@ This implementation directly addresses the original proposal's objectives:
 
 ### 2.1 Large-Scale Agile Adoption Challenges
 
-Agile adoption in large organizations has become increasingly common, with research showing that companies implementing agile processes have approximately 4x higher probability of success. However, organizations face significant challenges:
+Agile adoption in large organizations has become increasingly common. According to The Standish
+Group's *CHAOS Report 2015* (p. 7), 39% of agile software projects were successful compared with
+11% of waterfall projects—approximately 3.5 times the success rate—under its Modern Resolution
+definition. This is a reported association between project approach and outcome, not evidence that
+using an agile approach by itself caused the difference. Organizations nevertheless face
+significant adoption challenges:
 
 - **No Standard Path**: Agile implementations vary from organization to organization due to differences in product characteristics, technology, organizational culture, team sizes, and other factors
-- **Long Duration**: Each organization's agile adoption process is unique and typically takes years to complete
+- **Long Duration**: In the author's practitioner experience, each organization's adoption process
+  is different and a large-scale transformation can take years
 - **No Authoritative Source**: There are dozens of recommended practices, but the order of implementation and intensity of rollout varies from organization to organization, with no single written source detailing the correct sequence
 - **Resource Constraints**: A small number of agile coaches cannot manually analyze all pathways across a large organization's full team and practice volume, at the frequency (monthly) the data changes
 
@@ -216,7 +224,13 @@ The Practice Transition Model is an empirical summary of observed practice-to-pr
 
 ### 2.4 Hybrid Recommendation Approaches
 
-Hybrid recommendation systems combine multiple recommendation techniques to improve accuracy and coverage. This project combines collaborative filtering (similarity-based) with sequence learning (content-based) to create a hybrid system that leverages both peer team patterns and organizational improvement sequences.
+Hybrid recommendation systems combine multiple evidence sources to improve ranking quality and
+coverage. This project combines three empirical signals: collaborative filtering from similar
+historical team states, practice-transition evidence from observed improvement sequences, and
+time-aware organization-wide improvement popularity. `PolicyEngine` blends these signals using one
+global policy selected for each prediction month from completed prior outcomes. The transition
+signal is sequential evidence; it is not a conventional content-based recommender built from item
+attributes.
 
 ---
 
@@ -240,11 +254,14 @@ The system follows the input/processing/output architecture described in the ori
 - Receives a team name as input
 - Applies collaborative filtering to find similar teams
 - Applies sequence learning to identify natural improvement patterns
-- Combines signals using hybrid scoring
+- Calculates historical and recent organization-wide practice-improvement popularity
+- Uses `PolicyEngine` to select one global policy for the prediction month and combine all three
+  signals with that policy's weights
 
 **Output:**
 - Ranked list of agile practices recommended for the team to focus on as their next step
-- Practices selected based on highest probability of success for the team's current adoption state
+- Practices selected by their combined historical-evidence score for the team's current adoption
+  state; the score is a relative ranking value, not a calibrated probability of success
 - Recommendations based on lessons learned from other teams' experiences within the same organization
 
 ### 3.2 Data Preprocessing
@@ -330,7 +347,7 @@ Where:
 - Sum is over all recently improved practices
 - transition_probability is learned from historical data
 
-### 3.5 Global Two-Month Adaptive Blend Scoring
+### 3.5 Global Monthly Adaptive Three-Factor Blend Scoring
 
 The blend combines similarity, sequence, and time-aware popularity signals under one policy
 selected per prediction month (§6.5), not per team and not fixed in advance:
@@ -375,60 +392,95 @@ The validation methodology follows the original proposal's approach:
    - Validate against actual data for that month
 
 **Validation Criteria:**
-- Compare recommendations against actual improvements in test_month, test_month+1, and test_month+2
-- Account for adoption timelines (improvements may occur 1-3 months after recommendation)
-- Calculate accuracy: correct_predictions / total_predictions
+- Compare recommendations with improvements observed across up to the first three recorded team
+  snapshots after the baseline
+- Account for adoption timelines: improvements may occur within the next three recorded team
+  snapshots; because some teams have incomplete monthly coverage, this does not necessarily equal
+  three calendar months
+- Calculate Conditional Hit Rate@2: outcome-bearing cases with at least one matched recommendation / total outcome-bearing cases
+
+**Evaluation Cohort and Research Hypothesis:**
+- A team-month is included in the reported backtest only when it has a usable baseline, at least two
+  non-maxed candidate practices, and at least one observed maturity improvement in its outcome
+  window. Cases with no observed improvement are omitted from the hit-rate calculation because the
+  historical data contain no successful practice against which to evaluate the ranking.
+- This outcome-conditioned cohort does not leak future information into recommendation scoring or
+  monthly policy selection. It does condition the interpretation of the result: the reported metric
+  asks whether the model identified a practice associated with the team's next observed success,
+  not whether the model would cause an otherwise unsuccessful team to improve.
+- The five primary months are complete at the global dataset level. The current implementation uses
+  up to three subsequent snapshots from each team's available history; consequently, one of the 121
+  outcome-bearing primary cases has fewer than three team-level outcome snapshots.
+- As a stricter descriptive cohort audit, 298 otherwise eligible cases have all three subsequent
+  team-level snapshots: 120 (40.3%) contain at least one improvement and 178 (59.7%) contain no
+  improvement. The 178 cases are not counted as model failures because the historical teams did not
+  receive the model's recommendations.
+- The organizational premise is that teams were expected to pursue practice improvements
+  continuously. It is therefore plausible that many no-improvement cases represent unsuccessful
+  attempts. However, attempted and failed practices were not recorded, so this remains an explicit
+  operational assumption rather than an observed field in the dataset.
+- The project's prospective hypothesis is that directing teams toward practices supported by
+  observed organizational pathways will increase the likelihood of improvement and reduce time to
+  improvement. Testing that causal hypothesis requires a pilot that records recommendations,
+  attempted practices, failed attempts, successful improvements, and time to improvement.
 
 **Random Baseline:**
-- Calculate probability of getting at least one correct with random selection
-- Formula: P(at least one correct) = 1 - C(n-k_avg, top_n) / C(n, top_n)
-- Where n = total practices, k_avg = average improvements per case, top_n = recommendations
+- For each outcome-bearing case `i`, calculate the exact probability that random selection from
+  that team's eligible, non-maxed candidate practices produces at least one hit
+- Formula: P_i(at least one correct) = 1 - C(n_i-k_i, top_n) / C(n_i, top_n)
+- Where `n_i` is the number of eligible candidates for case `i`, `k_i` is the number of those
+  candidates that improved, and `top_n` is the fixed number of recommendations (2)
+- Average the case probabilities within each month, then average the monthly baselines across the
+  reporting scope. This matches both the recommender's candidate pool and the headline metric's
+  monthly macro-aggregation.
 
 **Time-Aware Popularity Comparison Arm (supplementary):**
 - A random baseline alone invites the reasonable question of whether the blend beats *any*
   systematic heuristic, not just chance. As a stronger comparison, the backtest also selects a
   pure time-aware-popularity policy each month — 0% similarity, 0% sequence, 100% popularity,
   with only the popularity recency weight chosen — under exactly the same walk-forward rule as
-  the blend itself (§6.5), evaluated on exactly the same evaluable cases
+  the blend itself (§6.5), evaluated on exactly the same outcome-bearing cases
 - This is a naive, personalization-free heuristic: it ignores the target team's specific state
   and recent improvement history entirely, always returning the organization-wide practices that
   are improving most (subject only to the per-team maxed-out filter)
 - Because it is selected under the same monthly rule as the blend (rather than being a single
   fixed heuristic), it replaces the earlier static popularity baseline used in early research —
   see §6.5, `src/ml/policy.py`, and `tests/test_blend_reproduction.py`
-- Formula: accuracy = correct_predictions_popularity / total_predictions, computed per month
-  (same per-month-averaging convention as the primary Accuracy metric) and compared against the
-  blend's actual accuracy via the same gap/improvement-factor framing used for the random
+- Formula: conditional_hit_rate = correct_predictions_popularity / total_predictions, computed per month
+  (same per-month-averaging convention as the blend's Conditional Hit Rate@2) and compared against the
+  blend's conditional hit rate via the same gap/improvement-factor framing used for the random
   baseline
 
 **Improvement Metrics:**
-- **Accuracy**: Percentage of recommendations that matched actual improvements
-- **Improvement Factor**: Accuracy / Random Baseline
-- **Improvement Gap**: Accuracy - Random Baseline
+- **Conditional Hit Rate@N**: Percentage of outcome-bearing cases in which at least one recommendation matched an actual improvement
+- **Improvement Factor**: Conditional Hit Rate@N / Random Baseline
+- **Improvement Gap**: Conditional Hit Rate@N - Random Baseline
 
 **Supplementary Rank-Aware Metrics:**
 
-The headline Accuracy above (also called Hit Rate@N) is a binary hit/miss per case: it ignores
+The headline Conditional Hit Rate@N is a binary hit/miss per outcome-bearing case: it ignores
 recommendation order and gives full credit even if only 1 of N recommendations was correct.
 Three stricter, rank-aware metrics are reported alongside it, each with its own matching random
 baseline:
 
 - **Precision@N**: Correct recommendations ÷ total recommendations made (top_n). Penalizes wrong
-  picks — getting 1 of 2 right scores 0.5 here, vs. 1.0 in Accuracy. Random baseline: k_avg / n.
+  picks — getting 1 of 2 right scores 0.5 here, vs. 1.0 in Conditional Hit Rate@N. Per-case random
+  baseline: `k_i / n_i`.
 - **Recall@N**: Correct recommendations ÷ practices actually improved. Measures coverage of a
   team's real improvement activity; capped at top_n ÷ actual improvements, so a low value can
-  reflect that cap rather than a weaker model. Random baseline: top_n / n.
+  reflect that cap rather than a weaker model. Per-case random baseline: `top_n / n_i`.
 - **MRR (Mean Reciprocal Rank)**: 1.0 if the first recommendation was correct, 0.5 if the second
   was the first hit, 0 if none were correct. Rewards ranking the right answer first. Random
-  baseline is computed per case via the exact negative-hypergeometric expectation (not linear in
-  k, so it can't be derived from k_avg like the other two).
+  baseline is computed per case via the exact negative-hypergeometric expectation using `n_i` and
+  `k_i`. Each supplementary baseline is aggregated by case within month and then across months,
+  matching its reported metric.
 
 These are supplementary diagnostics computed by `BacktestEngine` (backed by
-`MetricsCalculator.calculate_hit_rate` and `calculate_mrr`) and shown in the Backtest tab, split
+`MetricsCalculator.calculate_precision_at_n` and `calculate_mrr`) and shown in the Backtest tab, split
 into primary and sensitivity results (§6.5); they do not change the headline 58.0% primary
-accuracy / 26.0% random baseline figures reported elsewhere in this document.
+conditional hit rate / 30.6% candidate-aware random baseline figures reported elsewhere in this document.
 
-**Why Hit Rate@N Remains the Headline Metric**
+**Why Conditional Hit Rate@N Remains the Headline Metric**
 
 It would be reasonable to assume a stricter, rank-aware metric was left out of the headline
 because it looked worse. The opposite is true. On the same primary backtest scope, Precision@N,
@@ -437,156 +489,85 @@ Rate@N's:
 
 | Metric | Improvement Factor vs. Random |
 |---|---|
-| Hit Rate@N (headline) | 2.23x |
-| Precision@N | 2.57x |
-| Recall@N | 2.64x |
-| MRR | 2.36x |
+| Conditional Hit Rate@N (headline) | 1.89x |
+| Precision@N | 2.04x |
+| Recall@N | 2.09x |
+| MRR | 1.91x |
 
-So Hit Rate@N is not the flattering choice among the four — if anything it is the most
+So Conditional Hit Rate@N is not the flattering choice among the four — if anything it is the most
 conservative. It is reported as the headline for a domain-specific reason, not a statistical one:
 it matches the unit of value that actually matters in agile transformation work.
 
-The constraint on agile adoption is rarely correctness — teams are rarely short on plausible
-next steps. It is momentum: whether a team acts at all, and keeps acting, cycle over cycle. A
-recommendation list is not a forced-choice exam that must be graded in full; it is a menu a team
-uses to pick *one* concrete next step. If a team adopts the one practice on the list that was
-genuinely a good next move, that hit is enough to validate the recommendation and sustain
-engagement into the next cycle — regardless of whether the other N-1 items were also correct.
-Conversely, a list that scores well on Precision@N (say, 2 of 3 items are technically correct)
-but whose *adopted* item happens to be the wrong one delivers no operational value: nothing
-changed for the team that cycle. Hit Rate@N is chosen because it operationalizes exactly this —
-at least one correct, actionable step a team can commit to — which is the mechanism by which the
-system sustains adoption momentum, not because it is easiest to report favorably.
+The domain rationale for testing Conditional Hit Rate@N is that a recommendation list is intended to give a
+team a small menu from which it can choose one concrete next step. In prospective use, one suitable
+practice on that list may be enough to support progress even when the other item is not selected.
+The retrospective metric tests whether at least one recommendation coincides with a subsequently
+observed improvement; it does not show which practice a team attempted, whether it followed the
+recommendation, or whether the recommendation sustained adoption momentum.
 
 Precision@N, Recall@N, and MRR remain valuable and are reported alongside it because they answer
 different questions a reviewer will legitimately ask: how much of the list is wasted effort
 (Precision@N), how much of a team's real improvement activity the system captures (Recall@N),
 and whether the system tends to rank the correct answer first (MRR). Those measure list quality.
-Hit Rate@N measures the operational trigger — whether the recommendation, as consumed by a team
-picking one thing to try, was worth acting on.
+Conditional Hit Rate@N measures the ranking signal within cases where an improvement was observed —
+whether the recommendation identified at least one practice associated with that observed success.
+Its operational value and any effect on adoption speed remain hypotheses until prospectively tested.
 
 ### 3.7 Worked Examples
 
-This section provides detailed examples showing how the recommendation system works with actual data, demonstrating both similarity-based and sequence-based recommendations.
+This reproducible example uses the checked-in source data and the current adaptive three-factor
+implementation. Dates use the source workbook's numeric `YYYYMMDD` snapshot-date encoding.
 
-**Note on the weight used below:** these worked examples illustrate the score-combination
-*mechanism* using a fixed illustrative similarity weight of 0.7, matching the shipped system's
-behavior before the global monthly adaptive blend (§3.5) was introduced. In the current system
-the similarity/sequence/popularity weights are not fixed at 0.7/0.3 — they are re-selected for
-every prediction month from the 675-policy grid described in §6.5. The arithmetic below (weighted
-sum → normalize → filter maxed-out practices → rank) is otherwise unchanged; only the weight
-values and the addition of a third (popularity) term differ in production.
+#### Actual Recommendation Case: Black Pearl at 20200803
 
-#### Example 1: Similarity-Based Recommendation
+The prediction date is `20200803`. The team's most recent earlier observation, and therefore the
+recommendation baseline, is `20200705`. At that baseline, **Scrum Master** is at raw level 2
+(0.667 normalized) and **Tech debt strategy** is at raw level 1 (0.333 normalized); both remain
+eligible because neither has reached the maximum raw level of 3.
 
-**Scenario:**
-Team "AADS" at month 200105 (May 2020) needs recommendations for next practices to focus on.
+The global policy selected for `20200803`, using only completed prior outcome evidence, is:
 
-**Step 1: Current Team State**
-Team AADS's practice maturity profile at month 200105:
-- CI/CD: Level 1 (0.33 normalized)
-- Test Automation: Level 0 (0.00 normalized)
-- DoD (Definition of Done): Level 3 (1.00 normalized)
-- Code Review: Level 2 (0.67 normalized)
-- TDD: Level 0 (0.00 normalized)
-- ... (other practices)
+| Policy element | Selected value |
+| --- | ---: |
+| Similar peers | 10 |
+| Minimum cosine similarity | 0.75 |
+| Similarity weight | 0.25 |
+| Sequence weight | 0.25 |
+| Popularity weight | 0.50 |
+| Recent-popularity share | 0.00 |
 
-**Step 2: Find Similar Teams**
-The system compares AADS's profile against all teams at all past months (months < 200105). Using cosine similarity, it finds the 19 most similar teams:
+The only completed prior prediction month available to policy selection is `20200503`; the
+selected policy's mean Conditional Hit Rate@2 on that prior evidence is 0.5714. Because the
+recent-popularity share is 0, this month's popularity component uses historical popularity only.
 
-| Similar Team | Similarity Score | Historical Month | State When Similar |
-|--------------|------------------|------------------|-------------------|
-| Team B | 0.92 | 200103 | CI/CD=1, Test Automation=0, DoD=3, Code Review=2 |
-| Team C | 0.89 | 200102 | CI/CD=1, Test Automation=0, DoD=3, Code Review=2 |
-| Team D | 0.87 | 200104 | CI/CD=1, Test Automation=0, DoD=3, Code Review=1 |
-| ... | ... | ... | ... |
+After applying the component-specific normalization rules in §3.5, the two highest-scoring
+eligible practices are:
 
-**Step 3: Extract Improvement Patterns**
-For each similar team, the system checks which practices showed subsequent observed improvement
-within the next two recorded snapshots (but only using snapshots ≤ 200105 to prevent data leakage):
+| Practice | Similarity | Sequence | Popularity | Calculation | Final score |
+| --- | ---: | ---: | ---: | --- | ---: |
+| Scrum Master | 0.000 | 1.000 | 1.000 | 0.25(0.000) + 0.25(1.000) + 0.50(1.000) | **0.750** |
+| Tech debt strategy | 0.513 | 0.525 | 0.933 | 0.25(0.513) + 0.25(0.525) + 0.50(0.933) | **0.726** |
 
-**Team B** (similarity: 0.92, at month 200103):
-- Improved "Test Automation" from 0 to 1 in month 200104 (improvement magnitude: 0.33)
-- Improved "CI/CD" from 1 to 2 in month 200105 (improvement magnitude: 0.33)
+The final blended values are ranked directly; the implementation does not normalize the blended
+scores a second time. The resulting top-two recommendation list is therefore **Scrum Master** and
+**Tech debt strategy**.
 
-**Team C** (similarity: 0.89, at month 200102):
-- Improved "Test Automation" from 0 to 1 in month 200103 (improvement magnitude: 0.33)
-- Improved "CI/CD" from 1 to 2 in month 200104 (improvement magnitude: 0.33)
+In the subsequent three-snapshot evaluation window (`20200803`, `20200906`, and `20201005`), Black
+Pearl showed observed improvements in **Tech debt strategy**, **Tasking**, and **Reducing WIP**.
+Because one of the two recommendations matched an observed improvement, this case is a Conditional
+Hit@2. It is retrospective evidence of recommendation alignment, not evidence that a recommendation
+caused the improvement.
 
-**Team D** (similarity: 0.87, at month 200104):
-- Improved "Test Automation" from 0 to 1 in month 200105 (improvement magnitude: 0.33)
+#### How to Interpret the Three Signals
 
-**Step 4: Calculate Similarity Scores**
-For each practice, sum weighted improvements from similar teams. Each improvement is weighted by the cosine similarity score between the target team and the similar team:
+- **Similarity** measures which eligible practices comparable historical team states improved next.
+- **Sequence** measures which practices tended to follow the target team's recently improved
+  practices in prior organizational history.
+- **Popularity** measures the historical/recent frequency of practice improvements, with the
+  historical-versus-recent mix selected by the monthly policy.
 
-**Test Automation:**
-- Team B (similarity: 0.92): 0.92 × 0.33 = 0.304
-- Team C (similarity: 0.89): 0.89 × 0.33 = 0.294
-- Team D (similarity: 0.87): 0.87 × 0.33 = 0.287
-- **Total similarity score: 0.885**
-
-**CI/CD:**
-- Team B (similarity: 0.92): 0.92 × 0.33 = 0.304
-- Team C (similarity: 0.89): 0.89 × 0.33 = 0.294
-- **Total similarity score: 0.598**
-
-*Note: The similarity scores (0.92, 0.89, 0.87) are cosine similarity values between teams, not to be confused with the similarity_weight parameter (0.7) used later for combining similarity and sequence scores.*
-
-**Step 5: Sequence Scores**
-Team AADS did not recently improve any practices (no sequence boost applies in this example).
-
-**Step 6: Normalize and Combine**
-- Normalize similarity scores:
-  - Test Automation: 0.885 / 0.885 = 1.000
-  - CI/CD: 0.598 / 0.885 = 0.676
-- Sequence scores: 0.000 (no recent improvements)
-- Combined scores (similarity_weight = 0.7):
-  - Test Automation: (1.000 × 0.7) + (0.000 × 0.3) = 0.700
-  - CI/CD: (0.676 × 0.7) + (0.000 × 0.3) = 0.473
-- Final normalization (normalize combined scores):
-  - Test Automation: 0.700 / 0.700 = 1.000
-  - CI/CD: 0.473 / 0.700 = 0.676
-
-**Step 7: Filter and Rank**
-- Filter out practices at max level (DoD is already at Level 3, excluded)
-- Rank by final normalized score:
-  1. **Test Automation**: 1.000
-  2. **CI/CD**: 0.676
-
-**Recommendation:**
-- **Top Recommendation**: Test Automation (score: 1.000)
-  - Why: "3 similar team(s) improved this practice"
-  - 3 teams (B, C, D) with 87-92% similarity improved Test Automation
-
-**Validation Result:**
-Team AADS actually improved Test Automation from Level 0 to Level 1 in month 200106, confirming the recommendation was successful.
-
-#### Example 2: Sequence-Based Recommendation
-
-The Practice Transition Model does not encode a preselected agile-practice pathway. For a team with
-recent observed improvements, it retrieves the practices that most often improved at the next
-improvement-bearing step in the organization’s history, then combines those conditional frequencies
-with similarity-based scores. The empirical transition table in §6.8 shows the current full-data
-evidence; during backtesting, the same calculation is learned only from data before the evaluation
-month. A transition frequency is organizational evidence, not a causal rule or a guarantee for an
-individual team.
-
-**Key Insights from Examples:**
-
-1. **Similarity-Based Recommendations** work best when:
-   - Many similar teams have improvement history
-   - Similar teams show clear improvement patterns
-   - Target team's profile matches historical patterns
-
-2. **Sequence-Based Recommendations** work best when:
-   - Team recently improved practices
-   - Strong sequence patterns exist in organizational data
-   - Transition evidence is considered alongside the team's current maturity profile
-
-3. **Hybrid Approach** combines both signals:
-   - When both similarity and sequence agree, confidence is high
-   - When they differ, the weighted combination provides balanced recommendations
-   - Normalization ensures both signals contribute proportionally
+The system does not encode a prescribed agile-practice pathway. Each signal is historical
+organizational evidence rather than a causal rule or guarantee for an individual team.
 
 ---
 
@@ -635,7 +616,9 @@ The system is built using a modular architecture with clear separation of concer
 
 **Validation Module** (`src/validation/`):
 - **BacktestEngine**: Runs the rolling window backtest of the blend, split into primary and sensitivity aggregates
-- **Metrics**: Calculates accuracy, improvement factors, random baselines
+- **MetricsCalculator**: Supplies the per-list hit proportion used for Precision@N and the MRR
+  calculation. `BacktestEngine` owns Conditional Hit Rate@2, random baselines, improvement factors,
+  and scope aggregation
 
 **API Module** (`src/api/`):
 - **Routes**: FastAPI route definitions for REST endpoints
@@ -654,11 +637,12 @@ The system is built using a modular architecture with clear separation of concer
    - Validated DataFrame → DataProcessor → Team Histories
 
 2. **Recommendation Generation**:
-   - Team Name + Month → SimilarityEngine → Similar Teams
-   - Similar Teams → RecommendationEngine → Similarity Scores
-   - Historical Data → SequenceMapper → Transition Matrix
-   - Recent Improvements → SequenceMapper → Sequence Scores
-   - Similarity Scores + Sequence Scores → RecommendationEngine → Final Recommendations
+   - Team Name + Prediction Month → RecommendationEngine → PolicyEngine
+   - Historical Team States → SimilarityEngine → Similarity Evidence
+   - Historical Improvement Steps → SequenceMapper → Transition Evidence
+   - Historical and Recent Organization-wide Improvements → Popularity Evidence
+   - Completed Prior Prediction Months → PolicyEngine → Selected Monthly Policy
+   - Eligible Practices + Three Evidence Signals + Selected Policy → Ranked Top-Two Recommendations
 
 3. **Validation**:
    - Historical Data → BacktestEngine → Per-Month Recommendations
@@ -684,7 +668,8 @@ global monthly policy (§6.5) is the sole configuration authority for the primar
 backtest.
 
 **Request/Response Format:**
-- JSON format for all requests and responses
+- JSON for application-data requests and responses. `/api/example-data` returns an Excel file and
+  `/api/docs` returns plain-text Markdown
 - Pydantic models ensure type safety and validation
 - Error responses include detailed error messages
 
@@ -764,12 +749,12 @@ The source code is organized across 23 Python modules:
 **Module Structure:**
 ```
 src/
-├── data/           # Data loading, processing, validation (~600 lines)
-├── ml/             # Machine learning algorithms (~1,200 lines)
-├── validation/     # Backtest validation of the blend (~700 lines)
-├── api/            # Web API layer (~600 lines)
-├── interface/      # CLI interface (~400 lines)
-└── web_main.py     # Web server entry point (~200 lines)
+├── data/           # Data loading, processing, validation
+├── ml/             # Recommendation and policy algorithms
+├── validation/     # Backtest aggregation and metric helpers
+├── api/            # Web API layer
+├── interface/      # CLI interface
+└── web_main.py     # Web server entry point
 ```
 
 **Design Patterns:**
@@ -789,8 +774,10 @@ src/
 **Optimization Strategies:**
 - Estimated progress: the interface reports progress while a backtest is running
 - Cached policy scoring: `PolicyEngine` caches case components, evaluable cohorts, and per-month hit-rate sweeps so repeated backtests and recommendation calls for the same month are near-instant after the first pass
-- Async operations: FastAPI async endpoints for concurrent request handling
-- Memory efficiency: Process data in chunks where possible
+- Request handling: FastAPI exposes async HTTP handlers; the expensive backtest is explicitly
+  offloaded to a single-worker thread pool so it does not block the event loop
+- In-memory processing: pandas loads the workbook into memory; the current dataset is small enough
+  for this approach, but chunked or database-backed ingestion would be a future scaling change
 
 ### 5.5 Real-World Data Integration
 
@@ -803,6 +790,9 @@ src/
 **Data Validation:**
 - Checks for required columns (Team Name, Month)
 - Validates data types and ranges
+- Detects repeated `(Team Name, Month)` keys and reports the affected keys
+- Retains the final source occurrence during processing while recording how many earlier duplicate
+  rows were ignored; the source workbook itself is not modified
 - Handles missing values (fills with 0, normalized to 0.0)
 - Reports data quality issues
 
@@ -817,19 +807,27 @@ The system was evaluated on real organizational data:
 - **Teams**: 87 teams participating in agile adoption
 - **Practices**: 35 different agile practices tracked
 - **Time Period**: 10 months of historical data
-- **Observations**: 655 total observations (team-month combinations)
+- **Source Rows**: 655 rows in the original workbook
+- **Analytical Observations**: 654 unique team-month combinations
 - **Data Format**: Excel matrices with teams × practices × maturity levels (0-3)
 
-The 655 observations do not represent uniform coverage for every team: 48 teams have all 10
-recorded months, while 39 teams have partial coverage ranging from 1 to 9 months. This variation
-occurs because teams joined or left the recorded population at different points during the
-ten-month period. Analyses use each team's available chronological history and do not assume that
-every team is observed in every month.
+The source workbook contains two rows for team `ASBCE` at month `20200107`. Those rows disagree on
+seven practice values. To preserve the raw evidence, the workbook remains unchanged. Validation
+reports the repeated key, and processing deterministically retains its final source occurrence
+while recording that one earlier row was ignored. This is the same effective record used by the
+previous dictionary-based implementation, but it is now explicit and testable. The duplicate
+resolution does not change the reported backtest, baseline, or selected-policy results.
+
+The 654 unique observations do not represent uniform coverage for every team: 48 teams have all
+10 recorded months, while 39 teams have partial coverage ranging from 1 to 9 months. This
+variation occurs because teams joined or left the recorded population at different points during
+the ten-month period. Analyses use each team's available chronological history and do not assume
+that every team is observed in every month.
 
 | Recorded months per team | Teams |
 | --- | ---: |
-| 1 | 2 |
-| 2 | 7 |
+| 1 | 3 |
+| 2 | 6 |
 | 3 | 8 |
 | 4 | 5 |
 | 5 | 3 |
@@ -844,16 +842,23 @@ This dataset aligns with the proposal's scale (70+ teams, 30+ practices) and rep
 ### 6.2 Evaluation Metrics
 
 **Primary Metrics:**
-- **Accuracy**: Percentage of recommendations that matched actual improvements
-- **Random Baseline**: Expected accuracy with random practice selection
-- **Improvement Factor**: Accuracy / Random Baseline (how many times better than random)
-- **Improvement Gap**: Accuracy - Random Baseline (absolute improvement)
+- **Conditional Hit Rate@2**: Percentage of outcome-bearing cases in which at least one recommendation matched an actual improvement
+- **Random Baseline**: Expected Conditional Hit Rate@2 when selecting randomly from each case's eligible, non-maxed candidates
+- **Improvement Factor**: Conditional Hit Rate@2 / Random Baseline
+- **Improvement Gap**: Conditional Hit Rate@2 - Random Baseline (absolute improvement)
 
 **Secondary Metrics:**
-- **Per-Month Accuracy**: Accuracy broken down by validation month
+- **Per-Month Conditional Hit Rate@2**: Conditional hit rate broken down by validation month
 - **Teams Tested**: Number of teams included in validation
-- **Total Recommendations Evaluated**: Number of recommendation cases evaluated
+- **Outcome-Bearing Cases Evaluated**: Number of recommendation cases with at least one observed improvement
 - **Average Improvements per Case**: Average number of practices improved per team-month
+
+**Aggregation Convention:**
+- Formal scope-level metrics are monthly macro-averages: calculate the metric independently for
+  each prediction month and then give every included month equal weight
+- Pooled descriptive hit rate is also reported as total hit cases divided by total outcome-bearing
+  cases. It is not used for model-versus-baseline comparisons because months with more observed
+  teams would receive more weight
 
 **Supplementary Rank-Aware Metrics:**
 - **Precision@N**: Correct recommendations ÷ recommendations made — penalizes wrong picks
@@ -861,29 +866,40 @@ This dataset aligns with the proposal's scale (70+ teams, 30+ practices) and rep
 - **MRR**: Mean Reciprocal Rank — rewards ranking the correct recommendation first
 
 Each has its own matching random baseline, gap, and improvement factor, reported alongside the
-primary Accuracy metrics (see §3.6 for definitions and baseline formulas).
+primary Conditional Hit Rate@2 metrics (see §3.6 for definitions and baseline formulas).
 
 ### 6.3 Backtest Results
 
 The backtest reports two scopes, never mixed together: **primary** covers the five prediction
-months whose 3-snapshot outcome window has fully closed against the dataset's end; **sensitivity**
-covers all seven prediction months, including the two with a truncated outcome window.
+months whose 3-snapshot outcome window has closed at the global dataset level; **sensitivity**
+covers all seven prediction months, including the two with a truncated global outcome window.
+Both scopes are outcome-conditioned: a reported case must contain at least one observed
+improvement. As explained in §3.6, one of the 121 primary cases has fewer than three subsequent
+team-level snapshots.
 
-**Primary Performance (5 months, 121 evaluable cases):**
-- **Accuracy (Hit Rate@N)**: 58.0%
-- **Random Baseline**: 26.0%
-- **Improvement Factor**: 2.2x better than random
+**Primary Performance (5 months, 121 outcome-bearing cases):**
+- **Mean Monthly Conditional Hit Rate@2**: 58.0%
+- **Pooled Descriptive Hit Rate**: 71/121 = 58.7%
+- **Candidate-Aware Random Baseline**: 30.6%
+- **Improvement Factor**: 1.9x the random baseline
 - **Time-Aware Popularity Comparison**: 55.7% (blend +2.3 percentage points)
 
-**Sensitivity Performance (all 7 months, 151 evaluable cases):**
-- **Accuracy (Hit Rate@N)**: 50.9%
-- **Random Baseline**: 23.5%
-- **Improvement Factor**: 2.2x better than random
+**Sensitivity Performance (all 7 months, 151 outcome-bearing cases):**
+- **Mean Monthly Conditional Hit Rate@2**: 50.9%
+- **Pooled Descriptive Hit Rate**: 81/151 = 53.6%
+- **Candidate-Aware Random Baseline**: 28.0%
+- **Improvement Factor**: 1.8x the random baseline
 - **Time-Aware Popularity Comparison**: 47.5% (blend +3.4 percentage points)
+
+The headline figures are the mean of the exact, unrounded monthly rates, giving each prediction
+month equal weight. The pooled figures give each case equal weight and are included so the total
+hit counts are transparent. For example, the five primary monthly rates average to 58.0%, whereas
+pooling their 71 hits across 121 cases gives 58.7%. All improvement factors, gaps, and comparisons
+use the monthly macro-average consistently.
 
 **Per-Month Results (primary and sensitivity):**
 
-| Month | Evaluable Cases | Blend Accuracy | Time-Aware Popularity | Scope |
+| Month | Outcome-Bearing Cases | Blend Conditional Hit Rate@2 | Time-Aware Popularity | Scope |
 |---|---:|---:|---:|---|
 | 2020-05-03 | 21 | 28.6% | 28.6% | Primary (bootstrap policy) |
 | 2020-06-08 | 22 | 63.6% | 63.6% | Primary (bootstrap policy) |
@@ -902,12 +918,12 @@ months the blend and the time-aware-popularity comparison arm are identical by c
 
 | Metric | Value | Random Baseline | Improvement Factor |
 |---|---|---|---|
-| Precision@N | 35.6% | 13.9% | 2.57x |
-| Recall@N | 17.6% | 6.7% | 2.64x |
-| MRR | 0.46 | 0.19 | 2.36x |
+| Precision@N | 35.6% | 17.4% | 2.04x |
+| Recall@N | 17.6% | 8.4% | 2.09x |
+| MRR | 0.46 | 0.24 | 1.91x |
 
 Each stricter, rank-aware metric shows an improvement factor over its own random baseline that
-meets or exceeds Hit Rate@N's 2.23x — see §3.6 for why Hit Rate@N is still reported as the
+meets or exceeds Conditional Hit Rate@N's 1.89x — see §3.6 for why Conditional Hit Rate@N is still reported as the
 headline metric despite this.
 
 **How to read the time-aware-popularity comparison:**
@@ -919,6 +935,14 @@ primary months tie exactly because both arms fall back to the same bootstrap pol
 remaining +2.3 percentage-point primary margin is an aggregate organizational backtest result (a
 macro-average across the tested months), not a guarantee of improvement for every individual team
 or month.
+
+The 121 primary cases should not be read as the complete improvement opportunity. Across the five
+primary months, 298 otherwise eligible team-months have all three subsequent team-level snapshots:
+120 contain at least one observed improvement and 178 contain none. The historical data do not
+record attempted practices, so the backtest cannot determine whether a no-improvement team tried
+one of the algorithm's likely pathways or whether receiving the recommendation would have changed
+its outcome. Those 178 cases motivate the acceleration hypothesis; they are not evidence that the
+undeployed algorithm succeeded or failed.
 
 This is an important, honest framing: most of the blend's advantage over pure random selection is
 attributable to organization-wide improvement trends that even a naive, non-personalized
@@ -936,10 +960,13 @@ current trends" heuristic. The executable policy and its reproducible reference 
 The validation methodology follows the original proposal:
 - **Training**: Uses data from months before the test month
 - **Recommendation generation**: Generates likely next practices for the test month
-- **Validation**: Compares recommendations against actual improvements in test month, test_month+1, and test_month+2
+- **Validation**: Compares recommendations with improvements observed across up to the first three
+  recorded team snapshots after the baseline
 - **Success Criteria**: At least one recommended practice actually improved in the validation window
 
-Results demonstrate that the system identifies likely next practices with meaningful accuracy, validating the approach proposed in the original project proposal.
+The results support the feasibility of identifying practices associated with a team's next
+observed success. They do not validate the causal hypothesis that access to the system makes teams
+improve more often or faster; that question is reserved for prospective pilot evaluation.
 
 ### 6.5 Global Monthly Policy Selection
 
@@ -962,11 +989,11 @@ In its place, one **global policy** is selected automatically for each predictio
 
 **Selection Rule:**
 - For a target prediction month, only earlier prediction months whose full 3-snapshot outcome window has already closed are used as evidence - never the target month's own outcome, and never any later month's
-- The policy maximizing mean Hit Rate@N across those completed months is selected; ties are broken deterministically (prefer more popularity-heavy, then lower recency, then lower similarity weight, then lower sequence weight, then lower peer count, then lower similarity threshold)
+- The policy maximizing mean Conditional Hit Rate@2 across outcome-bearing cases in those completed months is selected; ties are broken deterministically (prefer more popularity-heavy, then lower recency, then lower similarity weight, then lower sequence weight, then lower peer count, then lower similarity threshold)
 - When no prior prediction month yet has a completed outcome window, the **bootstrap policy** applies: 100% popularity, 50% recent / 50% historical recency weighting
 - The same selected policy is replayed identically by the web interface, the CLI, and the backtest for a given prediction month - there is no per-team or per-request override
 
-**Component windows are fixed, never part of the grid:** both the similarity look-ahead (how far past a peer's similar-looking snapshot to check for improvements) and the sequence recency window (how far back to check the target team's own recent improvements) are fixed at exactly 2 observed snapshots. See §6.3 for the resulting per-month policy and accuracy figures.
+**Component windows are fixed, never part of the grid:** both the similarity look-ahead (how far past a peer's similar-looking snapshot to check for improvements) and the sequence recency window (how far back to check the target team's own recent improvements) are fixed at exactly 2 observed snapshots. See §6.3 for the resulting per-month policy and conditional hit-rate figures.
 
 ### 6.6 Performance Analysis
 
@@ -976,11 +1003,14 @@ In its place, one **global policy** is selected automatically for each predictio
 
 **Scalability:**
 - Handles 87 teams × 35 practices × 10 months efficiently
-- Memory usage: ~100-200 MB for full dataset
-- Can scale to larger datasets with same architecture
+- Similarity evidence requires scanning historical team states, while monthly policy selection
+  evaluates as many as 675 policies across the eligible cases; growth is therefore not assumed to
+  be linear
+- Larger-scale use would require profiling and load testing and may require indexed/vectorized or
+  database-backed processing
 
 **Accuracy vs. Speed Trade-offs:**
-- A larger peer count in the grid improves candidate coverage but increases per-policy computation
+- A larger peer count in the grid broadens peer-evidence coverage but increases per-policy computation
 - Sequence and case-component caching reduces repeated computation across prediction months
 - The interface reports estimated progress while a backtest is running
 
@@ -997,7 +1027,8 @@ The system is ready for real-world testing as proposed in the original project t
 
 **Testing Capabilities:**
 - Can be deployed with selected teams for pilot testing
-- Supports real-time recommendations based on current data
+- Supports on-demand recommendations based on the organizational dataset loaded at application
+  startup
 - Validation framework can evaluate real-world implementation results
 - Results can be compared against historical recommendation outcomes
 
@@ -1162,7 +1193,7 @@ The implemented system successfully addresses all objectives stated in the origi
 **3. Validation:**
 - Uses historical backtesting methodology as proposed
 - Compares recommendations against actual improvements
-- Demonstrates 58.0% primary aggregate backtest accuracy with a 2.2x improvement over the random baseline (26.0%), and a 2.3 percentage-point edge over an independently walk-forward-selected time-aware-popularity comparison arm (55.7%); this is exploratory and not a per-team guarantee (§6.3)
+- Demonstrates a 58.0% mean monthly Conditional Hit Rate@2 on outcome-bearing cases, 1.9x the candidate-aware random baseline (30.6%), and a 2.3 percentage-point edge over an independently walk-forward-selected time-aware-popularity comparison arm (55.7%); this evaluates retrospective alignment with observed successes and is not evidence of causal acceleration or a per-team guarantee (§6.3)
 
 **4. Practical Deployment:**
 - System is a functional prototype, ready for pilot testing with selected teams (see §7.3 for the gap to a hardened production deployment)
@@ -1172,16 +1203,18 @@ The implemented system successfully addresses all objectives stated in the origi
 ### 7.2 Strengths
 
 **Technical Strengths:**
-- **Hybrid Approach**: Combines collaborative filtering and sequence learning for robust recommendations
+- **Three-Factor Hybrid**: Combines peer similarity, practice-transition evidence, and time-aware
+  popularity under one globally selected monthly policy
 - **Data Leakage Prevention**: Careful implementation ensures no future data leakage
-- **Scalability**: Efficient algorithms support growth beyond the current project dataset
+- **Current-Dataset Efficiency**: Processes the submitted 87-team, 10-snapshot dataset efficiently;
+  larger deployments would require separate profiling and load testing
 - **Modular Architecture**: Clean separation enables maintenance and extension
 
 **Practical Strengths:**
 - **User-Friendly Interface**: Web interface makes system accessible to non-technical users
 - **Auditable monthly selection**: The response exposes the automatically selected policy and the completed months that informed it
-- **Real-World Ready**: Excel format matches organizational data collection methods
-- **Validation Framework**: Comprehensive backtesting validates approach
+- **Organizational Data Fit**: Excel format matches the organization's current data-collection method
+- **Validation Framework**: Comprehensive backtesting evaluates retrospective recommendation alignment and supports prospective pilot testing
 
 ### 7.3 Limitations
 
@@ -1190,11 +1223,16 @@ The implemented system successfully addresses all objectives stated in the origi
   baseline before it, and at least two non-maxed candidate practices
 - Accuracy depends on data quality and completeness
 - May not account for external factors (organizational changes, market conditions)
+- The dataset records maturity snapshots, not which practices a team attempted or which attempts
+  failed. The assumption that many no-improvement windows represent unsuccessful practice attempts
+  is operationally plausible but not directly observed in the supplied data
 
 **Algorithm Limitations:**
-- Recommendations are probabilistic, not deterministic guarantees
+- Recommendations are evidence-based rankings, not calibrated success probabilities or guarantees
 - Assumes historical patterns will continue (may not account for paradigm shifts)
 - Similarity matching may not capture all relevant team characteristics
+- Retrospective Conditional Hit Rate@2 measures alignment with the next observed success; it cannot
+  establish that providing a recommendation causes improvement or reduces time to improvement
 
 **Practical Limitations:**
 - Requires regular data updates (monthly) to maintain accuracy
@@ -1226,7 +1264,10 @@ the infrastructure-hardening sense of the term.
 
 **Business Value:**
 - **Decision Support**: Provides data-driven recommendations instead of intuition
-- **Scalability**: Can serve 70+ teams simultaneously (vs. 1-2 teams manually)
+- **Organizational reach**: The automated pipeline can apply the same recommendation method across
+  the 87 teams in the submitted dataset, replacing manual analysis of each team's history. A
+  single backtest run evaluates eligible cases across dozens of teams, while operational
+  recommendations are currently requested per team
 - **Consistency**: Standardized approach across all teams
 - **Efficiency**: Estimated to eliminate 4-8 hours/month of manual analysis per team (see basis
   below)
@@ -1242,7 +1283,7 @@ informed estimate of the problem's scale from direct practitioner experience, no
 empirically validated result of this specific tool.
 
 **Organizational Impact:**
-- **Faster Transformation**: Can help teams focus on practices with higher estimated success probability
+- **Faster Transformation Hypothesis**: Focusing teams on practices with stronger organizational evidence may reduce unsuccessful effort and shorten time to improvement; this requires prospective validation
 - **Reduced Waste**: Can reduce recommendations of practices teams may not be ready for
 - **Learning**: System learns from all teams' experiences, not just individual team history
 - **Continuous Improvement**: Gets smarter each month as more data accumulates
@@ -1250,35 +1291,42 @@ empirically validated result of this specific tool.
 ### 7.5 Comparison with Baseline
 
 **Random Baseline:**
-- Random practice selection achieves ~26.0% primary accuracy (per-month average improvements per case and number of recommendations, macro-averaged across months to match accuracy's own aggregation)
-- System achieves 58.0% primary accuracy, representing a 2.2x improvement over random, and a 2.3 percentage-point edge over an independently selected time-aware-popularity comparison arm (55.7%)
+- Candidate-aware random selection achieves a 30.6% primary Conditional Hit Rate@2. It is computed exactly for each case from that team's non-maxed candidates and observed improved candidates, averaged within month, and then macro-averaged across months
+- The system achieves a 58.0% mean monthly primary Conditional Hit Rate@2, 1.9x the candidate-aware random baseline, and a 2.3 percentage-point edge over an independently selected time-aware-popularity comparison arm (55.7%)
 
-These are aggregate organizational backtest results, not guaranteed outcomes for each team or month, and the comparison against time-aware popularity remains exploratory (§6.3). Individual results can differ based on a team's history, maturity profile, and subsequent improvements.
+These are aggregate, outcome-conditioned organizational backtest results, not guaranteed outcomes
+for each team or month, and the comparison against time-aware popularity remains exploratory
+(§6.3). They evaluate identification of observed successes, not the hypothesized causal effect on
+adoption speed.
 
 **Manual Analysis Baseline:**
 - Manual analysis can serve 1-2 teams per coach per month
-- System can serve all 70+ teams simultaneously
+- A single backtest run evaluates eligible cases across dozens of teams, while the same
+  standardized model supports operational recommendation requests for each team
 - Manual analysis is subjective and inconsistent
 - System provides standardized, evidence-based recommendations
 
 ### 7.6 Dataset Scale and Efficiency
 
-The project uses a moderate-sized organizational dataset: 655 recorded team-month rows across 87
-teams and 10 global months, with 35 tracked practices. This yields 22,925 team-practice cells
-before missing-data filtering. A fully populated 87 × 35 × 10 rectangular grid would contain
-30,450 cells, but the supplied data is not rectangular because 39 teams have partial month
-coverage (§6.1). The system processes the recorded dataset efficiently and can support future
-growth.
+The project uses a moderate-sized organizational dataset: 655 raw source rows across 87 teams and
+10 global months, with 35 tracked practices. This yields 22,925 source team-practice cells before
+missing-data filtering. One repeated team-month key is resolved during processing, leaving 654
+unique analytical observations (22,890 team-practice cells before practice filtering). A fully
+populated 87 × 35 × 10 rectangular grid would contain 30,450 cells, but the supplied data is not
+rectangular because 39 teams have partial month coverage (§6.1). The system processes the recorded
+dataset efficiently and can support future growth.
 
 **Efficiency:**
-- Processes 655 recorded team-month rows × 35 raw practices in seconds
+- Processes 655 raw rows into 654 unique team-month observations across 35 raw practices in seconds
 - Memory-efficient data structures
 - Caching reduces redundant computations
 
 **Scalability:**
-- Architecture supports larger datasets (more teams, practices, months)
-- Algorithms scale linearly with data size
-- Can handle real-time updates as new data arrives
+- The application supports a monthly batch refresh by restarting it with an updated workbook
+- Growth in teams, practices, or snapshots increases similarity-search and policy-evaluation work;
+  linear scaling has not been established
+- Larger deployments may require indexed/vectorized similarity search, persistent storage, and
+  measured load and memory testing
 
 **Practical Application:**
 - Handles data volumes that are impractical for manual analysis
@@ -1299,13 +1347,13 @@ Its core contribution is deriving team-specific recommendations from observed or
 - Implemented collaborative filtering algorithm for finding similar teams
 - Implemented the Practice Transition Model for identifying improvement patterns
 - Implemented time-aware popularity and a global monthly policy selection mechanism, replacing a static all-history parameter optimizer that walk-forward analysis showed to be unreliable (§6.5)
-- Achieved 58.0% primary aggregate recommendation alignment, 2.2x better than the random baseline (26.0%), and 2.3 percentage points ahead of an independently selected time-aware-popularity comparison arm (55.7%); individual team outcomes may differ, and this remains an exploratory result (§6.3)
+- Achieved a 58.0% mean monthly primary Conditional Hit Rate@2 on outcome-bearing cases, 1.9x the candidate-aware random baseline (30.6%), and 2.3 percentage points ahead of an independently selected time-aware-popularity comparison arm (55.7%); this evaluates identification of observed successes, not causal acceleration (§3.6 and §6.3)
 
 **Practical Achievements:**
 - Built a functional web interface, ready for pilot use (see §7.3 for the gap to production hardening)
 - Validated approach using historical backtesting methodology
-- Demonstrated scalability for large organizations (87 teams, 35 practices, 10 months)
-- Created comprehensive documentation for deployment and maintenance
+- Processed the project dataset of 87 teams, 35 raw practices, and 10 global snapshots efficiently
+- Created documentation covering methodology, installation, operation, and supervised pilot use
 
 **Alignment with Proposal:**
 - All original proposal objectives have been met
@@ -1313,26 +1361,27 @@ Its core contribution is deriving team-specific recommendations from observed or
 - Excel data format matches organizational requirements
 - Validation methodology follows proposed approach
 
-### 8.2 Real-World Deployment Readiness
+### 8.2 Pilot Deployment Readiness
 
-The system is ready for deployment and real-world testing:
+The system is ready for a small, supervised pilot with selected teams. It is not ready for
+unrestricted or production deployment; the production-hardening gaps are listed in §7.3.
 
-**Deployment Requirements Met:**
+**Pilot Capabilities Demonstrated:**
 - Web interface functional and user-friendly
 - API endpoints available for integration
 - Data format matches organizational Excel files
-- Error handling and validation robust
-- Documentation complete
+- Prototype-level input validation and error handling implemented
+- Methodology, installation, operation, and pilot-use documentation available
 
 **Testing Readiness:**
 - System can be deployed with selected teams for pilot testing
-- Real-time recommendations based on current data
-- Validation framework can evaluate implementation results
+- On-demand recommendations based on the data loaded at application startup
+- A prospective pilot can record recommendations, attempted practices, failed attempts, successful improvements, and time to improvement
 - Results can be compared against recommendation outcomes
 
-**Next Steps for Deployment:**
+**Next Steps for the Pilot:**
 1. Select pilot teams for initial testing
-2. Deploy system with current organizational data
+2. Deploy the prototype in a controlled environment with current organizational data
 3. Monitor recommendations and actual improvements
 4. Evaluate success/failure alignment
 5. Iterate based on feedback and results
@@ -1439,7 +1488,8 @@ The system is ready for deployment and real-world testing:
 
 **Validation Module** (`src/validation/`):
 - **backtest.py**: Rolling window backtest of the blend and primary/sensitivity aggregation
-- **metrics.py**: Accuracy calculations, random baseline computation
+- **metrics.py**: Per-list hit-proportion and MRR helpers; backtest aggregation and random baselines
+  remain in `backtest.py`
 
 **API Module** (`src/api/`):
 - **routes.py**: FastAPI route definitions
@@ -1493,12 +1543,20 @@ P(B | A improved) = count(A → B) / Σ_X count(A → X)
 
 **Recommendation Scoring Formula:**
 
-See §3.5 for the full hybrid scoring algorithm (normalize similarity and sequence scores
-separately, combine with `similarity_weight`, normalize again, filter maxed-out practices, rank).
-The final filter-and-rank step, as implemented:
+See §3.5 for the full adaptive three-factor scoring algorithm. The implementation identifies
+non-maxed candidate practices, normalizes the similarity, sequence, historical-popularity, and
+recent-popularity evidence according to their defined scopes, blends historical and recent
+popularity using `recency_weight`, and then combines the three components:
+```
+score(p) = similarity_weight × similarity(p)
+         + sequence_weight × sequence(p)
+         + popularity_weight × popularity(p)
+```
+
+The three factor weights sum to 1.0. The combined score is not normalized again. Candidate
+practices are ranked directly, with practice name providing a deterministic tie-break:
 ```python
-recommendations.sort(key=lambda x: (-x[1], x[0]))  # deterministic tie-break by practice name
-recommendations = recommendations[:top_n]
+top = tuple(sorted(scores, key=lambda practice: (-scores[practice], practice))[:2])
 ```
 
 **Normalization Procedures:**
@@ -1508,15 +1566,18 @@ recommendations = recommendations[:top_n]
    normalized = raw_score / 3.0
    ```
 
-2. **Score Normalization** (for combining):
+2. **Evidence-component normalization** (before weighting):
    ```
    normalized = score / max_score
    ```
 
-3. **Final Score Normalization** (for display):
-   ```
-   normalized = score / max_final_score
-   ```
+   Similarity and sequence are normalized over their available evidence. Historical popularity is
+   restricted to the team's eligible candidates before normalization; recent popularity is
+   normalized organization-wide and then read for eligible candidates. See §3.5 for the exact
+   scope of each component.
+
+3. **Final blended score**: the weighted sum above is used directly for ranking and display; there
+   is no second normalization step.
 
 ### 9.3 API Documentation
 
@@ -1533,9 +1594,9 @@ recommendations = recommendations[:top_n]
   {
     "name": "AADS",
     "num_months": 10,
-    "months": [200101, 200102, ...],
-    "first_month": 200101,
-    "last_month": 200110
+    "months": [20200107, 20200304, 20200402, 20200503, 20200608, 20200705, 20200803, 20200906, 20201005, 20201104],
+    "first_month": 20200107,
+    "last_month": 20201104
   }
 ]
 ```
@@ -1552,8 +1613,8 @@ recommendations = recommendations[:top_n]
 - **Example Response**:
 ```json
 {
-  "team": "AADS",
-  "months": [200105, 200106, 200107, ...]
+  "team": "Black Pearl",
+  "months": [20200503, 20200608, 20200705, 20200803, 20200906, 20201005, 20201104]
 }
 ```
 
@@ -1567,22 +1628,22 @@ recommendations = recommendations[:top_n]
 - **Request Body**:
 ```json
 {
-  "team": "AADS",
-  "month": 200105,
+  "team": "Black Pearl",
+  "month": 20200803,
   "top_n": 2
 }
 ```
 - **Response**: Recommendation response with practices, explanations, and the selected policy's audit record
-- **Example Response**:
+- **Abridged Example Response**:
 ```json
 {
-  "team": "AADS",
-  "month": 200105,
+  "team": "Black Pearl",
+  "month": 20200803,
   "recommendations": [
-    {"practice": "CI/CD", "score": 0.85, "current_level": 0.33, "why": "..."},
-    {"practice": "Test automation", "score": 0.72, "current_level": 0.00, "why": "..."}
+    {"practice": "Scrum Master", "score": 0.75, "current_level": 0.6667, "validated": false},
+    {"practice": "Tech debt strategy", "score": 0.7261, "current_level": 0.3333, "validated": true}
   ],
-  "validation": {...},
+  "validation": {"accuracy": 0.5},
   "selected_policy": {
     "is_bootstrap": false,
     "peer_count": 10,
@@ -1599,63 +1660,80 @@ recommendations = recommendations[:top_n]
 }
 ```
 
-**4. POST /api/backtest**
+**5. POST /api/backtest**
 - **Description**: Run the backtest of the global monthly adaptive blend. No request body - there are no user-adjustable model parameters
 - **Response**: `{ per_month_results, primary, sensitivity }` - `primary` covers prediction months with a complete 3-snapshot outcome window, `sensitivity` covers every prediction month; the two are never mixed
 
-**5. GET /api/stats**
+**6. GET /api/stats**
 - **Description**: Get system statistics
 - **Response**: System statistics including teams, practices, months, practice definitions
 
-**6. GET /api/sequences**
+**7. GET /api/sequences**
 - **Description**: Get learned improvement sequences
-- **Response**: List of sequence transitions with probabilities
+- **Response**: Object containing:
+  - `sequences`: Flat list of transitions with `from_practice`, `to_practice`, `count`, and
+    `probability`
+  - `grouped_sequences`: The same transition evidence grouped by source practice
+  - `stats`: Sequence summary statistics
+  - `total_sequences` and `total_practices_with_transitions`: Response totals
 
-**7. GET /api/example-data**
+**8. GET /api/example-data**
 - **Description**: Serve the raw Excel dataset file for in-browser preview (Statistics tab modal)
-- **Response**: Excel file download (`combined_dataset.xlsx`)
+- **Response**: Excel attachment downloaded as `example_data.xlsx`; its content is the data file
+  loaded by the running service
 
-**8. GET /api/docs**
+**9. GET /api/docs**
 - **Description**: Serve project documentation content as markdown
-- **Response**: Raw markdown string rendered by the About modal in the frontend
+- **Response**: Plain-text Markdown rendered by the About modal in the frontend
 
 There is no static all-history parameter optimizer and no `/api/optimize*` family of endpoints -
 see §6.5.
 
 **Error Handling:**
-- **400 Bad Request**: Invalid request parameters
-- **404 Not Found**: Resource not found (e.g., team not found)
-- **500 Internal Server Error**: Server error with error message
+- **400 Bad Request**: A recognized request cannot be fulfilled, such as an unknown team or an
+  unavailable/invalid prediction month submitted to `/api/recommendations`, or a backtest service
+  error
+- **404 Not Found**: A resource lookup fails, such as an unknown team in
+  `/api/teams/{team_name}/months`, a missing documentation/data file, or an undefined route
+- **422 Unprocessable Entity**: The request body fails Pydantic schema validation, for example
+  `top_n` is not 2, a required field is missing, or an unknown field is supplied
+- **500 Internal Server Error**: An unexpected server-side exception occurs
 
 ### 9.4 Data Format Specification
 
 **Excel File Structure:**
 
 Required columns:
-- **Team Name** (column 1): Text identifier for team (e.g., "AADS", "Strikers")
-- **Month** (column 2): Time period in YYMMDD format (e.g., 200101 = January 2020)
-- **Practice Columns** (columns 3+): Practice names with maturity scores (0-3)
+- **Team Name**: Text identifier for a team (for example, "AADS" or "Black Pearl")
+- **Month**: Snapshot date stored as a numeric `YYYYMMDD` value (for example, `20200107`)
+- **Practice Columns**: All other columns; practice names with maturity scores from 0 to 3
+
+Columns are identified by name rather than fixed position. In the checked-in workbook, `Team Name`
+is the first column and `Month` is the final column.
 
 Example:
 ```
-Team Name | Month   | CI/CD | TDD | DoD | Code Review | ...
-AADS      | 200101  | 1     | 0   | 3   | 2          | ...
-AADS      | 200102  | 2     | 0   | 3   | 2          | ...
-Strikers  | 200101  | 3     | 2   | 3   | 3          | ...
+Team Name   | Product Owner | Scrum Master | DoD | ... | TDD | CI/CD | ... | Month
+AADS        | 1             | 1            | 1   | ... | 0   | 1     | ... | 20200107
+AADS        | 1             | 1            | 1   | ... | 0   | 1     | ... | 20200304
+Black Pearl | 1             | 1            | 1   | ... | 0   | 1     | ... | 20200107
 ```
 
 **Data Validation Rules:**
 - Team Name: Non-empty string
-- Month: Numeric integer in the project's YYMMDD-style encoding (for example, `200101`)
+- Month: Numeric integer in `YYYYMMDD` snapshot-date encoding (for example, `20200107`)
+- Observation key: `(Team Name, Month)` should be unique. Repeated keys are reported; processing
+  retains the final source occurrence and records the number and keys of ignored earlier rows
 - Practice scores: Integer in range [0, 3]
 - Missing values: Filled with 0, normalized to 0.0
 
 **Processing Pipeline:**
 1. Load Excel file → DataFrame
-2. Validate columns and data types
-3. Fill missing values with 0
-4. Normalize scores: score / 3.0
-5. Build team histories: {team: {month: [practice_scores]}}
+2. Validate columns, data types, and repeated team-month keys
+3. On an internal copy, retain the final occurrence of each team-month key and record ignored rows
+4. Fill missing values with 0
+5. Normalize scores: score / 3.0
+6. Build team histories: {team: {month: [practice_scores]}}
 
 ### 9.5 Configuration Parameters
 
@@ -1679,7 +1757,11 @@ values in effect are always visible even though they cannot be configured direct
 
 ### 10.1 System Overview
 
-The Agile Practice Recommendation System is a web-based application that identifies likely next agile practices for teams based on organizational history. The system analyzes patterns from similar teams and improvement sequences to provide personalized recommendations.
+The Agile Practice Recommendation System is a web-based application that identifies likely next
+agile practices for teams from organizational history. It combines evidence from similar team
+states, observed practice-improvement sequences, and historical/recent organization-wide practice
+popularity. One global policy is selected automatically for each prediction month from completed
+prior outcomes and determines how those three signals are weighted for every team in that month.
 
 **Key Features:**
 - **Personalized Recommendations**: Get exactly two practice recommendations for an eligible
@@ -1720,7 +1802,7 @@ See **docs/QUICK_START.md** for a 3-step quick start guide.
 **2. Backtest Validation Tab:**
 - No configuration form - there is nothing to adjust, since the monthly policy is the sole configuration authority
 - Click "Run Backtest Validation" to validate on historical data
-- View primary and sensitivity accuracy metrics, improvement factors, and the time-aware-popularity comparison, plus a per-month table showing each month's selected policy
+- View primary and sensitivity Conditional Hit Rate@2 metrics, improvement factors, and the time-aware-popularity comparison, plus a per-month table showing each month's selected policy
 
 **3. Sequences Tab:**
 - View learned improvement sequences
@@ -1756,8 +1838,8 @@ python src/main.py data/raw/combined_dataset.xlsx
 **Example Usage:**
 ```
 Select option: 1
-Enter team name: AADS
-Enter month (YYMMDD-style integer): 200105
+Enter team name: Black Pearl
+Enter month (YYYYMMDD integer): 20200803
 [Shows recommendations]
 ```
 
@@ -1775,12 +1857,12 @@ Enter month (YYMMDD-style integer): 200105
 - **Validation Window**: Subsequent observed-improvement window (the target month and the following two recorded months)
 
 **Backtest Results:**
-- **Overall Accuracy**: Percentage of validated recommendations
-- **Random Baseline**: Expected accuracy with random selection
+- **Overall Accuracy**: The interface/API label for mean monthly Conditional Hit Rate@2 on outcome-bearing cases
+- **Random Baseline**: Expected Conditional Hit Rate@2 from random selection among each case's eligible, non-maxed practices
 - **Improvement Factor**: How many times better than random
-- **Per-Month Results**: Accuracy broken down by month
+- **Per-Month Results**: Conditional Hit Rate@2 broken down by month
 - **Supplementary Rank-Aware Metrics**: Precision@N, Recall@N, and MRR, each shown against its
-  own random baseline — stricter, order-sensitive alternatives to the headline Accuracy (see
+  own random baseline — stricter, order-sensitive alternatives to the headline Conditional Hit Rate@2 (see
   §3.6 and §6.2)
 
 **Sequence Patterns:**
@@ -1805,9 +1887,13 @@ Enter month (YYMMDD-style integer): 200105
 - Reinstall dependencies: `pip install -r requirements.txt`
 
 **No recommendations shown:**
-- Check that team has data for selected month
-- Choose a valid global prediction month and a team with a baseline snapshot before it
-- Check that team has improvements in validation window
+- Read the returned error or explanatory message
+- Confirm that the team has a snapshot on a valid global prediction month and a baseline snapshot
+  before it
+- Confirm that at least two practices remain below maximum maturity at the baseline; otherwise the
+  system intentionally returns an empty recommendation list
+- Subsequent improvements determine whether retrospective validation is available; they do not
+  determine whether recommendations can be generated
 
 **Backtest takes too long:**
 - Normal: the first backtest run after startup sweeps all 675 candidate policies per prediction month and can take up to a couple of minutes; subsequent runs reuse `PolicyEngine`'s caches and are much faster
@@ -1820,7 +1906,7 @@ Enter month (YYMMDD-style integer): 200105
 
 ### 11.1 Project Structure
 
-**Directory Tree:**
+**Abridged Directory Tree (key runtime and submission files):**
 ```
 agile-prediction-mvp/
 ├── src/
@@ -1839,7 +1925,7 @@ agile-prediction-mvp/
 │   ├── validation/
 │   │   ├── __init__.py
 │   │   ├── backtest.py         # Backtest validation of the blend
-│   │   └── metrics.py          # Accuracy metrics
+│   │   └── metrics.py          # Precision@N and MRR helpers
 │   ├── api/
 │   │   ├── __init__.py
 │   │   ├── main.py             # FastAPI application
@@ -1926,7 +2012,15 @@ agile-prediction-mvp/
 
 **backtest.py** - BacktestEngine class:
 - `run_backtest()`: Runs the rolling window backtest of the blend - no config parameter, no user-adjustable model parameters
-- Validates recommendations against actual improvements, split into primary and sensitivity aggregates
+- Validates recommendations against actual improvements; calculates Conditional Hit Rate@2,
+  candidate-aware random baselines, improvement factors, and primary/sensitivity aggregates
+
+**metrics.py** - MetricsCalculator class:
+- `calculate_precision_at_n()`: Returns the proportion of a recommendation list that matched
+  observed improvements
+- `calculate_mrr()`: Returns the reciprocal rank of the first matching recommendation
+- Also provides coverage, diversity, and confidence helpers that are not part of the reported
+  backtest aggregates
 
 **API Module** (`src/api/`):
 
@@ -1994,27 +2088,35 @@ algorithm design each implements.
 
 **Getting Recommendations:**
 ```python
-from src.ml import RecommendationEngine, SimilarityEngine, SequenceMapper
-from src.data import DataProcessor, DataLoader
+from src.data import DataLoader, DataProcessor, DataValidator
+from src.ml import RecommendationEngine, SequenceMapper, SimilarityEngine
+from src.ml.policy import policy_summary
 
-# Load and process data
+# Load, validate, and apply the same missing-practice filter as the CLI and web app
 loader = DataLoader("data/raw/combined_dataset.xlsx")
 df = loader.load()
-processor = DataProcessor(df, loader.practices)
+validator = DataValidator(df, loader.practices)
+if not validator.validate():
+    print("Validation warnings were reported; review them before interpreting results.")
+practices, excluded = validator.filter_high_missing_practices(
+    loader.practices, threshold=90.0
+)
+
+processor = DataProcessor(df, practices)
 processor.process()
 
 # Initialize ML components
 similarity_engine = SimilarityEngine(processor)
-sequence_mapper = SequenceMapper(processor, loader.practices)
-recommender = RecommendationEngine(similarity_engine, sequence_mapper, loader.practices)
+sequence_mapper = SequenceMapper(processor, practices)
+recommender = RecommendationEngine(similarity_engine, sequence_mapper, practices)
 
 # Get recommendations - exactly two when eligible, using that month's selected policy
-result = recommender.recommend("AADS", 200105)
+result = recommender.recommend("Black Pearl", 20200803)
 if result.insufficient_practices:
     print("Fewer than two practices remain to improve")
 for practice in result.practices:
     print(f"{practice}: {result.scores[practice]:.2f} (current: {result.current_levels[practice]:.2f})")
-print(f"Selected policy: {result.selected_policy}")
+print(f"Selected policy: {policy_summary(result.selected_policy)}")
 ```
 
 **Running Backtest:**
@@ -2025,9 +2127,9 @@ from src.validation import BacktestEngine
 backtest_engine = BacktestEngine(recommender, processor)
 results = backtest_engine.run_backtest()
 
-print(f"Primary accuracy: {results['primary']['overall_accuracy']:.1%}")
+print(f"Primary conditional hit rate: {results['primary']['overall_accuracy']:.1%}")
 print(f"Primary improvement factor: {results['primary']['improvement_factor']:.1f}x")
-print(f"Sensitivity accuracy: {results['sensitivity']['overall_accuracy']:.1%}")
+print(f"Sensitivity conditional hit rate: {results['sensitivity']['overall_accuracy']:.1%}")
 ```
 
 **Using API:**

@@ -68,10 +68,10 @@ class DataLoader:
         Example:
             >>> loader = DataLoader('data/raw/20250204_Cleaned_Dataset.xlsx')
             >>> df = loader.load()
-            Loaded data: 87 teams, 30 practices, 10 months
-               Total rows: 870
+            >>> len(loader.teams), len(loader.practices), len(loader.months), len(df)
+            (87, 35, 10, 655)
             >>> print(loader.practices[:3])
-            ['Practice A', 'Practice B', 'Practice C']
+            ['Product Owner', 'Scrum Master', 'Multi function team']
         """
         if not os.path.exists(self.file_path):
             raise FileNotFoundError(f"File not found: {self.file_path}")

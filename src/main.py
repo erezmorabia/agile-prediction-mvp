@@ -2,10 +2,10 @@
 Main entry point for the Agile Practice Prediction MVP.
 
 Usage:
-    python main.py <path_to_excel_file>
+    python src/main.py <path_to_excel_file>
 
 Example:
-    python main.py data/raw/20250204_Cleaned_Dataset.xlsx
+    python src/main.py data/raw/20250204_Cleaned_Dataset.xlsx
 """
 
 import os
@@ -49,22 +49,14 @@ def main() -> int:
             practice columns with values 0-3 (maturity levels).
 
     Returns:
-        int: Exit code. 0 for success, 1 for error.
-
-    Raises:
-        FileNotFoundError: If the specified Excel file does not exist.
-        ValueError: If data validation fails or file format is invalid.
-        Exception: Any other error during initialization or execution.
+        int: Exit code. 0 after normal completion; 1 for unsupported Python,
+            a missing workbook, or a handled startup/runtime error.
 
     Example:
-        >>> # Run with default file
-        >>> python main.py
-        Starting Agile Practice Prediction System MVP...
+        Run from the repository root with the default or a custom workbook:
 
-        >>> # Run with custom file
-        >>> python main.py data/raw/my_data.xlsx
-        Starting Agile Practice Prediction System MVP...
-           Loading: data/raw/my_data.xlsx
+            python src/main.py
+            python src/main.py data/raw/my_data.xlsx
 
     Note:
         - Practices with >90% missing values are automatically excluded
@@ -85,11 +77,11 @@ def main() -> int:
         if not os.path.exists(excel_file):
             print("Error: Usage: python main.py <path_to_excel_file>")
             print(f"   File not found: {excel_file}")
-            return
+            return 1
 
     if not os.path.exists(excel_file):
         print(f"Error: File not found: {excel_file}")
-        return
+        return 1
 
     print("Starting Agile Practice Prediction System MVP...")
     print(f"   Loading: {excel_file}")

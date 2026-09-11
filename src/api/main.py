@@ -48,7 +48,10 @@ def create_app(service: APIService) -> FastAPI:
     """
     app = FastAPI(
         title="Agile Practice Prediction API",
-        description="API for agile practice recommendations using collaborative filtering and sequence learning",
+        description=(
+            "API for agile practice recommendations using similarity, practice-transition, "
+            "and time-aware-popularity evidence under a monthly selected policy"
+        ),
         version="1.0.0",
     )
 

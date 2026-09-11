@@ -1,5 +1,5 @@
 """
-Reproduction test for the global two-month adaptive recommendation blend.
+Reproduction test for the global monthly adaptive three-factor recommendation blend.
 
 Pins src/ml/policy.py's PolicyEngine against results/fully-nested-global-fixed-two-month-
 20260818.json, produced by the research protocol this module ports.
@@ -9,6 +9,7 @@ Requires data/raw/combined_dataset.xlsx; skipped if absent.
 
 import os
 import sys
+from types import SimpleNamespace
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -17,6 +18,7 @@ import pytest
 from src.data import DataLoader, DataProcessor, DataValidator
 from src.ml import SequenceMapper, SimilarityEngine
 from src.ml.policy import BOOTSTRAP_POLICY, PolicyEngine
+from src.validation import BacktestEngine
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "raw", "combined_dataset.xlsx")
 
@@ -35,6 +37,8 @@ EXPECTED_PER_MONTH = [
 
 EXPECTED_PRIMARY_BLEND = 0.5797859547859547
 EXPECTED_PRIMARY_POPULARITY = 0.5566378066378066
+EXPECTED_PRIMARY_RANDOM = 0.30605548520204895
+EXPECTED_SENSITIVITY_RANDOM = 0.27967236735630185
 
 EXPECTED_COMPLETED_PRIOR_MONTHS = {
     20200503: (),
@@ -62,6 +66,15 @@ def engine():
 
 def test_prediction_months(engine):
     assert engine.prediction_months() == [m for m, *_ in EXPECTED_PER_MONTH]
+
+
+def test_source_duplicate_audit(engine):
+    """The source workbook stays intact while analysis uses unique team-month keys."""
+    processor = engine.processor
+    assert processor.raw_observation_count == 655
+    assert processor.unique_observation_count == 654
+    assert processor.duplicate_rows_ignored == 1
+    assert processor.duplicate_team_month_keys == [("ASBCE", 20200107)]
 
 
 @pytest.mark.parametrize("month,cases,blend_hr,popularity_hr,full_window,is_bootstrap", EXPECTED_PER_MONTH)
@@ -111,6 +124,22 @@ def test_primary_aggregate(engine):
 
     assert sum(blend_rates) / len(blend_rates) == pytest.approx(EXPECTED_PRIMARY_BLEND, abs=1e-6)
     assert sum(popularity_rates) / len(popularity_rates) == pytest.approx(EXPECTED_PRIMARY_POPULARITY, abs=1e-6)
+
+
+def test_candidate_aware_random_baseline_reproduction(engine):
+    """Random draws use each case's non-maxed candidates and monthly macro-averaging."""
+    recommender = SimpleNamespace(policy_engine=engine, practices=engine.practices)
+    results = BacktestEngine(recommender, engine.processor).run_backtest()
+
+    assert results["primary"]["random_baseline"] == pytest.approx(EXPECTED_PRIMARY_RANDOM, abs=1e-9)
+    assert results["primary"]["improvement_factor"] == pytest.approx(1.8943818451846954, abs=1e-9)
+    assert results["sensitivity"]["random_baseline"] == pytest.approx(EXPECTED_SENSITIVITY_RANDOM, abs=1e-9)
+    assert results["sensitivity"]["improvement_factor"] == pytest.approx(1.8213130060012994, abs=1e-9)
+
+    # Supplementary baselines must use the same candidate-aware, per-case calculation.
+    assert results["primary"]["random_precision"] == pytest.approx(0.17425410534596875, abs=1e-9)
+    assert results["primary"]["random_recall"] == pytest.approx(0.08406014591730197, abs=1e-9)
+    assert results["primary"]["random_mrr"] == pytest.approx(0.24015479527400885, abs=1e-9)
 
 
 def test_normalization_scope_per_component(engine):

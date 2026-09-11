@@ -2,10 +2,13 @@
 DataProcessor: Clean, normalize, and prepare data for ML algorithms.
 """
 
+import logging
 from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 class DataProcessor:
@@ -29,6 +32,13 @@ class DataProcessor:
         # scores as: team name -> {month: score vector}.
         self.team_histories = defaultdict(dict)
 
+        # Source-to-analysis observation audit. Duplicate team-month rows are
+        # resolved explicitly during process(), without changing the source file.
+        self.raw_observation_count = len(df)
+        self.unique_observation_count = 0
+        self.duplicate_rows_ignored = 0
+        self.duplicate_team_month_keys = []
+
         # On/off flag. False until process() finishes running once;
         # other methods rely on this before trusting team_histories.
         self.processed = False
@@ -38,7 +48,7 @@ class DataProcessor:
         Process and prepare data for machine learning algorithms.
 
         Performs the following transformations:
-        1. Fill missing values: Replaces NaN values with 0 (not implemented)
+        1. Fill missing values: Replaces NaN practice values with 0 in an internal working copy
         2. Normalize scores: Converts practice maturity scores from 0-3 scale to 0-1 scale
            (divides by 3.0) for ML algorithm compatibility
         3. Build team histories: Creates a dictionary mapping each team to their practice
@@ -56,7 +66,9 @@ class DataProcessor:
             ValueError: If practices list is empty or DataFrame is invalid.
 
         Note:
-            - Original DataFrame is modified in-place (NaN values filled)
+            - Processing uses an internal copy; the caller's DataFrame is not modified
+            - Duplicate (Team Name, Month) rows retain their final source occurrence
+              and earlier occurrences are recorded in the observation audit attributes
             - Practice scores are normalized: original_value / 3.0
             - Team histories are sorted by month chronologically
             - NaN values in vectors are replaced with 0.0 using np.nan_to_num()
@@ -64,21 +76,47 @@ class DataProcessor:
         Example:
             >>> processor = DataProcessor(df, practices)
             >>> processor.process()
-            Processing data...
-            Processed 87 team histories
+            >>> processor.processed
+            True
             >>> history = processor.get_team_history("Team Alpha")
             >>> history[20200107]  # Practice vector for January 2020
             array([0.33, 0.67, 0.0, ...])
         """
+        # Resolve duplicate observation keys before sorting so "final occurrence"
+        # refers deterministically to source-row order. This formalizes the prior
+        # dictionary-overwrite behavior while making the excluded rows auditable.
+        working_df = self.df.copy()
+        required_keys = ["Team Name", "Month"]
+        if all(column in working_df.columns for column in required_keys):
+            duplicate_key_mask = working_df.duplicated(subset=required_keys, keep=False)
+            ignored_mask = working_df.duplicated(subset=required_keys, keep="last")
+            duplicate_keys = working_df.loc[duplicate_key_mask, required_keys].drop_duplicates()
 
+            self.duplicate_rows_ignored = int(ignored_mask.sum())
+            self.duplicate_team_month_keys = [
+                (str(row["Team Name"]), int(row["Month"])) for _, row in duplicate_keys.iterrows()
+            ]
 
-        # Fill NaN values with 0 (not implemented)
+            if self.duplicate_rows_ignored:
+                formatted_keys = ", ".join(f"{team}/{month}" for team, month in self.duplicate_team_month_keys)
+                logger.warning(
+                    "Ignoring %d earlier duplicate team-month row(s); retaining the final source occurrence for: %s",
+                    self.duplicate_rows_ignored,
+                    formatted_keys,
+                )
+                working_df = working_df.loc[~ignored_mask].copy()
+
+        self.unique_observation_count = len(working_df)
+
+        # Fill NaN values with 0
         for practice in self.practices:
-            self.df[practice] = self.df[practice].fillna(0)
+            working_df[practice] = working_df[practice].fillna(0)
 
         # Normalize scores to 0-1 range (from 0-3 scale)
         for practice in self.practices:
-            self.df[practice] = self.df[practice] / 3.0
+            working_df[practice] = working_df[practice] / 3.0
+
+        self.df = working_df
 
         # Build team histories indexed by month
         for team in self.df["Team Name"].unique():

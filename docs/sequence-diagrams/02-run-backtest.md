@@ -1,6 +1,7 @@
 # Flow 2 — Run Backtest Validation
 
-Replays the global two-month blend month by month and compares it with a separately selected,
+Replays the global monthly adaptive three-factor blend prediction month by prediction month and
+compares it with a separately selected,
 time-aware-popularity-only arm. There are no user-supplied optimization settings.
 
 **Trigger**: the user clicks **Run Backtest Validation** on the Backtest tab.

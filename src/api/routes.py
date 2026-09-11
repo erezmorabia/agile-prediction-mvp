@@ -110,7 +110,7 @@ def create_routes(service: APIService) -> APIRouter:
 
     @router.post("/api/backtest", response_model=BacktestResponse)
     async def run_backtest():
-        """Run the global two-month adaptive blend backtest. No model parameters are
+        """Run the global monthly adaptive three-factor blend backtest. No model parameters are
         accepted - the monthly policy is the only configuration authority."""
         try:
             loop = asyncio.get_event_loop()

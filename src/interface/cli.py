@@ -42,7 +42,7 @@ class CLIInterface:
 
         The interface runs in a loop until the user selects option 5 (Exit).
         All operations use the initialized recommender and processor instances.
-        Both recommendations and the backtest use the same global two-month adaptive
+        Both recommendations and the backtest use the same global monthly adaptive three-factor
         blend policy engine as the web interface - there are no user-adjustable model
         parameters and no static "optimal configuration" search.
 
@@ -86,7 +86,7 @@ class CLIInterface:
         """
         print("\n" + "=" * 60)
         print("AGILE PRACTICE PREDICTION SYSTEM")
-        print("MVP - Collaborative Filtering + Sequence Learning")
+        print("MVP - Adaptive Similarity + Sequence + Popularity Blend")
         print("=" * 60)
 
     def _show_menu(self) -> None:
@@ -626,7 +626,7 @@ class CLIInterface:
 
     def _validate_recommendations(self) -> None:
         """
-        Run the global two-month adaptive blend backtest and display results.
+        Run the global monthly adaptive three-factor blend backtest and display results.
 
         Executes a full backtest validation using the BacktestEngine, which tests
         the recommendation system on historical data using a time-series cross-validation

@@ -115,30 +115,20 @@ def main() -> int:
             practice columns with values 0-3 (maturity levels).
 
     Returns:
-        int: Exit code. 0 for success, 1 for error.
-
-    Raises:
-        FileNotFoundError: If the specified Excel file does not exist.
-        ValueError: If data validation fails or file format is invalid.
-        KeyboardInterrupt: If server is stopped by user (Ctrl+C).
-        Exception: Any other error during initialization or execution.
+        int: Exit code. 0 after normal shutdown, including Ctrl+C; 1 for
+            unsupported Python, a missing workbook, or a handled startup error.
 
     Example:
-        >>> # Run with default file
-        >>> python src/web_main.py
-        Starting Agile Practice Prediction System (Web Interface)...
+        Run from the repository root with the default or a custom workbook:
 
-        >>> # Run with custom file
-        >>> python src/web_main.py data/raw/my_data.xlsx
-        Starting Agile Practice Prediction System (Web Interface)...
-           Loading: data/raw/my_data.xlsx
+            python src/web_main.py
+            python src/web_main.py data/raw/my_data.xlsx
 
     Note:
         - Practices with >90% missing values are automatically excluded
         - Data is normalized from 0-3 scale to 0-1 for ML algorithms
         - Web server runs on http://localhost:8000
         - API documentation available at http://localhost:8000/docs
-        - Server uses extended timeouts (5 min keep-alive) for long-running optimization requests
     """
 
     if not _python_version_supported():
@@ -238,7 +228,7 @@ def main() -> int:
 
         logger.info("Ready — open http://localhost:8000 in your browser")
 
-        # Start server with increased timeout settings for long-running requests
+        # Start the server and open the browser shortly afterward
         # Use threading to allow browser opening after server starts
         import threading
 
@@ -261,7 +251,6 @@ def main() -> int:
             host="0.0.0.0",
             port=8000,
             log_config=_UVICORN_LOG_CONFIG,
-            timeout_keep_alive=300,
             timeout_graceful_shutdown=30,
         )
 

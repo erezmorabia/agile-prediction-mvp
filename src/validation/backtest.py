@@ -1,5 +1,5 @@
 """
-BacktestEngine: Validate the global two-month adaptive blend against historical data.
+BacktestEngine: Validate the global monthly adaptive three-factor blend against historical data.
 """
 
 import logging
@@ -43,7 +43,7 @@ _EMPTY_SCOPE = {
 
 
 class BacktestEngine:
-    """Run backtest validation of the global two-month adaptive blend using historical data."""
+    """Run backtest validation of the global monthly adaptive three-factor blend."""
 
     def __init__(self, recommender_engine, processor):
         """
@@ -64,13 +64,15 @@ class BacktestEngine:
         """
         Exact expected MRR for a random top-N pick out of n practices, k of which are correct.
 
-        Uses the negative hypergeometric rank distribution: the probability that the first
-        correct practice lands at rank r (drawing without replacement) is
+        Here n is the number of practices eligible for recommendation in the case and
+        k is the number of those candidates that improved. Uses the negative
+        hypergeometric rank distribution: the probability that the first correct
+        practice lands at rank r (drawing without replacement) is
         P(R=r) = C(n-r, k-1) / C(n, k). Unlike precision/recall's random baselines, this is
         not linear in k, so it must be computed per case (using that case's actual k) rather
         than from an average k_avg.
         """
-        if n <= 0 or k <= 0 or top_n <= 0:
+        if n <= 0 or k <= 0 or k > n or top_n <= 0:
             return 0.0
         try:
             denom = comb(n, k, exact=True)
@@ -85,23 +87,26 @@ class BacktestEngine:
             return 0.0
 
     @staticmethod
-    def _baseline_from_k_avg(k_avg: float, total_practices: int, top_n: int) -> float:
+    def _expected_random_hit_rate(n: int, k: int, top_n: int) -> float:
         """
-        Probability of getting at least one correct recommendation by random selection.
+        Exact probability of at least one hit when drawing from one case's candidates.
 
-        P(at least one correct) = 1 - C(n-k_avg, top_n) / C(n, top_n), where n = total
-        practices, k_avg = average number of practices improved per case, top_n =
-        number of recommendations drawn.
+        P(at least one correct) = 1 - C(n-k, draws) / C(n, draws), where n is the
+        number of practices eligible for recommendation in this case, k is the number
+        of those candidates that improved, and draws=min(top_n, n).
         """
-        if total_practices <= 0:
+        if n <= 0 or k <= 0 or k > n or top_n <= 0:
             return 0.0
-        if k_avg > 0 and top_n > 0 and total_practices >= k_avg and total_practices >= top_n:
-            try:
-                p_none = comb(total_practices - k_avg, top_n, exact=False) / comb(total_practices, top_n, exact=False)
-                return 1.0 - p_none
-            except (ValueError, ZeroDivisionError):
-                return min(1.0, (k_avg / total_practices) * top_n)
-        return min(1.0, (k_avg / total_practices) * top_n)
+        draws = min(top_n, n)
+        try:
+            denominator = comb(n, draws, exact=True)
+            if denominator == 0:
+                return 0.0
+            misses = n - k
+            p_none = comb(misses, draws, exact=True) / denominator if misses >= draws else 0.0
+            return 1.0 - p_none
+        except (ValueError, ZeroDivisionError):
+            return 0.0
 
     def _empty_month_row(self, month: int) -> dict:
         engine = self.policy_engine
@@ -124,12 +129,12 @@ class BacktestEngine:
             "popularity_arm_recency_weight": popularity_arm.policy.recency_weight,
         }
 
-    def _score_month(self, month: int, total_practices: int):
+    def _score_month(self, month: int):
         """Score one prediction month over its fixed evaluable cohort."""
         engine = self.policy_engine
         cases = engine.evaluable_cases(month)
         if not cases:
-            return self._empty_month_row(month), [], []
+            return self._empty_month_row(month), []
 
         selected = engine.select_policy(month)
         popularity_arm = engine.select_popularity_arm(month)
@@ -140,13 +145,12 @@ class BacktestEngine:
         precision_sum = 0.0
         recall_sum = 0.0
         mrr_sum = 0.0
-        improvements_per_case = []
-        expected_mrr_per_case = []
+        case_stats = []
 
         for case in cases:
             actual = case.actual_improved
-            improvements_per_case.append(len(actual))
-            expected_mrr_per_case.append(self._expected_random_mrr(total_practices, len(actual), TOP_N))
+            candidates = set(case.components.candidates)
+            case_stats.append((len(candidates), len(actual & candidates)))
 
             ordered = list(engine.top_practices(case.components, selected.policy))
             recommended = set(ordered)
@@ -158,7 +162,7 @@ class BacktestEngine:
             if popularity_recommended & actual:
                 popularity_correct += 1
 
-            precision_sum += MetricsCalculator.calculate_hit_rate(ordered, actual)
+            precision_sum += MetricsCalculator.calculate_precision_at_n(ordered, actual)
             recall_sum += len(recommended & actual) / len(actual)
             mrr_sum += MetricsCalculator.calculate_mrr(ordered, actual)
 
@@ -180,14 +184,12 @@ class BacktestEngine:
             "selected_policy": policy_summary(selected),
             "popularity_arm_recency_weight": popularity_arm.policy.recency_weight,
         }
-        return row, improvements_per_case, expected_mrr_per_case
+        return row, case_stats
 
     def _aggregate_scope(
         self,
         rows: list,
-        raw_improvements_by_month: dict,
-        raw_expected_mrr_by_month: dict,
-        total_practices: int,
+        raw_case_stats_by_month: dict,
     ) -> dict:
         """Macro-average (per-month mean) aggregate over one scope (primary or
         sensitivity). Random baselines mirror the same aggregation as their headline
@@ -207,8 +209,7 @@ class BacktestEngine:
         overall_recall = sum(r["recall"] for r in rows) / len(rows)
         overall_mrr = sum(r["mrr"] for r in rows) / len(rows)
 
-        pooled_improvements = [k for m in months for k in raw_improvements_by_month.get(m, [])]
-        pooled_expected_mrr = [v for m in months for v in raw_expected_mrr_by_month.get(m, [])]
+        pooled_case_stats = [case for m in months for case in raw_case_stats_by_month.get(m, [])]
 
         random_baseline = 0.0
         random_precision = 0.0
@@ -220,22 +221,37 @@ class BacktestEngine:
         mrr_gap = 0.0
         k_avg = 0.0
 
-        if pooled_improvements and total_practices > 0:
-            k_avg = sum(pooled_improvements) / len(pooled_improvements)
+        if pooled_case_stats:
+            k_avg = sum(k for _n, k in pooled_case_stats) / len(pooled_case_stats)
 
-            per_month_baselines = []
+            per_month_hit_rates = []
+            per_month_precisions = []
+            per_month_recalls = []
+            per_month_mrrs = []
             for m in months:
-                case_list = raw_improvements_by_month.get(m, [])
-                month_k_avg = sum(case_list) / len(case_list) if case_list else 0.0
-                per_month_baselines.append(self._baseline_from_k_avg(month_k_avg, total_practices, TOP_N))
-            random_baseline = sum(per_month_baselines) / len(per_month_baselines) if per_month_baselines else 0.0
+                case_stats = raw_case_stats_by_month.get(m, [])
+                if not case_stats:
+                    per_month_hit_rates.append(0.0)
+                    per_month_precisions.append(0.0)
+                    per_month_recalls.append(0.0)
+                    per_month_mrrs.append(0.0)
+                    continue
+
+                per_month_hit_rates.append(
+                    sum(self._expected_random_hit_rate(n, k, TOP_N) for n, k in case_stats) / len(case_stats)
+                )
+                per_month_precisions.append(sum(k / n for n, k in case_stats) / len(case_stats))
+                per_month_recalls.append(sum(min(TOP_N, n) / n for n, _k in case_stats) / len(case_stats))
+                per_month_mrrs.append(
+                    sum(self._expected_random_mrr(n, k, TOP_N) for n, k in case_stats) / len(case_stats)
+                )
+
+            random_baseline = sum(per_month_hit_rates) / len(per_month_hit_rates)
+            random_precision = sum(per_month_precisions) / len(per_month_precisions)
+            random_recall = sum(per_month_recalls) / len(per_month_recalls)
+            random_mrr = sum(per_month_mrrs) / len(per_month_mrrs)
 
             improvement_gap = overall_accuracy - random_baseline
-            random_precision = min(1.0, k_avg / total_practices)
-            random_recall = min(1.0, TOP_N / total_practices)
-            if pooled_expected_mrr:
-                random_mrr = sum(pooled_expected_mrr) / len(pooled_expected_mrr)
-
             precision_gap = overall_precision - random_precision
             recall_gap = overall_recall - random_recall
             mrr_gap = overall_mrr - random_mrr
@@ -273,15 +289,14 @@ class BacktestEngine:
 
     def run_backtest(self) -> dict:
         """
-        Run the global two-month adaptive blend backtest over every prediction month.
+        Run the global monthly adaptive three-factor blend over every prediction month.
 
         For each prediction month: build the fixed evaluable cohort first (independent
         of any policy), select that month's global blend policy and its independently
         selected time-aware-popularity comparison arm from strictly earlier prediction
         months whose full outcome window has already closed, then score every case
         under both. No model parameters are accepted - the monthly policy is the only
-        configuration authority (see docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_
-        REQUIREMENTS-refined.md).
+        configuration authority (see docs/PROJECT_DOCUMENTATION.md).
 
         Returns:
             dict: {
@@ -301,17 +316,14 @@ class BacktestEngine:
         if not months:
             return {"error": "Need at least 4 time periods (start from month 4)"}
 
-        total_practices = len(self.recommender.practices)
         per_month_results = []
-        raw_improvements_by_month: dict = {}
-        raw_expected_mrr_by_month: dict = {}
+        raw_case_stats_by_month: dict = {}
 
         for month in months:
-            row, improvements, expected_mrr = self._score_month(month, total_practices)
+            row, case_stats = self._score_month(month)
 
             per_month_results.append(row)
-            raw_improvements_by_month[month] = improvements
-            raw_expected_mrr_by_month[month] = expected_mrr
+            raw_case_stats_by_month[month] = case_stats
 
         primary_rows = [r for r in per_month_results if r["full_outcome_window"]]
         sensitivity_rows = per_month_results
@@ -319,10 +331,6 @@ class BacktestEngine:
         return {
             "status": "success",
             "per_month_results": per_month_results,
-            "primary": self._aggregate_scope(
-                primary_rows, raw_improvements_by_month, raw_expected_mrr_by_month, total_practices
-            ),
-            "sensitivity": self._aggregate_scope(
-                sensitivity_rows, raw_improvements_by_month, raw_expected_mrr_by_month, total_practices
-            ),
+            "primary": self._aggregate_scope(primary_rows, raw_case_stats_by_month),
+            "sensitivity": self._aggregate_scope(sensitivity_rows, raw_case_stats_by_month),
         }

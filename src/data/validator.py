@@ -45,6 +45,9 @@ class DataValidator:
         # Check data types
         self._check_data_types()
 
+        # Check uniqueness of the observation key
+        self._check_duplicate_team_months()
+
         # Check value ranges
         self._check_value_ranges()
 
@@ -89,6 +92,37 @@ class DataValidator:
 
             if min_val < 0 or max_val > 3:
                 self.issues.append(f"Practice '{practice}' has values outside 0-3 range: [{min_val}, {max_val}]")
+
+    def _duplicate_team_month_summary(self) -> dict:
+        """Summarize duplicate observation keys without modifying the source data."""
+        required = ["Team Name", "Month"]
+        if not all(column in self.df.columns for column in required):
+            return {"duplicate_rows": 0, "duplicated_keys": 0, "keys": []}
+
+        duplicate_key_mask = self.df.duplicated(subset=required, keep=False)
+        ignored_mask = self.df.duplicated(subset=required, keep="last")
+        keys = self.df.loc[duplicate_key_mask, required].drop_duplicates()
+        key_values = [(str(row["Team Name"]), str(row["Month"])) for _, row in keys.iterrows()]
+        return {
+            "duplicate_rows": int(ignored_mask.sum()),
+            "duplicated_keys": len(key_values),
+            "keys": key_values,
+        }
+
+    def _check_duplicate_team_months(self) -> None:
+        """Report repeated (Team Name, Month) keys as a data-quality issue."""
+        summary = self._duplicate_team_month_summary()
+        if not summary["duplicate_rows"]:
+            return
+
+        formatted_keys = ", ".join(f"{team}/{month}" for team, month in summary["keys"][:10])
+        if summary["duplicated_keys"] > 10:
+            formatted_keys += f", and {summary['duplicated_keys'] - 10} more"
+        self.issues.append(
+            f"Found {summary['duplicate_rows']} duplicate team-month row(s) across "
+            f"{summary['duplicated_keys']} key(s): {formatted_keys}. "
+            "Processing retains the final source occurrence."
+        )
 
     def _check_missing_values(self) -> None:
         """Check for missing values."""
@@ -161,7 +195,10 @@ class DataValidator:
         """Check that teams have multiple time periods."""
         if "Team Name" not in self.df.columns:
             return
-        team_counts = self.df["Team Name"].value_counts()
+        if "Month" not in self.df.columns:
+            return
+        unique_observations = self.df[["Team Name", "Month"]].drop_duplicates()
+        team_counts = unique_observations["Team Name"].value_counts()
         min_periods = team_counts.min()
 
         if min_periods < 2:
@@ -177,8 +214,17 @@ class DataValidator:
         Returns:
             dict: Detailed quality metrics
         """
+        duplicate_summary = self._duplicate_team_month_summary()
+        unique_team_months = (
+            len(self.df[["Team Name", "Month"]].drop_duplicates())
+            if {"Team Name", "Month"}.issubset(self.df.columns)
+            else 0
+        )
         return {
             "total_rows": len(self.df),
+            "unique_team_months": unique_team_months,
+            "duplicate_rows": duplicate_summary["duplicate_rows"],
+            "duplicated_team_month_keys": duplicate_summary["duplicated_keys"],
             "total_columns": len(self.df.columns),
             "unique_teams": self.df["Team Name"].nunique(),
             "unique_months": self.df["Month"].nunique(),

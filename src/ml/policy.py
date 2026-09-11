@@ -1,12 +1,12 @@
 """
-PolicyEngine: Global two-month adaptive recommendation blend.
+PolicyEngine: Global monthly adaptive three-factor recommendation blend.
 
 Selects one global policy per prediction month from prior completed outcomes, combining
 similarity, sequence, and time-aware popularity evidence. This is the single source of
 truth for the blend so the web API, the CLI, and the backtest cannot drift apart - all
 three call into the same PolicyEngine instance built from the same recommender.
 
-See docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md for the spec this
+See docs/PROJECT_DOCUMENTATION.md for the specification this
 implements, and scripts/research_three_factor_blend.py / research_popularity_strategies.py /
 research_full_per_team_optimization.py for the research prototypes this ports.
 """
@@ -217,7 +217,7 @@ class RecommendationResult:
 
 
 class PolicyEngine:
-    """Selects and applies the global two-month adaptive recommendation blend."""
+    """Select and apply the global monthly adaptive three-factor recommendation blend."""
 
     def __init__(self, similarity_engine, sequence_mapper, practices: list):
         self.similarity_engine = similarity_engine
@@ -510,7 +510,7 @@ class PolicyEngine:
         """Final blended score per candidate practice for one case under one policy.
 
         Normalization scope (research-exact, see plan doc decision 1 and
-        docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md):
+        docs/PROJECT_DOCUMENTATION.md):
         - similarity, sequence: normalize over all evidence, then mask to candidates.
         - historical popularity: mask to candidates, then normalize.
         - recent popularity: normalize org-wide, then mask to candidates.

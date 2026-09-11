@@ -441,7 +441,7 @@ class APIService:
 
     def run_backtest(self) -> dict[str, Any]:
         """
-        Run the global two-month adaptive blend backtest. No model parameters are
+        Run the global monthly adaptive three-factor blend backtest. No model parameters are
         accepted - the monthly policy is the only configuration authority.
 
         Returns:

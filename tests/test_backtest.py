@@ -2,8 +2,6 @@
 Tests for BacktestEngine class.
 """
 
-import warnings
-
 import pytest
 from unittest.mock import Mock, patch
 from src.validation.backtest import BacktestEngine
@@ -130,25 +128,50 @@ class TestBacktestEngine:
                 else:
                     assert scope['random_baseline'] is None
 
-    def test_baseline_from_k_avg_matches_hand_computed_value(self):
+    def test_expected_random_hit_rate_matches_hand_computed_value(self):
         """Independently verify the hypergeometric formula against a hand-checkable example.
 
-        n=3 practices, 1 improves on average, 1 recommendation drawn at random:
-        P(hit) = 1 - C(2,1)/C(3,1) = 1 - 2/3 = 1/3.
+        n=5 eligible practices, k=2 improvements, top_n=2 recommendations:
+        P(hit) = 1 - C(3,2)/C(5,2) = 1 - 3/10 = 0.7.
         """
-        baseline = BacktestEngine._baseline_from_k_avg(k_avg=1, total_practices=3, top_n=1)
-        assert baseline == pytest.approx(1 / 3)
+        baseline = BacktestEngine._expected_random_hit_rate(n=5, k=2, top_n=2)
+        assert baseline == pytest.approx(0.7)
 
-    def test_baseline_from_k_avg_handles_fractional_k_avg(self):
-        """comb(..., exact=False) must accept a non-integer k_avg without raising or warning.
+    def test_expected_random_hit_rate_uses_case_candidate_count(self):
+        """Maxed-out practices excluded by the model must also be excluded by random."""
+        candidate_aware = BacktestEngine._expected_random_hit_rate(n=5, k=1, top_n=2)
+        all_practices = BacktestEngine._expected_random_hit_rate(n=30, k=1, top_n=2)
 
-        n=5, k_avg=1.5 (average improvements per case), top_n=1:
-        P(hit) = 1 - C(3.5,1)/C(5,1) = 1 - 3.5/5 = 0.3.
-        """
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", DeprecationWarning)
-            baseline = BacktestEngine._baseline_from_k_avg(k_avg=1.5, total_practices=5, top_n=1)
-        assert baseline == pytest.approx(0.3)
+        assert candidate_aware == pytest.approx(0.4)
+        assert all_practices == pytest.approx(1 / 15)
+
+    def test_random_metrics_use_case_candidates_and_monthly_macro_average(
+        self, sample_recommender, sample_processor
+    ):
+        """Every random comparator mirrors the model's per-month aggregation."""
+        backtest = BacktestEngine(sample_recommender, sample_processor)
+        rows = [
+            {
+                "month": 1, "predictions": 2, "correct": 0, "accuracy": 0.0,
+                "time_aware_popularity_accuracy": 0.0, "precision": 0.0,
+                "recall": 0.0, "mrr": 0.0,
+            },
+            {
+                "month": 2, "predictions": 1, "correct": 0, "accuracy": 0.0,
+                "time_aware_popularity_accuracy": 0.0, "precision": 0.0,
+                "recall": 0.0, "mrr": 0.0,
+            },
+        ]
+        # Month 1 has two cases; month 2 has one. A pooled case average would weight
+        # month 1 twice, so these assertions also pin the required monthly macro-average.
+        case_stats = {1: [(5, 1), (3, 1)], 2: [(10, 1)]}
+
+        result = backtest._aggregate_scope(rows, case_stats)
+
+        assert result["random_baseline"] == pytest.approx(((0.4 + 2 / 3) / 2 + 0.2) / 2)
+        assert result["random_precision"] == pytest.approx(((1 / 5 + 1 / 3) / 2 + 1 / 10) / 2)
+        assert result["random_recall"] == pytest.approx(((2 / 5 + 2 / 3) / 2 + 2 / 10) / 2)
+        assert result["random_mrr"] == pytest.approx(((0.3 + 0.5) / 2 + 0.15) / 2)
 
     def test_run_backtest_improvement_gap(self, sample_recommender, sample_processor):
         """Test run_backtest calculates improvement gap per scope."""
@@ -184,7 +207,7 @@ class TestBacktestEngine:
         refactor collapsed into one aggregation function used for every scope."""
         backtest = BacktestEngine(sample_recommender, sample_processor)
 
-        result = backtest._aggregate_scope([], {}, {}, total_practices=3)
+        result = backtest._aggregate_scope([], {})
 
         assert result['months_included'] == 0
         assert result['overall_accuracy'] is None

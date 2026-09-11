@@ -11,7 +11,7 @@ class RecommendationRequest(BaseModel):
     """Request model for getting recommendations.
 
     top_n is pinned to 2 (the primary flow always returns exactly two recommendations -
-    see docs/GLOBAL_TWO_MONTH_BLEND_IMPLEMENTATION_REQUIREMENTS-refined.md). A request for
+    see docs/PROJECT_DOCUMENTATION.md). A request for
     any other value fails Pydantic validation rather than silently receiving a different
     policy. There is no k_similar - peer count is chosen by the month's selected policy,
     not by the caller.
@@ -22,7 +22,7 @@ class RecommendationRequest(BaseModel):
     team: str = Field(..., description="Team name")
     month: int = Field(
         ...,
-        description="Prediction month in the project's YYMMDD-style integer encoding; must be the fourth recorded global month or later",
+        description="Prediction month in the project's YYYYMMDD integer encoding; must be the fourth recorded global month or later",
     )
     top_n: Literal[2] = Field(2, description="Number of recommendations - must be exactly 2")
 

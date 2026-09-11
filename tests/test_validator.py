@@ -72,6 +72,27 @@ class TestDataValidator:
         result = validator.validate()
         assert result is False
         assert any('missing values' in issue.lower() for issue in validator.issues)
+
+    def test_validate_duplicate_team_months(self):
+        """Duplicate observation keys are reported without changing the source rows."""
+        df = pd.DataFrame(
+            {
+                "Team Name": ["Team1", "Team1", "Team1"],
+                "Month": [202001, 202001, 202002],
+                "Practice1": [0, 3, 2],
+            }
+        )
+        validator = DataValidator(df, ["Practice1"])
+
+        result = validator.validate()
+        report = validator.get_data_quality_report()
+
+        assert result is False
+        assert any("duplicate team-month" in issue.lower() for issue in validator.issues)
+        assert report["total_rows"] == 3
+        assert report["unique_team_months"] == 2
+        assert report["duplicate_rows"] == 1
+        assert report["duplicated_team_month_keys"] == 1
     
     def test_validate_temporal_coverage(self, sample_practices):
         """Test validation fails when teams have insufficient temporal coverage."""
@@ -141,6 +162,9 @@ class TestDataValidator:
         report = validator.get_data_quality_report()
         
         assert 'total_rows' in report
+        assert 'unique_team_months' in report
+        assert 'duplicate_rows' in report
+        assert 'duplicated_team_month_keys' in report
         assert 'total_columns' in report
         assert 'unique_teams' in report
         assert 'unique_months' in report
@@ -149,6 +173,9 @@ class TestDataValidator:
         assert 'is_valid' in report
         
         assert report['total_rows'] == len(sample_dataframe)
+        assert report['unique_team_months'] == len(sample_dataframe)
+        assert report['duplicate_rows'] == 0
+        assert report['duplicated_team_month_keys'] == 0
         assert report['unique_teams'] == sample_dataframe['Team Name'].nunique()
         assert report['is_valid'] == (len(validator.issues) == 0)
     
@@ -280,4 +307,3 @@ class TestDataValidator:
         
         # Issues should be reset (not accumulated)
         assert len(validator.issues) == initial_issues
-
