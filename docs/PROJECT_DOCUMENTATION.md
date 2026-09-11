@@ -8,6 +8,7 @@ degree: "M.Sc."
 author: "Erez Morabia"
 supervisor: "Prof. Shmuel Tyszberowicz"
 date: "September 2026"
+repository: "https://github.com/erezmorabia/agile-prediction-mvp"
 logo: "web/static/ou-logo.png"
 lang: "en"
 ---

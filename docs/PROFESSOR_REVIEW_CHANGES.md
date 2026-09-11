@@ -1004,3 +1004,21 @@ Ruff passes across `src/`, and `git diff --check` is clean.
 No static-analysis finding was suppressed in tool configuration, and no recommendation behavior,
 calculations, tests, API contract, reported results, or source-workbook data was changed for this
 item.
+
+## 49. Add the project repository to the submitted report
+
+**Submission-readiness review finding:** The canonical project documentation did not identify the
+GitHub repository containing the submitted implementation.
+
+**Issue classification:** Documentation and submission-packaging issue, not a code implementation
+or algorithm defect.
+
+**Decision applied:** Added the configured GitHub repository URL to the report metadata and made it
+a visible, clickable `Project repository` entry on the PDF title page.
+
+**Verification:** Rebuilt the PDF from the canonical Markdown source, confirmed that the repository
+URL is present in the extracted PDF text and link annotations, and visually inspected the rendered
+title page for alignment and legibility.
+
+No recommendation behavior, calculations, tests, API contract, reported results, or source-workbook
+data was changed for this item.

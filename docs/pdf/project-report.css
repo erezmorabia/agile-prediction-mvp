@@ -114,6 +114,11 @@ body {
   font-size: 12pt;
 }
 
+.title-details a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
 .report-date {
   color: var(--muted);
   font-family: Arial, Helvetica, sans-serif;
