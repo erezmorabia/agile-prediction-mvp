@@ -1,4 +1,4 @@
-.PHONY: help type-check lint format check-docs check-all fix install-dev clean test test-cov test-file test-ui project-pdf
+.PHONY: help type-check lint format check-docs check-all fix install-dev clean test test-cov test-file test-ui project-pdf xp2027-evidence xp2027-paper xp2027-check xp2027-package
 
 PYTHON := $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 
@@ -16,6 +16,10 @@ help:
 	@echo "  make test-ui        - Run Playwright UI tests (requires data file + server)"
 	@echo "  make test-cov       - Run tests with coverage report"
 	@echo "  make project-pdf    - Build the formal project report PDF from Markdown"
+	@echo "  make xp2027-evidence - Rebuild aggregate XP 2027 evidence"
+	@echo "  make xp2027-paper   - Build the eight-page XP 2027 preparation PDF"
+	@echo "  make xp2027-check   - Run focused evidence, privacy, and paper checks"
+	@echo "  make xp2027-package - Build the sanitized preparation archive"
 	@echo "  make clean          - Remove Python cache files"
 
 # Install development dependencies
@@ -72,6 +76,21 @@ test-ui:
 project-pdf:
 	@PDF_PYTHON="$$(if [ -x .venv/bin/python ]; then printf '%s' .venv/bin/python; else printf '%s' python3; fi)"; \
 	"$$PDF_PYTHON" scripts/build_project_pdf.py
+
+xp2027-evidence:
+	.research-venv/bin/python scripts/build_xp2027_evidence.py --bootstrap-replicates 10000
+
+xp2027-paper:
+	.research-venv/bin/python scripts/build_xp2027_paper.py
+
+xp2027-check:
+	.research-venv/bin/ruff check scripts/build_xp2027_evidence.py scripts/build_xp2027_paper.py scripts/package_xp2027_submission.py tests/test_xp2027_evidence.py
+	.research-venv/bin/python -m pytest tests/test_xp2027_evidence.py tests/test_blend_reproduction.py tests/test_temporal_boundaries.py -q
+	.research-venv/bin/python scripts/build_xp2027_paper.py
+	.research-venv/bin/python scripts/package_xp2027_submission.py --output /tmp/xp2027-submission-check.zip
+
+xp2027-package: xp2027-check
+	.research-venv/bin/python scripts/package_xp2027_submission.py
 
 # Run tests with coverage
 test-cov:

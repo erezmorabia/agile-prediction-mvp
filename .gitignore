@@ -56,3 +56,18 @@ dmypy.json
 
 # Submission zip file
 agile-prediction-mvp-submission.zip
+
+# XP conference paper build intermediates and release archives
+submission/xp2027/.latex-build/
+output/xp2027/*.zip
+tmp/pdfs/
+
+# XP conference internal working material
+submission/xp2027/PROFESSOR_EMAIL_DRAFT.md
+submission/xp2027/OPEN_ITEMS.md
+submission/xp2027/DECISIONS.md
+submission/xp2027/PLAN.md
+submission/xp2027/STATUS.md
+submission/xp2027/DATA_GOVERNANCE.md
+submission/xp2027/CONFERENCE_REQUIREMENTS.md
+submission/xp2027/reviews/

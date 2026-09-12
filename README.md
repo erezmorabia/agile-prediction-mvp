@@ -107,3 +107,14 @@ findings without acting as a pass/fail gate. The automated tests and `ruff check
 currently enforced passing checks.
 
 Repository-oriented implementation guidance is in [CLAUDE.md](CLAUDE.md).
+
+## License
+
+Copyright 2026 Erez Morabia.
+
+Except where otherwise noted, the software source code and original project documentation are licensed under the
+[Apache License 2.0](LICENSE).
+
+The organizational assessment workbooks and derived datasets under `data/raw/` are not covered by the Apache License
+2.0. No license to reuse or redistribute those data is granted by this repository. Third-party packages and assets remain
+subject to their respective licenses.

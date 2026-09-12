@@ -108,6 +108,7 @@ make test-file FILE=test_temporal_boundaries.py
 | `/domain-data` | Excel loading, normalization, validation, practice definitions | `src/data/` |
 | `/domain-ml` | Collaborative filtering, practice transition patterns, global monthly adaptive three-factor blend policy | `src/ml/` |
 | `/domain-validation` | Rolling window backtest of the blend, primary/sensitivity aggregation, accuracy metrics | `src/validation/` |
+| `/domain-research` | Aggregate-only conference evidence, manuscript, review, and sanitized package | `scripts/build_xp2027_*`, `scripts/package_xp2027_*`, `submission/xp2027/` |
 | `/domain-api` | FastAPI routes, service layer, Pydantic models, startup | `src/api/`, `src/web_main.py` |
 | `/domain-frontend` | Single-page web UI, 4 tabs, API client, rendering | `web/` |
 
@@ -155,6 +156,7 @@ Commit skill/doc updates in the same commit as the code change.
 | `src/validation/` | `.claude/skills/domain-validation/SKILL.md` |
 | `src/api/`, `src/web_main.py` | `.claude/skills/domain-api/SKILL.md` |
 | `web/` | `.claude/skills/domain-frontend/SKILL.md` |
+| `scripts/build_xp2027_*`, `scripts/package_xp2027_*`, `submission/xp2027/` | `.claude/skills/domain-research/SKILL.md` |
 
 ### Planning-time creation trigger
 If a plan introduces any of:

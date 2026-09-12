@@ -12,6 +12,9 @@
 | `src/validation/` | Backtest validation of the blend, accuracy metrics |
 | `src/interface/` | CLI interface and output formatting |
 | `web/` | Static SPA served by FastAPI at `/` |
+| `scripts/build_xp2027_*` | Aggregate evidence and deterministic paper generation |
+| `scripts/package_xp2027_submission.py` | Allowlisted, confidentiality-scanned research archive |
+| `submission/xp2027/` | Versioned protocol, manuscript sources, aggregate evidence, and artifact guidance |
 
 ## Tech Stack
 
@@ -25,6 +28,7 @@
 | Executable packaging | PyInstaller (`dist/` dir) |
 | Code quality | mypy, pylint, ruff, pydocstyle |
 | Tests | pytest, pytest-cov |
+| Research artifacts | ReportLab, pypdf, deterministic NumPy team-cluster bootstrap |
 
 ## Directory Structure
 
@@ -61,9 +65,14 @@ web/
     │   └── api.js           # API client wrapper functions
     └── css/style.css
 tests/                       # pytest files
-data/raw/                    # Excel data files (gitignored)
+data/raw/                    # Version-controlled Excel data files (excluded from the XP release archive)
 results/                     # Research-script output JSON files (reproduced by tests/test_blend_reproduction.py)
+submission/xp2027/           # Versioned XP manuscript, protocol, and aggregate-only evidence
+output/pdf/                  # Rendered research-paper draft
+output/xp2027/               # Sanitized release archive (ignored)
 ```
+
+Internal XP planning, governance, correspondence, and review notes remain local and are excluded by `.gitignore`.
 
 ## Functional Domains
 
@@ -74,8 +83,10 @@ results/                     # Research-script output JSON files (reproduced by 
 | validation | Rolling window backtest of the blend, primary/sensitivity aggregation, accuracy metrics | `BacktestEngine` | `run_backtest()` |
 | api | FastAPI routes, service orchestration, request/response models | `APIService`, route handlers, Pydantic models | `create_routes()`, `get_recommendations()`, `run_backtest()` |
 | frontend | Single-page web app, 4-tab UI, API client | `index.html`, `app.js`, `api.js`, `style.css` | `initializeRecommendations()`, `initializeBacktest()`, `initializeStats()`, `initializeSequences()` |
+| research | Aggregate-only evaluation, manuscript build, and sanitized packaging | XP build/package scripts and submission workspace | `build_report()`, `team_cluster_bootstrap()`, `build_paper()`, `build_archive()` |
 
-For detailed domain information, see `/domain-data`, `/domain-ml`, `/domain-validation`, `/domain-api`, `/domain-frontend`.
+For detailed domain information, see `/domain-data`, `/domain-ml`, `/domain-validation`, `/domain-api`,
+`/domain-frontend`, `/domain-research`.
 
 ## API Endpoints
 
