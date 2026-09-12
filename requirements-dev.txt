@@ -22,4 +22,4 @@ pytest-playwright>=0.4.0
 pypdf>=5.0.0
 
 # FastAPI / Starlette TestClient dependency for API-route tests
-httpx2>=0.28.1
+httpx>=0.28.1
