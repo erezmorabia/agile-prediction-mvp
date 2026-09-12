@@ -18,7 +18,20 @@ cd agile-prediction-mvp
 start_windows.bat
 ```
 
-The script installs all dependencies automatically on first run, starts the server, and opens your browser to **http://localhost:8000**.
+The script creates an isolated `.venv` environment when needed, checks all dependencies on every run, starts the server, and opens your browser to **http://localhost:8000**.
+
+If port 8000 is already being used, choose another without stopping the existing process:
+
+**macOS / Linux:**
+```bash
+PORT=8001 ./start_mac_linux.sh
+```
+
+**Windows:**
+```cmd
+set PORT=8001
+start_windows.bat
+```
 
 Press `CTRL+C` to stop.
 
@@ -45,7 +58,7 @@ Press `CTRL+C` to stop.
 
 | Problem | Fix |
 |---------|-----|
-| Port 8000 in use | Close other apps on that port |
+| Port 8000 in use | Stop the existing process or start this app with `PORT=8001` |
 | Browser didn't open automatically | Navigate manually to http://localhost:8000 |
-| `pip` errors during install | Run `pip install -r requirements.txt` manually, then re-run the script |
+| `pip` errors during install | Activate `.venv`, run `python -m pip install -r requirements.txt`, then re-run the script |
 | Data file not found | Ensure `data/raw/combined_dataset.xlsx` exists in the project folder |

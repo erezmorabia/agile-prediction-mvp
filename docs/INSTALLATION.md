@@ -99,9 +99,11 @@ python -c "import sys; assert sys.version_info >= (3, 10); import pandas, numpy,
 3. Use the full path to the file when running: `python src/web_main.py /full/path/to/data/raw/combined_dataset.xlsx`
 
 ### Issue: Port 8000 already in use
-**Solution:** 
-- Stop the process using port 8000, then run the app again. The supplied startup scripts already attempt to free that port before starting.
-- If you start `src/web_main.py` directly, change the `port` passed to `uvicorn.run()` and browse to the matching URL.
+**Solution:**
+- Stop the process using port 8000, or select another port without disturbing it.
+- On macOS/Linux, run `PORT=8001 ./start_mac_linux.sh`.
+- On Windows, run `set PORT=8001` and then `start_windows.bat`.
+- Direct startup also honors `PORT`, for example `PORT=8001 python src/web_main.py`.
 
 ## Next Steps
 

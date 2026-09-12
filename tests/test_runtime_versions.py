@@ -18,6 +18,47 @@ def test_python_310_and_newer_are_accepted(entrypoint, version):
     assert entrypoint._python_version_supported(version) is True
 
 
+def test_web_server_port_defaults_to_8000(monkeypatch):
+    """The web server must retain port 8000 as its default."""
+    monkeypatch.delenv("PORT", raising=False)
+
+    assert web_main._server_port() == 8000
+
+
+@pytest.mark.parametrize("value", ["1", "8001", "65535"])
+def test_web_server_port_accepts_valid_values(value):
+    """Valid TCP ports must be accepted from configuration."""
+    assert web_main._server_port(value) == int(value)
+
+
+@pytest.mark.parametrize("value", ["", "invalid", "0", "65536"])
+def test_web_server_port_rejects_invalid_values(value):
+    """Invalid port configuration must fail with an actionable error."""
+    with pytest.raises(ValueError, match="PORT must be an integer"):
+        web_main._server_port(value)
+
+
+def test_web_exits_before_startup_for_invalid_port(monkeypatch, caplog):
+    """Invalid port configuration must stop startup before application imports."""
+    monkeypatch.setattr(web_main.sys, "argv", ["web_main.py", "data/raw/combined_dataset.xlsx"])
+    monkeypatch.setenv("PORT", "invalid")
+
+    assert web_main.main() == 1
+    assert "PORT must be an integer" in caplog.text
+
+
+def test_web_exits_without_replacing_existing_port_listener(monkeypatch, caplog):
+    """An occupied port must produce guidance rather than replacing its listener."""
+    monkeypatch.setattr(web_main.sys, "argv", ["web_main.py", "data/raw/combined_dataset.xlsx"])
+    monkeypatch.setattr(web_main, "_port_is_available", lambda _port: False)
+    monkeypatch.setenv("PORT", "8000")
+
+    assert web_main.main() == 1
+    assert "Port 8000 is already in use" in caplog.text
+    assert "set PORT to another value" in caplog.text
+    assert "8001" in caplog.text
+
+
 def test_cli_exits_before_startup_on_unsupported_python(monkeypatch, capsys):
     """The CLI must explain the minimum version before doing startup work."""
     monkeypatch.setattr(main, "_python_version_supported", lambda: False)

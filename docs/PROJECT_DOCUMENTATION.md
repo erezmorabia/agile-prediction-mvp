@@ -1778,18 +1778,20 @@ See **docs/INSTALLATION.md** for detailed installation instructions.
 
 **Quick Installation:**
 1. Install Python 3.10+
-2. Install dependencies: `pip install -r requirements.txt`
-3. Start web server: `python src/web_main.py data/raw/combined_dataset.xlsx`
-4. Open browser: `http://localhost:8000`
+2. On macOS/Linux, run `./start_mac_linux.sh`; on Windows, run `start_windows.bat`
+3. The launcher creates `.venv`, reconciles the dependencies, and opens `http://localhost:8000`
+
+To preserve an existing service on port 8000, select another port, for example
+`PORT=8001 ./start_mac_linux.sh` on macOS/Linux or `set PORT=8001` before `start_windows.bat` on Windows.
 
 ### 10.3 Getting Started
 
 See **docs/QUICK_START.md** for a 3-step quick start guide.
 
 **Quick Start:**
-1. Install dependencies
-2. Start web interface
-3. Open http://localhost:8000 in browser
+1. Run the platform startup script
+2. Let it prepare the isolated project environment and dependencies
+3. Use the browser window it opens (port 8000 by default)
 
 ### 10.4 Using the Web Interface
 
@@ -1874,9 +1876,9 @@ Enter month (YYYYMMDD integer): 20200803
 ### 10.7 Troubleshooting
 
 **Server won't start:**
-- Check that port 8000 is not in use
+- If port 8000 is occupied, stop that service or choose another port with `PORT=8001`
 - Verify data file exists: `ls data/raw/combined_dataset.xlsx`
-- Make sure all dependencies are installed: `pip list`
+- Re-run the platform launcher so it can reconcile all dependencies inside `.venv`
 
 **Can't access http://localhost:8000:**
 - Make sure the server started successfully
@@ -1884,8 +1886,8 @@ Enter month (YYYYMMDD integer): 20200803
 - Try http://127.0.0.1:8000 instead
 
 **Import errors:**
-- Activate virtual environment if using one
-- Reinstall dependencies: `pip install -r requirements.txt`
+- Re-run the platform launcher, which installs every declared dependency into `.venv`
+- For manual setup, activate the environment and run `python -m pip install -r requirements.txt`
 
 **No recommendations shown:**
 - Read the returned error or explanatory message
@@ -2173,6 +2175,7 @@ uvicorn.run(app, host="0.0.0.0", port=8000)
 **Configuration:**
 - Dependencies: `requirements.txt`
 - Startup scripts: `start_mac_linux.sh`, `start_windows.bat`
+- Server port: `PORT` environment variable (default: `8000`)
 
 ---
 

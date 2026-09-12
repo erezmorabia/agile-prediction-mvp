@@ -10,6 +10,7 @@ Example:
 
 import logging
 import os
+import socket
 import sys
 
 logging.basicConfig(
@@ -20,12 +21,46 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 MINIMUM_PYTHON_VERSION = (3, 10)
+DEFAULT_SERVER_PORT = 8000
 
 
 def _python_version_supported(version_info=None) -> bool:
     """Return whether ``version_info`` satisfies the supported Python minimum."""
     candidate = sys.version_info if version_info is None else version_info
     return tuple(candidate[:2]) >= MINIMUM_PYTHON_VERSION
+
+
+def _server_port(value: str | None = None) -> int:
+    """Return a validated server port from a value or the ``PORT`` environment variable.
+
+    Args:
+        value: Optional port text. When omitted, reads ``PORT`` and defaults to 8000.
+
+    Returns:
+        A valid TCP port number.
+
+    Raises:
+        ValueError: If the configured value is not an integer from 1 through 65535.
+    """
+    configured_value = os.environ.get("PORT", str(DEFAULT_SERVER_PORT)) if value is None else value
+    try:
+        port = int(configured_value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"PORT must be an integer from 1 through 65535; received {configured_value!r}") from exc
+
+    if not 1 <= port <= 65535:
+        raise ValueError(f"PORT must be an integer from 1 through 65535; received {configured_value!r}")
+    return port
+
+
+def _port_is_available(port: int) -> bool:
+    """Return whether the server can bind to ``port`` on all IPv4 interfaces."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.bind(("0.0.0.0", port))
+    except OSError:
+        return False
+    return True
 
 
 _UVICORN_LOG_CONFIG = {
@@ -127,8 +162,8 @@ def main() -> int:
     Note:
         - Practices with >90% missing values are automatically excluded
         - Data is normalized from 0-3 scale to 0-1 for ML algorithms
-        - Web server runs on http://localhost:8000
-        - API documentation available at http://localhost:8000/docs
+        - Web server uses the ``PORT`` environment variable, defaulting to 8000
+        - API documentation is available at ``http://localhost:<PORT>/docs``
     """
 
     if not _python_version_supported():
@@ -156,6 +191,19 @@ def main() -> int:
     if not os.path.exists(excel_file):
         logger.error("Data file not found: %s", excel_file)
         return 1
+
+    try:
+        server_port = _server_port()
+    except ValueError as exc:
+        logger.error("%s", exc)
+        return 1
+
+    if not _port_is_available(server_port):
+        logger.error("Port %d is already in use.", server_port)
+        logger.error("Stop the existing process or set PORT to another value (for example, 8001) and try again.")
+        return 1
+
+    server_url = f"http://localhost:{server_port}"
 
     logger.info("Starting Agile Practice Prediction System")
     logger.info("Dataset: %s", excel_file)
@@ -226,7 +274,7 @@ def main() -> int:
         service.docs_path = get_resource_path("docs/PROJECT_DOCUMENTATION.md")
         app = create_app(service)
 
-        logger.info("Ready — open http://localhost:8000 in your browser")
+        logger.info("Ready — open %s in your browser", server_url)
 
         # Start the server and open the browser shortly afterward
         # Use threading to allow browser opening after server starts
@@ -236,7 +284,7 @@ def main() -> int:
             """Open browser after server has had time to start"""
             time.sleep(2.0)  # Wait for server to be ready
             try:
-                webbrowser.open('http://localhost:8000')
+                webbrowser.open(server_url)
             except Exception:
                 # Browser opening failed, but continue anyway
                 pass
@@ -249,7 +297,7 @@ def main() -> int:
         uvicorn.run(
             app,
             host="0.0.0.0",
-            port=8000,
+            port=server_port,
             log_config=_UVICORN_LOG_CONFIG,
             timeout_graceful_shutdown=30,
         )

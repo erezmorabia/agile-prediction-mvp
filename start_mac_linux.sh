@@ -5,18 +5,33 @@
 echo "Agile Practice Prediction System"
 echo "---------------------------------"
 
-# Resolve Python command
+# Resolve the system Python used to create the project environment
 if command -v python3 &> /dev/null; then
-    PYTHON_CMD="python3"
+    SYSTEM_PYTHON="python3"
 elif command -v python &> /dev/null; then
-    PYTHON_CMD="python"
+    SYSTEM_PYTHON="python"
 else
     echo "ERROR: Python not found. Install Python 3.10+ and try again."
     exit 1
 fi
 
-if ! "$PYTHON_CMD" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+if ! "$SYSTEM_PYTHON" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
     echo "ERROR: Python 3.10 or newer is required."
+    exit 1
+fi
+
+# Create and consistently use an isolated project environment
+VENV_PYTHON=".venv/bin/python"
+if [ ! -x "$VENV_PYTHON" ]; then
+    echo "Creating project environment (.venv)..."
+    if ! "$SYSTEM_PYTHON" -m venv .venv; then
+        echo "ERROR: Could not create .venv. Ensure the Python venv module is installed."
+        exit 1
+    fi
+fi
+
+if ! "$VENV_PYTHON" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+    echo "ERROR: .venv uses an unsupported Python version. Remove .venv and run this script again."
     exit 1
 fi
 
@@ -30,17 +45,18 @@ if [ ! -f "$DATA_FILE" ]; then
     fi
 fi
 
-# Install dependencies automatically if needed
-if ! "$PYTHON_CMD" -c "import fastapi" 2>/dev/null; then
-    echo "Installing dependencies (first run only)..."
-    "$PYTHON_CMD" -m pip install -r requirements.txt --quiet
+# Reconcile all declared dependencies, including partially configured environments
+echo "Checking dependencies..."
+if ! "$VENV_PYTHON" -m pip install -r requirements.txt --quiet; then
+    echo "ERROR: Dependency installation failed. Check the messages above and your internet connection."
+    exit 1
 fi
 
-# Free port 8000 if something is already using it
-lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+PORT="${PORT:-8000}"
+export PORT
 
-echo "Starting server → http://localhost:8000"
+echo "Starting server → http://localhost:$PORT"
 echo "Press CTRL+C to stop."
 echo ""
 
-"$PYTHON_CMD" src/web_main.py "$DATA_FILE"
+"$VENV_PYTHON" src/web_main.py "$DATA_FILE"

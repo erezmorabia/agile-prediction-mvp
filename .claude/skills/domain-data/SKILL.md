@@ -12,7 +12,7 @@ Loads agile metrics from Excel, validates quality, normalizes scores to 0–1, a
 
 - **Load:** `DataLoader.load()` reads sheet 0 of the Excel file → identifies practice columns (all columns except `Team Name` and `Month`) → stores `df`, `practices`, `teams`, `months`
 - **Validate + filter:** `DataValidator.validate()` checks required columns and value ranges → `filter_high_missing_practices(practices, threshold=90.0)` removes practices with >90% missing → returns filtered `practices` list used for all subsequent steps
-- **Process:** `DataProcessor.process()` fills NaN with 0, divides all practice values by 3.0, then iterates rows to build `team_histories[team_name][month_int] = np.ndarray` (one float per practice, normalized 0–1)
+- **Process:** `DataProcessor.process()` creates an internal working copy, resolves duplicate team-month keys by retaining the final source occurrence, fills NaN with 0, divides all practice values by 3.0, then iterates rows to build `team_histories[team_name][month_int] = np.ndarray` (one float per practice, normalized 0–1); the caller's DataFrame is not modified
 - **Practice definitions (optional):** `PracticeDefinitionsLoader` reads a second Excel file (`practice_level_definitions.xlsx`) to supply level 0–3 text descriptions; loaded by `APIService` at startup; missing file handled gracefully
 
 ## Domain Validation Rules and Business Logic
@@ -20,7 +20,7 @@ Loads agile metrics from Excel, validates quality, normalizes scores to 0–1, a
 - Required Excel columns: `Team Name` (string-like), `Month` (numeric integer in the project's YYMMDD-style encoding); all other columns treated as practices
 - Practice values expected 0–3; NaN filled with 0 before normalization
 - Practices with > 90% missing values are excluded before model building; `web_main.py` replaces its active practices list with the filtered result
-- `DataProcessor.process()` modifies the DataFrame in-place (NaN fill + normalization)
+- `DataProcessor.process()` performs duplicate resolution, NaN filling, and normalization on an internal copy; the caller's DataFrame and source workbook are not modified
 
 ## Entity Schemas
 

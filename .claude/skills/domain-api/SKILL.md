@@ -6,11 +6,11 @@ description: FastAPI app factory, route handlers, APIService orchestration, Pyda
 # Domain: API
 
 ## Summary
-`APIService` wraps all ML and validation components for HTTP consumption. `create_routes()` registers 9 endpoints on a shared `APIRouter`; `create_app()` mounts static files and wires routes. The backtest (not an optimizer - that was removed entirely) runs in a `ThreadPoolExecutor` so the event loop stays free while it completes. The web and CLI entry points require Python 3.10+ and reject older interpreters before importing application modules.
+`APIService` wraps all ML and validation components for HTTP consumption. `create_routes()` registers 9 endpoints on a shared `APIRouter`; `create_app()` mounts static files and wires routes. The backtest (not an optimizer - that was removed entirely) runs in a `ThreadPoolExecutor` so the event loop stays free while it completes. The web and CLI entry points require Python 3.10+ and reject older interpreters before importing application modules. Web startup reads a validated `PORT` environment variable (default 8000) and exits with guidance rather than replacing an existing listener.
 
 ## Data Flows
 
-- **App startup:** reject Python below 3.10 → `create_app(service)` → mounts `web/static` at `/static` → serves `web/index.html` at `/` → calls `create_routes(service)` and includes the router
+- **App startup:** launchers create/reuse `.venv` and reconcile `requirements.txt` → reject Python below 3.10 → validate `PORT` and confirm it is available → `create_app(service)` → mount `web/static` at `/static` → serve `web/index.html` at `/` → call `create_routes(service)` and include the router
 - **Request lifecycle:** HTTP request → route handler (async) → `APIService` method → ML/validation component → Pydantic model → JSON response
 - **Backtest async pattern:** `POST /api/backtest` calls `loop.run_in_executor(_executor, service.run_backtest)` with `ThreadPoolExecutor(max_workers=1)`. This executor and pattern were repointed from the deleted optimizer's `/api/optimize`, not newly added
 - **Recommendations:** `POST /api/recommendations` requires the team to have a snapshot in the requested valid prediction month and a usable earlier baseline. It takes only `team`, `month`, and `top_n` (pinned to `Literal[2]` - a request for any other value fails Pydantic validation, `extra="forbid"` rejects unknown fields like the old `k_similar`); the response carries `selected_policy` (the month's audit record from `policy_summary()`), `no_similar_teams_found`, and `message` (set when the team has fewer than two candidate practices)

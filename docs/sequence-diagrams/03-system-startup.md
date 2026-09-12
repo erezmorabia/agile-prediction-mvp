@@ -19,6 +19,8 @@ sequenceDiagram
     participant Data as Data Pipeline
     participant ML as ML Engines
 
+    WebMain->>WebMain: validate PORT and confirm it is available
+    Note right of WebMain: defaults to port 8000;<br/>an occupied port stops startup without terminating its listener
     WebMain->>Data: load the Excel file
     Note right of Data: reads the raw spreadsheet into a table
     WebMain->>Data: validate, then filter out unreliable practices
@@ -35,7 +37,7 @@ sequenceDiagram
     Note right of ML: wires the engines together<br/>construction does no policy selection<br/>the global blend is selected lazily per prediction month
 
     WebMain->>WebMain: wire up the API layer and start the web server
-    Note right of WebMain: builds APIService around the recommender,<br/>then starts listening for requests on port 8000
+    Note right of WebMain: builds APIService around the recommender,<br/>then starts listening on the configured port
 ```
 
 ## Notes
@@ -66,6 +68,9 @@ sequenceDiagram
   scoring and monthly policy selection happen later, per request, inside `PolicyEngine`.
 - `DataValidator.validate()`'s pass/fail result is discarded by `web_main.py` — a failed check only
   produces warning log lines, it never blocks startup.
+- The platform launchers create or reuse `.venv` and reconcile all packages in `requirements.txt`
+  before invoking `web_main.py`. `web_main.py` validates `PORT` (default 8000) and confirms it can
+  bind without terminating any process already listening there.
 
 References: `web_main.py`, `src/data/validator.py`, `src/ml/sequences.py`,
 `src/api/service.py`, `src/ml/recommender.py`, and `src/ml/policy.py`.

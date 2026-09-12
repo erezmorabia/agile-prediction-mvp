@@ -31,13 +31,14 @@ overall_accuracy = mean(per_month_accuracy for each month in scope)
 
 **Random baseline for HR@N** (probability of ≥1 correct recommendation by chance):
 ```
-month_baseline(m) = 1 − C(n − k_avg(m), top_n) / C(n, top_n)   # BacktestEngine._baseline_from_k_avg
-random_baseline    = mean(month_baseline(m) for each month in scope)
+case_baseline(i)  = 1 − C(n_i − k_i, draws_i) / C(n_i, draws_i)
+month_baseline(m) = mean(case_baseline(i) for each case i in month m)
+random_baseline   = mean(month_baseline(m) for each month in scope)
 ```
-- `n` = total number of practices, `top_n` = 2 (`policy.TOP_N`)
-- `k_avg(m)` = average number of improvements per case, within month `m` only
-- Falls back to `min(1.0, (k_avg / n) * top_n)` if combination calculation fails
-- `random_baseline` is macro-averaged per month — the same aggregation `overall_accuracy` uses — so the two are directly comparable
+- `n_i` = number of practices eligible for recommendation in case `i`
+- `k_i` = number of those eligible candidates that improved, `top_n` = 2 (`policy.TOP_N`), and `draws_i = min(top_n, n_i)`
+- `BacktestEngine._expected_random_hit_rate()` computes the exact per-case probability; invalid inputs or combination errors return 0.0
+- Case probabilities are averaged within month, then macro-averaged across months — the same aggregation `overall_accuracy` uses — so the two are directly comparable
 
 **Improvement factor:** `overall_accuracy / random_baseline`
 
@@ -53,11 +54,11 @@ mrr (case)         = 1 / rank of first hit, else 0        # MetricsCalculator.ca
 
 **Random baselines** — each metric needs its own chance-level comparison:
 ```
-random_precision = k_avg / n     # exact, linear in k
-random_recall    = top_n / n     # exact, doesn't depend on k
-random_mrr       = mean(expected_mrr_per_case)   # NOT derived from k_avg — nonlinear in k
+random_precision(i) = k_i / n_i
+random_recall(i)    = min(top_n, n_i) / n_i
+random_mrr          = mean(expected_mrr_per_case)
 ```
-`random_mrr` uses `BacktestEngine._expected_random_mrr(n, k, top_n)` per case (negative hypergeometric rank distribution), averaged — not derived from `k_avg`.
+Each baseline is computed per case, averaged within month, and then macro-averaged across months. `random_mrr` uses `BacktestEngine._expected_random_mrr(n_i, k_i, top_n)` per case (negative hypergeometric rank distribution), rather than deriving it from an average improvement count.
 
 **Two caveats when reading these numbers:**
 - Recall@N is capped at `top_n / |actual_improved|` by construction.
@@ -82,10 +83,10 @@ On the reference dataset (primary, 5 full-outcome-window months): blend 57.98% v
 |---|---|---|---|
 | `BacktestEngine.__init__()` | `src/validation/backtest.py` | `APIService`, CLI | `recommender_engine, processor` → also stores `self.policy_engine = recommender_engine.policy_engine` |
 | `BacktestEngine.run_backtest()` | `src/validation/backtest.py` | `APIService.run_backtest()`, CLI `_validate_recommendations()` | no params → `{status, per_month_results, primary, sensitivity}` — no config dict, no `train_ratio` |
-| `BacktestEngine._score_month()` | `src/validation/backtest.py` | `run_backtest()` | one prediction month → `(row, improvements_per_case, expected_mrr_per_case)` |
+| `BacktestEngine._score_month()` | `src/validation/backtest.py` | `run_backtest()` | one prediction month → `(row, case_stats)`, where each case stat is `(eligible_candidate_count, improved_candidate_count)` |
 | `BacktestEngine._aggregate_scope()` | `src/validation/backtest.py` | `run_backtest()` (primary and sensitivity, and any empty scope) | replaces the old duplicated `_build_partial_results()` — one aggregation function used for every scope |
 | `BacktestEngine._expected_random_mrr()` | `src/validation/backtest.py` | `_score_month()` (per case) | staticmethod; `n, k, top_n` → exact expected MRR under random selection |
-| `BacktestEngine._baseline_from_k_avg()` | `src/validation/backtest.py` | `_aggregate_scope()` | staticmethod; `k_avg, total_practices, top_n` → P(≥1 correct by chance) |
+| `BacktestEngine._expected_random_hit_rate()` | `src/validation/backtest.py` | `_aggregate_scope()` (per case) | staticmethod; `n, k, top_n` → exact P(≥1 correct by chance) from the case's eligible candidate pool |
 
 ## Cross-references
 - **Related Use Case Skills:** `/uc-02-run-backtest-validation`

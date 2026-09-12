@@ -18,7 +18,7 @@ On Windows:
 start_windows.bat
 ```
 
-The startup scripts use `data/raw/combined_dataset.xlsx` when available, otherwise `data/raw/20250204_Cleaned_Dataset.xlsx`, install runtime dependencies when FastAPI is missing, and start the application at <http://localhost:8000>. The web server also opens the browser when it can.
+The startup scripts create an isolated `.venv` environment when needed, reconcile all runtime dependencies, use `data/raw/combined_dataset.xlsx` when available (otherwise `data/raw/20250204_Cleaned_Dataset.xlsx`), and start the application at <http://localhost:8000>. The web server also opens the browser when it can. To use a different port without disturbing an existing process, set `PORT`, for example `PORT=8001 ./start_mac_linux.sh`.
 
 For manual setup and troubleshooting, see [Installation](docs/INSTALLATION.md). For a short product walkthrough, see [Quick Start](docs/QUICK_START.md).
 
