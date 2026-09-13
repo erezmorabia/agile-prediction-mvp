@@ -17,7 +17,7 @@ help:
 	@echo "  make test-cov       - Run tests with coverage report"
 	@echo "  make project-pdf    - Build the formal project report PDF from Markdown"
 	@echo "  make xp2027-evidence - Rebuild aggregate XP 2027 evidence"
-	@echo "  make xp2027-paper   - Build the eight-page XP 2027 preparation PDF"
+	@echo "  make xp2027-paper   - Build the XP 2027 short-paper preparation PDF"
 	@echo "  make xp2027-check   - Run focused evidence, privacy, and paper checks"
 	@echo "  make xp2027-package - Build the sanitized preparation archive"
 	@echo "  make clean          - Remove Python cache files"

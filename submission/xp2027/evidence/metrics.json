@@ -1,4 +1,294 @@
 {
+  "exploratory_unconditional_complete_window": {
+    "estimand": "observed ranking alignment across all recommendable complete-window cases",
+    "methods": {
+      "equal_three_factor": {
+        "blend_gap": 0.03558465223012164,
+        "monthly_macro_hit_rate_at_2": 0.19548993307580737,
+        "monthly_macro_mrr": 0.1611566512780301,
+        "monthly_macro_precision_at_2": 0.11740036356873211,
+        "monthly_macro_recall_at_2": 0.06851413588702635,
+        "per_month_hit_rate_at_2": {
+          "20200503": 0.1320754716981132,
+          "20200608": 0.17543859649122806,
+          "20200705": 0.19672131147540983,
+          "20200803": 0.2857142857142857,
+          "20200906": 0.1875
+        },
+        "pooled_descriptive_hit_rate_at_2": 0.19798657718120805,
+        "recommendation_coverage": 0.7666666666666667
+      },
+      "historical_popularity": {
+        "blend_gap": 0.0628456184990262,
+        "monthly_macro_hit_rate_at_2": 0.1682289668069028,
+        "monthly_macro_mrr": 0.13255231206172974,
+        "monthly_macro_precision_at_2": 0.10949966525306461,
+        "monthly_macro_recall_at_2": 0.043757645826014144,
+        "per_month_hit_rate_at_2": {
+          "20200503": 0.11320754716981132,
+          "20200608": 0.12280701754385964,
+          "20200705": 0.14754098360655737,
+          "20200803": 0.2857142857142857,
+          "20200906": 0.171875
+        },
+        "pooled_descriptive_hit_rate_at_2": 0.17114093959731544,
+        "recommendation_coverage": 0.4666666666666667
+      },
+      "random_expected": {
+        "blend_gap": 0.10914419388329231,
+        "monthly_macro_hit_rate_at_2": 0.12193039142263669,
+        "monthly_macro_mrr": 0.09568214673066258,
+        "monthly_macro_precision_at_2": 0.06943390203868849,
+        "monthly_macro_recall_at_2": 0.033323174286841055,
+        "per_month_hit_rate_at_2": {
+          "20200503": 0.09322695240511904,
+          "20200608": 0.125267365133637,
+          "20200705": 0.14534542777588208,
+          "20200803": 0.13352015699032668,
+          "20200906": 0.1122920548082186
+        },
+        "pooled_descriptive_hit_rate_at_2": 0.12263691537763086,
+        "recommendation_coverage": null
+      },
+      "recent_popularity": {
+        "blend_gap": 0.07346262378546634,
+        "monthly_macro_hit_rate_at_2": 0.15761196152046267,
+        "monthly_macro_mrr": 0.12756300120791203,
+        "monthly_macro_precision_at_2": 0.09667475343684502,
+        "monthly_macro_recall_at_2": 0.041645439216370796,
+        "per_month_hit_rate_at_2": {
+          "20200503": 0.11320754716981132,
+          "20200608": 0.24561403508771928,
+          "20200705": 0.11475409836065574,
+          "20200803": 0.12698412698412698,
+          "20200906": 0.1875
+        },
+        "pooled_descriptive_hit_rate_at_2": 0.15771812080536912,
+        "recommendation_coverage": 0.5
+      },
+      "selected_blend": {
+        "blend_gap": 0.0,
+        "monthly_macro_hit_rate_at_2": 0.231074585305929,
+        "monthly_macro_mrr": 0.18076631070471827,
+        "monthly_macro_precision_at_2": 0.1419935459912282,
+        "monthly_macro_recall_at_2": 0.07045523416759822,
+        "per_month_hit_rate_at_2": {
+          "20200503": 0.09433962264150944,
+          "20200608": 0.24561403508771928,
+          "20200705": 0.29508196721311475,
+          "20200803": 0.30158730158730157,
+          "20200906": 0.21875
+        },
+        "pooled_descriptive_hit_rate_at_2": 0.2348993288590604,
+        "recommendation_coverage": 0.5
+      },
+      "similarity_only": {
+        "blend_gap": 0.05987750154978122,
+        "monthly_macro_hit_rate_at_2": 0.17119708375614778,
+        "monthly_macro_mrr": 0.1256368069073343,
+        "monthly_macro_precision_at_2": 0.09671209248957531,
+        "monthly_macro_recall_at_2": 0.05804843409241035,
+        "per_month_hit_rate_at_2": {
+          "20200503": 0.20754716981132076,
+          "20200608": 0.10526315789473684,
+          "20200705": 0.18032786885245902,
+          "20200803": 0.2222222222222222,
+          "20200906": 0.140625
+        },
+        "pooled_descriptive_hit_rate_at_2": 0.17114093959731544,
+        "recommendation_coverage": 0.9
+      },
+      "similarity_popularity": {
+        "blend_gap": 0.051403185927753725,
+        "monthly_macro_hit_rate_at_2": 0.17967139937817528,
+        "monthly_macro_mrr": 0.15022890927959137,
+        "monthly_macro_precision_at_2": 0.11113044098221117,
+        "monthly_macro_recall_at_2": 0.06382202794184463,
+        "per_month_hit_rate_at_2": {
+          "20200503": 0.1320754716981132,
+          "20200608": 0.17543859649122806,
+          "20200705": 0.21311475409836064,
+          "20200803": 0.1746031746031746,
+          "20200906": 0.203125
+        },
+        "pooled_descriptive_hit_rate_at_2": 0.18120805369127516,
+        "recommendation_coverage": 0.7666666666666667
+      },
+      "similarity_transition": {
+        "blend_gap": 0.05033177932071131,
+        "monthly_macro_hit_rate_at_2": 0.1807428059852177,
+        "monthly_macro_mrr": 0.14007576033598793,
+        "monthly_macro_precision_at_2": 0.1030474536041103,
+        "monthly_macro_recall_at_2": 0.06004969464360619,
+        "per_month_hit_rate_at_2": {
+          "20200503": 0.20754716981132076,
+          "20200608": 0.12280701754385964,
+          "20200705": 0.13114754098360656,
+          "20200803": 0.30158730158730157,
+          "20200906": 0.140625
+        },
+        "pooled_descriptive_hit_rate_at_2": 0.18120805369127516,
+        "recommendation_coverage": 0.9
+      },
+      "time_aware_popularity": {
+        "blend_gap": 0.009424603174603141,
+        "monthly_macro_hit_rate_at_2": 0.22164998213132586,
+        "monthly_macro_mrr": 0.17287940594281354,
+        "monthly_macro_precision_at_2": 0.1388437444039266,
+        "monthly_macro_recall_at_2": 0.06817396054703888,
+        "per_month_hit_rate_at_2": {
+          "20200503": 0.09433962264150944,
+          "20200608": 0.24561403508771928,
+          "20200705": 0.29508196721311475,
+          "20200803": 0.2857142857142857,
+          "20200906": 0.1875
+        },
+        "pooled_descriptive_hit_rate_at_2": 0.22483221476510068,
+        "recommendation_coverage": 0.43333333333333335
+      },
+      "transition_only": {
+        "blend_gap": 0.16901194307037828,
+        "monthly_macro_hit_rate_at_2": 0.062062642235550726,
+        "monthly_macro_mrr": 0.03582046696737203,
+        "monthly_macro_precision_at_2": 0.03259382111777536,
+        "monthly_macro_recall_at_2": 0.018898514045392317,
+        "per_month_hit_rate_at_2": {
+          "20200503": 0.03773584905660377,
+          "20200608": 0.017543859649122806,
+          "20200705": 0.04918032786885246,
+          "20200803": 0.1746031746031746,
+          "20200906": 0.03125
+        },
+        "pooled_descriptive_hit_rate_at_2": 0.06375838926174497,
+        "recommendation_coverage": 0.5
+      },
+      "transition_popularity": {
+        "blend_gap": 0.026175026021337477,
+        "monthly_macro_hit_rate_at_2": 0.20489955928459153,
+        "monthly_macro_mrr": 0.16276564390794493,
+        "monthly_macro_precision_at_2": 0.1254875011660505,
+        "monthly_macro_recall_at_2": 0.06618356674387801,
+        "per_month_hit_rate_at_2": {
+          "20200503": 0.09433962264150944,
+          "20200608": 0.24561403508771928,
+          "20200705": 0.18032786885245902,
+          "20200803": 0.2698412698412698,
+          "20200906": 0.234375
+        },
+        "pooled_descriptive_hit_rate_at_2": 0.2080536912751678,
+        "recommendation_coverage": 0.5666666666666667
+      }
+    },
+    "month_count": 5,
+    "months": [
+      20200503,
+      20200608,
+      20200705,
+      20200803,
+      20200906
+    ],
+    "no_improvement_cases": 178,
+    "outcome_bearing_cases": 120,
+    "outcome_bearing_share": 0.40268456375838924,
+    "status": "exploratory post-protocol analysis",
+    "total_recommendable_cases": 298,
+    "unique_teams": 66
+  },
+  "exploratory_unconditional_uncertainty": {
+    "cluster": "team identity with all team-month cases retained",
+    "interpretation": "conditional on the monthly policies fitted to the observed histories",
+    "method_hit_rate_intervals": {
+      "equal_three_factor": [
+        0.1335899026308009,
+        0.2606360276406837
+      ],
+      "historical_popularity": [
+        0.11113274915095704,
+        0.22942249211894072
+      ],
+      "random_expected": [
+        0.08804588822680182,
+        0.16037969376351896
+      ],
+      "recent_popularity": [
+        0.10819705035941905,
+        0.21164563618391408
+      ],
+      "selected_blend": [
+        0.16122559209266024,
+        0.30407895602832563
+      ],
+      "similarity_only": [
+        0.11642841869026845,
+        0.22794408838214675
+      ],
+      "similarity_popularity": [
+        0.12220364014110024,
+        0.23959296944247757
+      ],
+      "similarity_transition": [
+        0.12426567206935706,
+        0.2404374857598541
+      ],
+      "time_aware_popularity": [
+        0.15357872944284626,
+        0.29355458534029577
+      ],
+      "transition_only": [
+        0.029467369874617146,
+        0.10026333727860028
+      ],
+      "transition_popularity": [
+        0.13904808239665234,
+        0.2740496210451481
+      ]
+    },
+    "replicates": 10000,
+    "seed": 22998,
+    "selected_blend_gap_intervals": {
+      "equal_three_factor": [
+        -0.004978537660939708,
+        0.07661490491439052
+      ],
+      "historical_popularity": [
+        0.023449791265977488,
+        0.10319341771206687
+      ],
+      "random_expected": [
+        0.061093055091701445,
+        0.15867586685916524
+      ],
+      "recent_popularity": [
+        0.03279966451186208,
+        0.11441598557389641
+      ],
+      "similarity_only": [
+        0.01108651237374278,
+        0.10906458451557116
+      ],
+      "similarity_popularity": [
+        0.007694535856300541,
+        0.09637285366488753
+      ],
+      "similarity_transition": [
+        0.004750130501580536,
+        0.09574323292097418
+      ],
+      "time_aware_popularity": [
+        0.0,
+        0.021538461538461506
+      ],
+      "transition_only": [
+        0.1004230208654922,
+        0.23748721246598054
+      ],
+      "transition_popularity": [
+        0.0008991316246953438,
+        0.053186880508282526
+      ]
+    },
+    "selection_refit_in_replicate": false
+  },
   "fixed_ablation_policies": {
     "equal_three_factor": {
       "min_similarity": 0.5,
@@ -417,7 +707,289 @@
     "unique_teams": 42
   },
   "protocol_status": "frozen before extended analysis",
-  "schema_version": 2,
+  "schema_version": 4,
+  "selection_refit_robustness": {
+    "cluster": "team identity with all team-month cases retained",
+    "interpretation": "whole walk-forward selection-and-evaluation pipeline under team resampling",
+    "method_hit_rate_intervals": {
+      "selected_blend": [
+        0.4461696516990634,
+        0.6573728737989173
+      ],
+      "time_aware_popularity": [
+        0.40712026898540055,
+        0.6481034088379626
+      ]
+    },
+    "policy_grid_size": 675,
+    "replicates": 10000,
+    "seed": 22999,
+    "selected_blend_gap_interval": [
+      -0.04449139538293956,
+      0.12509194324194328
+    ],
+    "selection_frequency": {
+      "selected_blend": {
+        "20200503": {
+          "distinct_policies": 1,
+          "top_selections": [
+            {
+              "count": 10000,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 5,
+                "popularity_weight": 1.0,
+                "recency_weight": 0.5,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.0
+              },
+              "share": 1.0
+            }
+          ]
+        },
+        "20200608": {
+          "distinct_policies": 1,
+          "top_selections": [
+            {
+              "count": 10000,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 5,
+                "popularity_weight": 1.0,
+                "recency_weight": 0.5,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.0
+              },
+              "share": 1.0
+            }
+          ]
+        },
+        "20200705": {
+          "distinct_policies": 1,
+          "top_selections": [
+            {
+              "count": 10000,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 5,
+                "popularity_weight": 1.0,
+                "recency_weight": 0.5,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.0
+              },
+              "share": 1.0
+            }
+          ]
+        },
+        "20200803": {
+          "distinct_policies": 15,
+          "top_selections": [
+            {
+              "count": 3259,
+              "policy": {
+                "min_similarity": 0.75,
+                "peer_count": 10,
+                "popularity_weight": 0.5,
+                "recency_weight": 0.0,
+                "sequence_weight": 0.25,
+                "similarity_weight": 0.25
+              },
+              "share": 0.3259
+            },
+            {
+              "count": 1998,
+              "policy": {
+                "min_similarity": 0.75,
+                "peer_count": 19,
+                "popularity_weight": 0.5,
+                "recency_weight": 0.0,
+                "sequence_weight": 0.25,
+                "similarity_weight": 0.25
+              },
+              "share": 0.1998
+            },
+            {
+              "count": 1542,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 10,
+                "popularity_weight": 0.0,
+                "recency_weight": 0.0,
+                "sequence_weight": 0.75,
+                "similarity_weight": 0.25
+              },
+              "share": 0.1542
+            }
+          ]
+        },
+        "20200906": {
+          "distinct_policies": 31,
+          "top_selections": [
+            {
+              "count": 2098,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 19,
+                "popularity_weight": 0.75,
+                "recency_weight": 1.0,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.25
+              },
+              "share": 0.2098
+            },
+            {
+              "count": 1632,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 10,
+                "popularity_weight": 0.75,
+                "recency_weight": 0.5,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.25
+              },
+              "share": 0.1632
+            },
+            {
+              "count": 1266,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 10,
+                "popularity_weight": 0.75,
+                "recency_weight": 1.0,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.25
+              },
+              "share": 0.1266
+            }
+          ]
+        }
+      },
+      "time_aware_popularity": {
+        "20200503": {
+          "distinct_policies": 1,
+          "top_selections": [
+            {
+              "count": 10000,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 5,
+                "popularity_weight": 1.0,
+                "recency_weight": 0.5,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.0
+              },
+              "share": 1.0
+            }
+          ]
+        },
+        "20200608": {
+          "distinct_policies": 1,
+          "top_selections": [
+            {
+              "count": 10000,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 5,
+                "popularity_weight": 1.0,
+                "recency_weight": 0.5,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.0
+              },
+              "share": 1.0
+            }
+          ]
+        },
+        "20200705": {
+          "distinct_policies": 1,
+          "top_selections": [
+            {
+              "count": 10000,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 5,
+                "popularity_weight": 1.0,
+                "recency_weight": 0.5,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.0
+              },
+              "share": 1.0
+            }
+          ]
+        },
+        "20200803": {
+          "distinct_policies": 2,
+          "top_selections": [
+            {
+              "count": 6554,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 5,
+                "popularity_weight": 1.0,
+                "recency_weight": 0.0,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.0
+              },
+              "share": 0.6554
+            },
+            {
+              "count": 3446,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 5,
+                "popularity_weight": 1.0,
+                "recency_weight": 1.0,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.0
+              },
+              "share": 0.3446
+            }
+          ]
+        },
+        "20200906": {
+          "distinct_policies": 4,
+          "top_selections": [
+            {
+              "count": 6855,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 5,
+                "popularity_weight": 1.0,
+                "recency_weight": 0.75,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.0
+              },
+              "share": 0.6855
+            },
+            {
+              "count": 2646,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 5,
+                "popularity_weight": 1.0,
+                "recency_weight": 1.0,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.0
+              },
+              "share": 0.2646
+            },
+            {
+              "count": 427,
+              "policy": {
+                "min_similarity": 0.0,
+                "peer_count": 5,
+                "popularity_weight": 1.0,
+                "recency_weight": 0.5,
+                "sequence_weight": 0.0,
+                "similarity_weight": 0.0
+              },
+              "share": 0.0427
+            }
+          ]
+        }
+      }
+    },
+    "selection_refit_in_replicate": true
+  },
   "sensitivity": {
     "methods": {
       "equal_three_factor": {

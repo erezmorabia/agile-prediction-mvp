@@ -1,6 +1,8 @@
 # Aggregate Reproducibility Artifact
 
-This preparation artifact intentionally contains no raw organizational data and no team-level output.
+This sanitized XP preparation artifact intentionally contains no raw organizational data and no team-level output. It
+is distinct from the broader public repository for the prior MSc project, which currently tracks source workbooks. The
+conference artifact does not redistribute or license those workbooks.
 
 ## Reproduce with authorized local data
 

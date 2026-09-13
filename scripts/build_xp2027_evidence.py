@@ -25,7 +25,15 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.data import DataLoader, DataProcessor, DataValidator  # noqa: E402
 from src.ml import SequenceMapper, SimilarityEngine  # noqa: E402
-from src.ml.policy import Policy, PolicyEngine, policy_summary  # noqa: E402
+from src.ml.policy import (  # noqa: E402
+    BOOTSTRAP_POLICY,
+    POLICY_GRID,
+    POPULARITY_ARM_POLICIES,
+    Policy,
+    PolicyEngine,
+    _preference_key,
+    policy_summary,
+)
 from src.validation.backtest import BacktestEngine  # noqa: E402
 from src.validation.metrics import MetricsCalculator  # noqa: E402
 
@@ -48,6 +56,15 @@ class CaseScore:
     method_recalls: dict[str, float]
     method_mrrs: dict[str, float]
     method_recommendations: dict[str, tuple[str, ...]]
+
+
+@dataclass(frozen=True)
+class PolicyGridCaseHits:
+    """XP-only per-case hit vector for every unchanged production policy."""
+
+    team: str
+    month: int
+    hits: tuple[float, ...]
 
 
 FIXED_POLICIES: dict[str, Policy] = {
@@ -184,6 +201,120 @@ def build_case_scores(engine: PolicyEngine) -> tuple[list[CaseScore], list[dict[
     return records, month_rows
 
 
+def build_unconditional_complete_window_scores(engine: PolicyEngine) -> list[CaseScore]:
+    """Score every recommendable primary case with three observed future snapshots.
+
+    Unlike the frozen primary cohort, this exploratory cohort retains cases with no
+    recorded improvement. Their observed alignment metrics and random expectation are
+    zero because there is no later event for any ranking method to identify.
+    """
+    records: list[CaseScore] = []
+
+    for month in engine.prediction_months():
+        if not engine.full_outcome_window(month):
+            continue
+        selected = engine.select_policy(month)
+        popularity = engine.select_popularity_arm(month)
+        method_policies = {
+            "selected_blend": selected.policy,
+            "time_aware_popularity": popularity.policy,
+            **FIXED_POLICIES,
+        }
+
+        for team in engine.processor.get_all_teams():
+            recommendable, components = engine.is_recommendable(team, month)
+            if not recommendable or components is None:
+                continue
+            history = engine.processor.get_team_history(team)
+            later_snapshots = [
+                candidate
+                for candidate in sorted(history)
+                if candidate > components.baseline_month
+            ][:3]
+            if len(later_snapshots) != 3:
+                continue
+
+            baseline = history[components.baseline_month]
+            actual = {
+                engine.practices[index]
+                for outcome_month in later_snapshots
+                for index, (before, after) in enumerate(
+                    zip(baseline, history[outcome_month], strict=True)
+                )
+                if after > before
+            }
+            candidates = set(components.candidates)
+            actual_eligible = frozenset(actual & candidates)
+            improved_count = len(actual_eligible)
+            method_hits: dict[str, float] = {}
+            method_precisions: dict[str, float] = {}
+            method_recalls: dict[str, float] = {}
+            method_mrrs: dict[str, float] = {}
+            method_recommendations: dict[str, tuple[str, ...]] = {}
+
+            for name, policy in method_policies.items():
+                ordered = engine.top_practices(components, policy)
+                hit, precision, recall, mrr = _score_recommendations(ordered, actual_eligible)
+                method_hits[name] = hit
+                method_precisions[name] = precision
+                method_recalls[name] = recall
+                method_mrrs[name] = mrr
+                method_recommendations[name] = ordered
+
+            method_hits["random_expected"] = BacktestEngine._expected_random_hit_rate(
+                len(candidates), improved_count, TOP_N
+            )
+            method_precisions["random_expected"] = (
+                improved_count / len(candidates) if candidates else 0.0
+            )
+            method_recalls["random_expected"] = (
+                min(TOP_N, len(candidates)) / len(candidates)
+                if improved_count and candidates
+                else 0.0
+            )
+            method_mrrs["random_expected"] = BacktestEngine._expected_random_mrr(
+                len(candidates), improved_count, TOP_N
+            )
+
+            records.append(
+                CaseScore(
+                    team=team,
+                    month=month,
+                    complete_team_window=True,
+                    candidate_count=len(candidates),
+                    improved_count=improved_count,
+                    method_hits=method_hits,
+                    method_precisions=method_precisions,
+                    method_recalls=method_recalls,
+                    method_mrrs=method_mrrs,
+                    method_recommendations=method_recommendations,
+                )
+            )
+
+    return records
+
+
+def build_policy_grid_case_hits(
+    engine: PolicyEngine,
+    months: list[int],
+) -> list[PolicyGridCaseHits]:
+    """Precompute XP-only case hits for the unchanged 675-policy production grid."""
+    records: list[PolicyGridCaseHits] = []
+    for month in months:
+        for case in engine.evaluable_cases(month):
+            records.append(
+                PolicyGridCaseHits(
+                    team=case.components.team,
+                    month=month,
+                    hits=tuple(
+                        float(bool(set(engine.top_practices(case.components, policy)) & case.actual_improved))
+                        for policy in POLICY_GRID
+                    ),
+                )
+            )
+    return records
+
+
 def _mean(values: list[float]) -> float:
     """Return a numeric mean, using zero only for an empty input."""
     return sum(values) / len(values) if values else 0.0
@@ -237,6 +368,28 @@ def aggregate_scope(
         "unique_teams": len({record.team for record in selected}),
         "methods": methods,
     }
+
+
+def aggregate_unconditional_scope(
+    records: list[CaseScore],
+    months: list[int],
+    practices: list[str],
+) -> dict[str, Any]:
+    """Aggregate the exploratory complete-window cohort, including no-change cases."""
+    result = aggregate_scope(records, months, practices)
+    total = result.pop("outcome_bearing_cases")
+    outcome_bearing = sum(record.improved_count > 0 for record in records if record.month in months)
+    result.update(
+        {
+            "total_recommendable_cases": total,
+            "outcome_bearing_cases": outcome_bearing,
+            "no_improvement_cases": total - outcome_bearing,
+            "outcome_bearing_share": outcome_bearing / total if total else 0.0,
+            "estimand": "observed ranking alignment across all recommendable complete-window cases",
+            "status": "exploratory post-protocol analysis",
+        }
+    )
+    return result
 
 
 def strict_complete_window_audit(engine: PolicyEngine) -> dict[str, int | float]:
@@ -325,11 +478,151 @@ def team_cluster_bootstrap(
     }
 
 
+def selection_refit_team_bootstrap(
+    engine: PolicyEngine,
+    records: list[PolicyGridCaseHits],
+    months: list[int],
+    *,
+    replicates: int,
+    seed: int,
+    batch_size: int = 1_000,
+) -> dict[str, Any]:
+    """Repeat walk-forward policy selection inside each team-cluster bootstrap.
+
+    This XP-only robustness analysis leaves ``PolicyEngine`` and ``POLICY_GRID``
+    unchanged. Each replicate resamples complete team identities, reselects policies
+    from completed prior prediction months, and evaluates those policies on the later
+    resampled cases. Months without closed prior outcomes retain ``BOOTSTRAP_POLICY``.
+    """
+    teams = sorted({record.team for record in records})
+    team_index = {team: index for index, team in enumerate(teams)}
+    policy_count = len(POLICY_GRID)
+    bootstrap_index = POLICY_GRID.index(BOOTSTRAP_POLICY)
+    popularity_indices = np.asarray(
+        [POLICY_GRID.index(policy) for policy in POPULARITY_ARM_POLICIES],
+        dtype=int,
+    )
+    preference_order = np.asarray(
+        sorted(range(policy_count), key=lambda index: _preference_key(POLICY_GRID[index]), reverse=True),
+        dtype=int,
+    )
+
+    presence_by_month = {month: np.zeros(len(teams), dtype=float) for month in months}
+    hits_by_month = {
+        month: np.zeros((len(teams), policy_count), dtype=float)
+        for month in months
+    }
+    for record in records:
+        row = team_index[record.team]
+        presence_by_month[record.month][row] = 1.0
+        hits_by_month[record.month][row] = np.asarray(record.hits, dtype=float)
+
+    rng = np.random.default_rng(seed)
+    blend_samples: list[float] = []
+    popularity_samples: list[float] = []
+    gap_samples: list[float] = []
+    blend_selection_counts = {month: Counter() for month in months}
+    popularity_selection_counts = {month: Counter() for month in months}
+    probabilities = np.full(len(teams), 1.0 / len(teams))
+
+    def select_blend_indices(training_rates: np.ndarray) -> np.ndarray:
+        maxima = training_rates.max(axis=1, keepdims=True)
+        tied = np.isclose(training_rates, maxima, rtol=0.0, atol=1e-15)
+        preferred_ties = tied[:, preference_order]
+        preferred_positions = preferred_ties.argmax(axis=1)
+        return preference_order[preferred_positions]
+
+    for start in range(0, replicates, batch_size):
+        size = min(batch_size, replicates - start)
+        multiplicities = rng.multinomial(len(teams), probabilities, size=size)
+        month_rates: dict[int, np.ndarray] = {}
+        for month in months:
+            denominators = multiplicities @ presence_by_month[month]
+            numerators = multiplicities @ hits_by_month[month]
+            month_rates[month] = np.divide(
+                numerators,
+                denominators[:, None],
+                out=np.zeros_like(numerators),
+                where=denominators[:, None] > 0,
+            )
+
+        batch_blend: list[np.ndarray] = []
+        batch_popularity: list[np.ndarray] = []
+        for month in months:
+            completed = [candidate for candidate in engine.completed_prior_months(month) if candidate in months]
+            if completed:
+                training = np.mean([month_rates[candidate] for candidate in completed], axis=0)
+                blend_indices = select_blend_indices(training)
+                popularity_training = training[:, popularity_indices]
+                popularity_indices_selected = popularity_indices[popularity_training.argmax(axis=1)]
+            else:
+                blend_indices = np.full(size, bootstrap_index, dtype=int)
+                popularity_indices_selected = np.full(size, bootstrap_index, dtype=int)
+
+            target_rates = month_rates[month]
+            rows = np.arange(size)
+            batch_blend.append(target_rates[rows, blend_indices])
+            batch_popularity.append(target_rates[rows, popularity_indices_selected])
+            blend_selection_counts[month].update(blend_indices.tolist())
+            popularity_selection_counts[month].update(popularity_indices_selected.tolist())
+
+        blend_values = np.mean(batch_blend, axis=0)
+        popularity_values = np.mean(batch_popularity, axis=0)
+        blend_samples.extend(blend_values.tolist())
+        popularity_samples.extend(popularity_values.tolist())
+        gap_samples.extend((blend_values - popularity_values).tolist())
+
+    def interval(values: list[float]) -> list[float]:
+        return [float(np.percentile(values, 2.5)), float(np.percentile(values, 97.5))]
+
+    def selection_summary(counts_by_month: dict[int, Counter]) -> dict[str, Any]:
+        summaries: dict[str, Any] = {}
+        for month, counts in counts_by_month.items():
+            most_common = counts.most_common(3)
+            summaries[str(month)] = {
+                "distinct_policies": len(counts),
+                "top_selections": [
+                    {
+                        "policy": _policy_dict(POLICY_GRID[index]),
+                        "count": count,
+                        "share": count / replicates,
+                    }
+                    for index, count in most_common
+                ],
+            }
+        return summaries
+
+    return {
+        "seed": seed,
+        "replicates": replicates,
+        "cluster": "team identity with all team-month cases retained",
+        "selection_refit_in_replicate": True,
+        "policy_grid_size": policy_count,
+        "interpretation": "whole walk-forward selection-and-evaluation pipeline under team resampling",
+        "method_hit_rate_intervals": {
+            "selected_blend": interval(blend_samples),
+            "time_aware_popularity": interval(popularity_samples),
+        },
+        "selected_blend_gap_interval": interval(gap_samples),
+        "selection_frequency": {
+            "selected_blend": selection_summary(blend_selection_counts),
+            "time_aware_popularity": selection_summary(popularity_selection_counts),
+        },
+    }
+
+
 def _policy_dict(policy: Policy) -> dict[str, Any]:
     return asdict(policy)
 
 
-def _write_markdown_table(path: Path, primary: dict[str, Any], intervals: dict[str, Any]) -> None:
+def _write_markdown_table(
+    path: Path,
+    primary: dict[str, Any],
+    intervals: dict[str, Any],
+    unconditional: dict[str, Any],
+    unconditional_intervals: dict[str, Any],
+    selection_refit: dict[str, Any],
+) -> None:
     labels = {
         "selected_blend": "Selected three-factor blend",
         "time_aware_popularity": "Nested time-aware popularity",
@@ -359,6 +652,55 @@ def _write_markdown_table(path: Path, primary: dict[str, Any], intervals: dict[s
     lines.extend(
         [
             "",
+            "## Exploratory all-recommendable complete-window analysis",
+            "",
+            f"This post-protocol analysis retains all {unconditional['total_recommendable_cases']} recommendable "
+            f"cases with three observed future snapshots: {unconditional['outcome_bearing_cases']} "
+            f"({unconditional['outcome_bearing_share']:.1%}) contain an eligible recorded increase and "
+            f"{unconditional['no_improvement_cases']} do not. A case with no recorded increase contributes zero "
+            "observed alignment to every method.",
+            "",
+            "| Method | Monthly macro observed alignment@2 | 95% team-cluster bootstrap CI |",
+            "| --- | ---: | ---: |",
+        ]
+    )
+    for method in ("selected_blend", "time_aware_popularity", "random_expected"):
+        values = unconditional["methods"][method]
+        low, high = unconditional_intervals["method_hit_rate_intervals"][method]
+        lines.append(
+            f"| {labels[method]} | {values['monthly_macro_hit_rate_at_2']:.1%} | "
+            f"[{low:.1%}, {high:.1%}] |"
+        )
+    blend_low, blend_high = selection_refit["method_hit_rate_intervals"]["selected_blend"]
+    popularity_low, popularity_high = selection_refit["method_hit_rate_intervals"][
+        "time_aware_popularity"
+    ]
+    gap_low, gap_high = selection_refit["selected_blend_gap_interval"]
+    adaptive_selection = selection_refit["selection_frequency"]["selected_blend"]
+    adaptive_rows = [
+        (month, values)
+        for month, values in adaptive_selection.items()
+        if values["distinct_policies"] > 1
+    ]
+    adaptive_summary = "; ".join(
+        f"{month}: {values['distinct_policies']} policies, modal share "
+        f"{values['top_selections'][0]['share']:.1%}"
+        for month, values in adaptive_rows
+    )
+    lines.extend(
+        [
+            "",
+            "## Selection-refit robustness analysis",
+            "",
+            "This post-protocol team-cluster bootstrap repeats the complete walk-forward choice among 675 policies "
+            "inside every replicate. The observed point estimates remain those in the primary table; these intervals "
+            "add variability from selecting a policy on resampled completed months.",
+            "",
+            f"- Selected blend: [{blend_low:.1%}, {blend_high:.1%}]",
+            f"- Time-aware popularity: [{popularity_low:.1%}, {popularity_high:.1%}]",
+            f"- Paired blend-popularity gap: [{gap_low:.1%}, {gap_high:.1%}]",
+            f"- Adaptive-month blend selection: {adaptive_summary}",
+            "",
             "Generated by `scripts/build_xp2027_evidence.py`; do not edit numerical values manually.",
             "",
         ]
@@ -385,8 +727,28 @@ def build_report(data_path: Path, seed: int, replicates: int) -> dict[str, Any]:
         replicates=replicates,
         seed=seed,
     )
+    unconditional_records = build_unconditional_complete_window_scores(engine)
+    unconditional = aggregate_unconditional_scope(
+        unconditional_records,
+        primary_months,
+        engine.practices,
+    )
+    unconditional_intervals = team_cluster_bootstrap(
+        unconditional_records,
+        primary_months,
+        replicates=replicates,
+        seed=seed + 1,
+    )
+    policy_grid_hits = build_policy_grid_case_hits(engine, primary_months)
+    selection_refit = selection_refit_team_bootstrap(
+        engine,
+        policy_grid_hits,
+        primary_months,
+        replicates=replicates,
+        seed=seed + 2,
+    )
     return {
-        "schema_version": 2,
+        "schema_version": 4,
         "protocol_status": "frozen before extended analysis",
         "input": {
             "file": data_path.name,
@@ -403,6 +765,9 @@ def build_report(data_path: Path, seed: int, replicates: int) -> dict[str, Any]:
         "sensitivity": sensitivity,
         "strict_team_complete_sensitivity": strict_team_complete,
         "strict_complete_window_audit": strict_complete_window_audit(engine),
+        "exploratory_unconditional_complete_window": unconditional,
+        "exploratory_unconditional_uncertainty": unconditional_intervals,
+        "selection_refit_robustness": selection_refit,
         "uncertainty": intervals,
         "per_month": per_month,
         "interpretation": {
@@ -455,6 +820,58 @@ def validate_reference_results(report: dict[str, Any]) -> None:
             raise RuntimeError(
                 f"Strict sensitivity drift for {method}: expected {strict_expected[method]}, got {observed}"
             )
+    unconditional = report["exploratory_unconditional_complete_window"]
+    unconditional_expected = {
+        "total_recommendable_cases": 298,
+        "outcome_bearing_cases": 120,
+        "no_improvement_cases": 178,
+        "selected_blend": 0.231074585305929,
+        "time_aware_popularity": 0.22164998213132586,
+        "random_expected": 0.12193039142263669,
+    }
+    for count_name in (
+        "total_recommendable_cases",
+        "outcome_bearing_cases",
+        "no_improvement_cases",
+    ):
+        if unconditional[count_name] != unconditional_expected[count_name]:
+            raise RuntimeError(
+                f"Exploratory unconditional drift for {count_name}: expected "
+                f"{unconditional_expected[count_name]}, got {unconditional[count_name]}"
+            )
+    for method in ("selected_blend", "time_aware_popularity", "random_expected"):
+        observed = unconditional["methods"][method]["monthly_macro_hit_rate_at_2"]
+        if not math.isclose(observed, unconditional_expected[method], abs_tol=1e-12):
+            raise RuntimeError(
+                f"Exploratory unconditional drift for {method}: expected "
+                f"{unconditional_expected[method]}, got {observed}"
+            )
+    if "selection_refit_robustness" in report:
+        refit = report["selection_refit_robustness"]
+        expected_gap_interval = (-0.04449139538293956, 0.12509194324194328)
+        observed_gap_interval = tuple(refit["selected_blend_gap_interval"])
+        if any(
+            not math.isclose(observed, expected, abs_tol=1e-12)
+            for observed, expected in zip(
+                observed_gap_interval,
+                expected_gap_interval,
+                strict=True,
+            )
+        ):
+            raise RuntimeError(
+                "Selection-refit interval drift: expected "
+                f"{expected_gap_interval}, got {observed_gap_interval}"
+            )
+        expected_distinct = {"20200803": 15, "20200906": 31}
+        frequencies = refit["selection_frequency"]["selected_blend"]
+        observed_distinct = {
+            month: frequencies[month]["distinct_policies"]
+            for month in expected_distinct
+        }
+        if observed_distinct != expected_distinct:
+            raise RuntimeError(
+                f"Selection-frequency drift: expected {expected_distinct}, got {observed_distinct}"
+            )
 
 
 def main() -> int:
@@ -467,7 +884,14 @@ def main() -> int:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     metrics_path = args.output_dir / "metrics.json"
     metrics_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    _write_markdown_table(args.output_dir / "PRIMARY_RESULTS.md", report["primary"], report["uncertainty"])
+    _write_markdown_table(
+        args.output_dir / "PRIMARY_RESULTS.md",
+        report["primary"],
+        report["uncertainty"],
+        report["exploratory_unconditional_complete_window"],
+        report["exploratory_unconditional_uncertainty"],
+        report["selection_refit_robustness"],
+    )
     print(f"Wrote aggregate-only XP 2027 evidence to {metrics_path}")
     return 0
 

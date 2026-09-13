@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the deterministic eight-page XP 2027 preparation draft.
+"""Build the deterministic XP 2027 short-paper preparation draft.
 
 The manuscript Markdown is the canonical source for all prose and references.
 Aggregate metrics supply the results visualization and validation guards.
@@ -14,7 +14,7 @@ from typing import Any
 from xml.sax.saxutils import escape
 
 from pypdf import PdfReader
-from reportlab.graphics.shapes import Drawing, Line, Rect, String
+from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
 from reportlab.lib.pagesizes import A4
@@ -25,10 +25,11 @@ from reportlab.platypus import (
     Flowable,
     Frame,
     KeepTogether,
-    PageBreak,
     PageTemplate,
     Paragraph,
     Spacer,
+    Table,
+    TableStyle,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,10 +39,10 @@ METRICS = ROOT / "submission/xp2027/evidence/metrics.json"
 OUTPUT = ROOT / "output/pdf/XP2027_temporal_agile_practice_recommendation_draft.pdf"
 
 WIDTH, HEIGHT = A4
-LEFT = 23 * mm
-RIGHT = 23 * mm
-TOP = 18 * mm
-BOTTOM = 17 * mm
+LEFT = 31 * mm
+RIGHT = 31 * mm
+TOP = 19 * mm
+BOTTOM = 18 * mm
 BODY_WIDTH = WIDTH - LEFT - RIGHT
 INK = colors.HexColor("#17233B")
 BLUE = colors.HexColor("#2455A4")
@@ -80,12 +81,31 @@ def validate_bibliography(manuscript: str) -> None:
     """Fail if the rendered reference list and BibTeX database drift apart."""
     bibliography = BIBLIOGRAPHY.read_text(encoding="utf-8")
     bib_entries = re.findall(r"^@\w+\{", bibliography, flags=re.MULTILINE)
-    references = manuscript.split("## References", maxsplit=1)[1]
-    rendered_entries = re.findall(r"^\d+\. ", references, flags=re.MULTILINE)
-    if len(bib_entries) != len(rendered_entries):
+    body, references = manuscript.split("## References", maxsplit=1)
+    reference_numbers = [
+        int(value) for value in re.findall(r"^(\d+)\. ", references, flags=re.MULTILINE)
+    ]
+    rendered_entries = len(reference_numbers)
+    if len(bib_entries) != rendered_entries:
         raise RuntimeError(
             "Bibliography drift: "
-            f"{len(bib_entries)} BibTeX entries but {len(rendered_entries)} rendered references"
+            f"{len(bib_entries)} BibTeX entries but {rendered_entries} rendered references"
+        )
+
+    expected_numbers = list(range(1, rendered_entries + 1))
+    if reference_numbers != expected_numbers:
+        raise RuntimeError("Rendered references must be numbered sequentially from 1")
+
+    first_citation_order: list[int] = []
+    for citation_group in re.findall(r"\[([0-9]+(?:\s*,\s*[0-9]+)*)\]", body):
+        for value in citation_group.split(","):
+            citation = int(value.strip())
+            if citation not in first_citation_order:
+                first_citation_order.append(citation)
+    if first_citation_order != reference_numbers:
+        raise RuntimeError(
+            "References must follow first-citation order: "
+            f"citations={first_citation_order}, references={reference_numbers}"
         )
 
     bib_dois = {value.lower() for value in re.findall(r"doi\s*=\s*\{([^}]+)\}", bibliography, re.I)}
@@ -181,18 +201,18 @@ def _styles() -> dict[str, ParagraphStyle]:
             "XPBody",
             parent=base["BodyText"],
             fontName="Times-Roman",
-            fontSize=7.9,
-            leading=9.55,
+            fontSize=9.1,
+            leading=11.0,
             alignment=TA_JUSTIFY,
             textColor=INK,
-            spaceAfter=4.2,
+            spaceAfter=5.0,
         ),
         "abstract": ParagraphStyle(
             "XPAbstract",
             parent=base["BodyText"],
             fontName="Times-Roman",
-            fontSize=7.55,
-            leading=9.2,
+            fontSize=8.5,
+            leading=10.3,
             alignment=TA_JUSTIFY,
             textColor=INK,
             spaceAfter=4,
@@ -201,18 +221,18 @@ def _styles() -> dict[str, ParagraphStyle]:
             "XPReference",
             parent=base["BodyText"],
             fontName="Times-Roman",
-            fontSize=5.25,
-            leading=6.05,
+            fontSize=7.0,
+            leading=8.2,
             alignment=TA_LEFT,
             textColor=INK,
-            spaceAfter=1.1,
+            spaceAfter=1.5,
         ),
         "bullet": ParagraphStyle(
             "XPBullet",
             parent=base["BodyText"],
             fontName="Times-Roman",
-            fontSize=7.8,
-            leading=9.4,
+            fontSize=9.0,
+            leading=10.8,
             alignment=TA_JUSTIFY,
             textColor=INK,
             leftIndent=13,
@@ -224,10 +244,28 @@ def _styles() -> dict[str, ParagraphStyle]:
             "XPCaption",
             parent=base["BodyText"],
             fontName="Times-Roman",
-            fontSize=6.7,
-            leading=8,
+            fontSize=7.2,
+            leading=8.6,
             textColor=INK,
             spaceAfter=5,
+        ),
+        "table_header": ParagraphStyle(
+            "XPTableHeader",
+            parent=base["BodyText"],
+            fontName="Helvetica-Bold",
+            fontSize=5.5,
+            leading=6.4,
+            alignment=TA_CENTER,
+            textColor=colors.white,
+        ),
+        "table_cell": ParagraphStyle(
+            "XPTableCell",
+            parent=base["BodyText"],
+            fontName="Helvetica",
+            fontSize=5.7,
+            leading=6.7,
+            alignment=TA_CENTER,
+            textColor=INK,
         ),
     }
 
@@ -309,6 +347,169 @@ class ResultsChart(Flowable):
         drawing.drawOn(self.canv, 0, 0)
 
 
+class TemporalProtocolDiagram(Flowable):
+    """Compact visual summary of the leakage-conscious prediction boundary."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.width = BODY_WIDTH
+        self.height = 25 * mm
+
+    def draw(self) -> None:
+        """Draw the train-predict-observe-release sequence."""
+        drawing = Drawing(self.width, self.height)
+        labels = [
+            ("Closed prior outcomes", "fit and tune"),
+            ("Target baseline", "construct + rank"),
+            ("Next 3 snapshots", "observe outcomes"),
+            ("Window closed", "release for later tuning"),
+        ]
+        gap = 12
+        box_width = (self.width - gap * 3) / 4
+        box_height = 31
+        y = 22
+        for index, (title, subtitle) in enumerate(labels):
+            x = index * (box_width + gap)
+            fill = colors.HexColor("#EEF3FA") if index != 1 else colors.HexColor("#E4F3F1")
+            stroke = BLUE if index != 1 else TEAL
+            drawing.add(
+                Rect(
+                    x,
+                    y,
+                    box_width,
+                    box_height,
+                    rx=4,
+                    ry=4,
+                    fillColor=fill,
+                    strokeColor=stroke,
+                    strokeWidth=0.8,
+                )
+            )
+            drawing.add(
+                String(
+                    x + box_width / 2,
+                    y + 18,
+                    title,
+                    fontName="Helvetica-Bold",
+                    fontSize=6.4,
+                    textAnchor="middle",
+                    fillColor=INK,
+                )
+            )
+            drawing.add(
+                String(
+                    x + box_width / 2,
+                    y + 8,
+                    subtitle,
+                    fontName="Helvetica",
+                    fontSize=5.8,
+                    textAnchor="middle",
+                    fillColor=MUTED,
+                )
+            )
+            if index < len(labels) - 1:
+                arrow_start = x + box_width + 2
+                arrow_end = x + box_width + gap - 2
+                arrow_y = y + box_height / 2
+                drawing.add(Line(arrow_start, arrow_y, arrow_end, arrow_y, strokeColor=MUTED, strokeWidth=0.8))
+                drawing.add(
+                    Polygon(
+                        [arrow_end, arrow_y, arrow_end - 4, arrow_y + 2.5, arrow_end - 4, arrow_y - 2.5],
+                        fillColor=MUTED,
+                        strokeColor=None,
+                    )
+                )
+        drawing.add(
+            String(
+                self.width / 2,
+                8,
+                "No outcome or policy choice crosses left of its availability time",
+                fontName="Helvetica-Oblique",
+                fontSize=6.2,
+                textAnchor="middle",
+                fillColor=MUTED,
+            )
+        )
+        drawing.drawOn(self.canv, 0, 0)
+
+
+def monthly_results_table(metrics: dict[str, Any]) -> Table:
+    """Build the primary month-level comparison directly from aggregate evidence."""
+    primary = metrics["primary"]["methods"]
+    blend = primary["selected_blend"]["per_month_hit_rate_at_2"]
+    popularity = primary["time_aware_popularity"]["per_month_hit_rate_at_2"]
+    case_counts = {str(row["month"]): row["evaluable_cases"] for row in metrics["per_month"]}
+    rows: list[list[str]] = [["Prediction month", "Cases", "Blend", "Popularity", "Difference"]]
+    for month in metrics["primary"]["months"]:
+        key = str(month)
+        month_label = f"{key[:4]}-{key[4:6]}"
+        difference = blend[key] - popularity[key]
+        rows.append(
+            [
+                month_label,
+                str(case_counts[key]),
+                f"{blend[key]:.1%}",
+                f"{popularity[key]:.1%}",
+                f"{difference:+.1%}",
+            ]
+        )
+    rows.append(["Monthly macro", "121", "58.0%", "55.7%", "+2.3 pp"])
+    table = Table(rows, colWidths=[96, 52, 72, 76, 74], hAlign="CENTER")
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), INK),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#EEF3FA")),
+                ("FONTNAME", (0, 1), (-1, -2), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, -1), 6.5),
+                ("ALIGN", (1, 0), (-1, -1), "CENTER"),
+                ("ALIGN", (0, 0), (0, -1), "LEFT"),
+                ("GRID", (0, 0), (-1, -1), 0.4, GRID),
+                ("TOPPADDING", (0, 0), (-1, -1), 2.5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5),
+            ]
+        )
+    )
+    return table
+
+
+def prior_work_table(styles: dict[str, ParagraphStyle]) -> Table:
+    """Build the structured comparison of the closest screened studies."""
+    raw_rows = [
+        ["Study", "Guidance target", "Longitudinal teams", "Next observed practice", "Walk-forward + temporal baseline"],
+        ["Packlick [12]", "Agile maturity-guided change", "NR", "NR", "NR"],
+        ["Choi et al. [13]", "Process-improvement actions", "NR", "NR", "NR"],
+        ["Raza et al. [14]", "Developer-improvement actions", "NR", "NR", "NR"],
+        ["Song et al. [11]", "Software-process model", "NR", "No", "NR"],
+        ["This study", "Team practice top two", "Yes", "Yes", "Yes"],
+    ]
+    rows = [
+        [
+            Paragraph(_inline_markup(value), styles["table_header"] if row_index == 0 else styles["table_cell"])
+            for value in row
+        ]
+        for row_index, row in enumerate(raw_rows)
+    ]
+    table = Table(rows, colWidths=[73, 105, 72, 75, 94], hAlign="CENTER")
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), INK),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E4F3F1")),
+                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("GRID", (0, 0), (-1, -1), 0.4, GRID),
+                ("TOPPADDING", (0, 0), (-1, -1), 2.5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5),
+            ]
+        )
+    )
+    return table
+
+
 def _page(canvas: Any, _document: BaseDocTemplate) -> None:
     """Draw deterministic metadata, running header, footer, and page number."""
     canvas.saveState()
@@ -318,11 +519,11 @@ def _page(canvas: Any, _document: BaseDocTemplate) -> None:
         canvas.line(LEFT, HEIGHT - TOP + 1, WIDTH - RIGHT, HEIGHT - TOP + 1)
         canvas.setFont("Helvetica", 7.2)
         canvas.setFillColor(MUTED)
-        canvas.drawString(LEFT, HEIGHT - TOP + 5, "XP 2027 PREPARATION DRAFT")
-        canvas.drawRightString(WIDTH - RIGHT, HEIGHT - TOP + 5, "AGILE PRACTICE SEQUENCING")
+        canvas.drawString(LEFT, HEIGHT - TOP + 5, "XP 2027 RESEARCH SHORT-PAPER DRAFT")
+        canvas.drawRightString(WIDTH - RIGHT, HEIGHT - TOP + 5, "AGILE PRACTICE GUIDANCE")
     canvas.setFont("Helvetica", 7)
     canvas.setFillColor(MUTED)
-    canvas.drawString(LEFT, 11 * mm, "Official XP 2027 venue format pending publication")
+    canvas.drawString(LEFT, 11 * mm, "Provisional short-paper format - official XP 2027 call pending")
     canvas.drawRightString(WIDTH - RIGHT, 11 * mm, str(page_number))
     canvas.restoreState()
 
@@ -366,8 +567,6 @@ def manuscript_story(manuscript: str, metrics: dict[str, Any]) -> list[Flowable]
             return
         text = " ".join(part.strip() for part in paragraph_lines)
         paragraph_lines.clear()
-        if text == "The study asks:":
-            story.append(PageBreak())
         style = styles["reference"] if in_references else styles["abstract"] if in_abstract else styles["body"]
         story.append(Paragraph(_inline_markup(text), style))
 
@@ -390,8 +589,6 @@ def manuscript_story(manuscript: str, metrics: dict[str, Any]) -> list[Flowable]
             flush_paragraph()
             flush_bullets()
             heading = stripped[3:]
-            if re.match(r"[3-8] ", heading):
-                story.append(PageBreak())
             in_abstract = heading == "Abstract"
             in_references = heading == "References"
             secondary = in_abstract or heading in {
@@ -399,20 +596,52 @@ def manuscript_story(manuscript: str, metrics: dict[str, Any]) -> list[Flowable]
                 "Acknowledgments",
                 "References",
             }
-            story.append(Paragraph(_inline_markup(heading), styles["h2"] if secondary else styles["h1"]))
+            heading_flowable = Paragraph(
+                _inline_markup(heading), styles["h2"] if secondary else styles["h1"]
+            )
+            if heading == "3 Study Design":
+                diagram = TemporalProtocolDiagram()
+                caption = Paragraph(
+                    "<b>Fig. 1.</b> Prediction-time boundary. A prior month can tune a later policy only after its "
+                    "outcome window closes.",
+                    styles["caption"],
+                )
+                story.append(KeepTogether([heading_flowable, diagram, caption]))
+                continue
             if heading == "6 Results":
                 chart = ResultsChart(metrics)
                 caption = Paragraph(
-                    "<b>Fig. 1.</b> Primary monthly macro Conditional Hit Rate@2. "
+                    "<b>Fig. 2.</b> Primary monthly macro Conditional Hit Rate@2. "
                     "Popularity is a substantive comparator.",
                     styles["caption"],
                 )
-                story.append(KeepTogether([chart, caption]))
+                table = monthly_results_table(metrics)
+                table_caption = Paragraph(
+                    "<b>Table 2.</b> Primary per-month Conditional Hit Rate@2. The first three rows are identical "
+                    "because no earlier prediction window had closed.",
+                    styles["caption"],
+                )
+                story.append(
+                    KeepTogether([heading_flowable, chart, caption, table, table_caption])
+                )
+                continue
+            story.append(heading_flowable)
             continue
         if stripped.startswith("### "):
             flush_paragraph()
             flush_bullets()
-            story.append(Paragraph(_inline_markup(stripped[4:]), styles["h2"]))
+            heading = stripped[4:]
+            heading_flowable = Paragraph(_inline_markup(heading), styles["h2"])
+            if heading == "2.4 Structured gap check":
+                table = prior_work_table(styles)
+                caption = Paragraph(
+                    "<b>Table 1.</b> Closest screened studies. NR = not reported in the screened title or abstract; "
+                    "it does not prove absence from the full text.",
+                    styles["caption"],
+                )
+                story.append(KeepTogether([heading_flowable, table, caption]))
+                continue
+            story.append(heading_flowable)
             continue
         if stripped.startswith("- "):
             flush_paragraph()
@@ -442,9 +671,12 @@ def build_paper(metrics: dict[str, Any], output: Path = OUTPUT) -> Path:
         rightMargin=RIGHT,
         topMargin=TOP + 3,
         bottomMargin=BOTTOM,
-        title="Do Complex Recommenders Beat Popularity for Agile Practice Sequencing?",
+        title=(
+            "Can Organizational History Inform What Agile Teams Improve Next? "
+            "A Walk-Forward Study of 87 Teams"
+        ),
         author="Erez Morabia",
-        subject="XP 2027 preparation draft",
+        subject="XP 2027 provisional research short-paper draft",
         creator="XP 2027 manuscript builder",
         invariant=True,
         pageCompression=True,
@@ -454,16 +686,20 @@ def build_paper(metrics: dict[str, Any], output: Path = OUTPUT) -> Path:
     document.build(manuscript_story(manuscript, metrics))
 
     reader = PdfReader(str(output))
-    if len(reader.pages) != 8:
-        raise RuntimeError(f"Expected exactly 8 pages, got {len(reader.pages)}")
+    if not 5 <= len(reader.pages) <= 8:
+        raise RuntimeError(f"Expected a five-to-eight-page short-paper draft, got {len(reader.pages)} pages")
     text = "\n".join(page.extract_text() or "" for page in reader.pages)
     normalized_text = " ".join(text.split())
     required = [
-        "Do Complex Recommenders Beat Popularity",
+        "Can Organizational History Inform What Agile Teams Improve Next?",
         "58.0%",
         "55.7%",
         "57.3%",
         "40.3%",
+        "23.1%",
+        "22.2%",
+        "-4.4",
+        "12.5",
         "conditional on the monthly policies",
         "Data Availability and Disclosures",
         "This research received no external funding",
@@ -478,7 +714,7 @@ def build_paper(metrics: dict[str, Any], output: Path = OUTPUT) -> Path:
 def main() -> int:
     """Build and validate the paper."""
     path = build_paper(load_metrics())
-    print(f"Wrote eight-page XP 2027 preparation draft to {path}")
+    print(f"Wrote XP 2027 short-paper preparation draft to {path}")
     return 0
 
 
