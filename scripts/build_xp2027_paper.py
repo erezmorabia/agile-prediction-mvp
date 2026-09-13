@@ -41,7 +41,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANUSCRIPT = ROOT / "submission/xp2027/manuscript/PAPER.md"
 BIBLIOGRAPHY = ROOT / "submission/xp2027/manuscript/references.bib"
 METRICS = ROOT / "submission/xp2027/evidence/metrics.json"
-OUTPUT = ROOT / "output/pdf/XP2027_temporal_agile_practice_recommendation_draft.pdf"
+OUTPUT = ROOT / "output/pdf/Morabia_XP2027_Paper_Draft.pdf"
 
 WIDTH, HEIGHT = A4
 LEFT = 31 * mm

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "output/xp2027/xp2027-submission-preparation.zip"
 ALLOWLIST = [
     ROOT / "LICENSE",
-    ROOT / "output/pdf/XP2027_temporal_agile_practice_recommendation_draft.pdf",
+    ROOT / "output/pdf/Morabia_XP2027_Paper_Draft.pdf",
     ROOT / "submission/xp2027/manuscript/PAPER.md",
     ROOT / "submission/xp2027/manuscript/references.bib",
     ROOT / "submission/xp2027/RESEARCH_PROTOCOL.md",
