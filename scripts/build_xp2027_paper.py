@@ -14,17 +14,22 @@ from typing import Any
 from xml.sax.saxutils import escape
 
 from pypdf import PdfReader
+from reportlab import rl_config
+from reportlab.graphics import shapes as graphics_shapes
 from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     BaseDocTemplate,
     Flowable,
     Frame,
     KeepTogether,
+    PageBreak,
     PageTemplate,
     Paragraph,
     Spacer,
@@ -49,6 +54,71 @@ BLUE = colors.HexColor("#2455A4")
 TEAL = colors.HexColor("#16827A")
 MUTED = colors.HexColor("#5B6678")
 GRID = colors.HexColor("#D9E0EA")
+
+SERIF = "XPSerif"
+SERIF_BOLD = "XPSerif-Bold"
+SERIF_ITALIC = "XPSerif-Italic"
+SERIF_BOLD_ITALIC = "XPSerif-BoldItalic"
+SANS = "XPSans"
+SANS_BOLD = "XPSans-Bold"
+SANS_ITALIC = "XPSans-Italic"
+SANS_BOLD_ITALIC = "XPSans-BoldItalic"
+MONO = "XPMono"
+
+
+def _find_font(*filenames: str) -> Path:
+    """Find the first available embeddable font in ReportLab's search paths."""
+    directories = [
+        *map(Path, rl_config.TTFSearchPath),
+        Path("/System/Library/Fonts/Supplemental"),
+        Path("/usr/share/fonts/truetype/msttcorefonts"),
+        Path("C:/Windows/Fonts"),
+    ]
+    for filename in filenames:
+        for directory in directories:
+            candidate = directory / filename
+            if candidate.is_file():
+                return candidate
+    raise RuntimeError(f"Could not find an embeddable font from: {', '.join(filenames)}")
+
+
+def _register_embedded_fonts() -> None:
+    """Register portable PDF font aliases backed by embedded TrueType fonts."""
+    if SERIF in pdfmetrics.getRegisteredFontNames():
+        return
+
+    font_files = {
+        SERIF: _find_font("Times New Roman.ttf", "Vera.ttf"),
+        SERIF_BOLD: _find_font("Times New Roman Bold.ttf", "VeraBd.ttf"),
+        SERIF_ITALIC: _find_font("Times New Roman Italic.ttf", "VeraIt.ttf"),
+        SERIF_BOLD_ITALIC: _find_font("Times New Roman Bold Italic.ttf", "VeraBI.ttf"),
+        SANS: _find_font("Arial.ttf", "Vera.ttf"),
+        SANS_BOLD: _find_font("Arial Bold.ttf", "VeraBd.ttf"),
+        SANS_ITALIC: _find_font("Arial Italic.ttf", "VeraIt.ttf"),
+        SANS_BOLD_ITALIC: _find_font("Arial Bold Italic.ttf", "VeraBI.ttf"),
+        MONO: _find_font("Courier New.ttf", "Vera.ttf"),
+    }
+    for name, path in font_files.items():
+        pdfmetrics.registerFont(TTFont(name, str(path)))
+    pdfmetrics.registerFontFamily(
+        SERIF,
+        normal=SERIF,
+        bold=SERIF_BOLD,
+        italic=SERIF_ITALIC,
+        boldItalic=SERIF_BOLD_ITALIC,
+    )
+    pdfmetrics.registerFontFamily(
+        SANS,
+        normal=SANS,
+        bold=SANS_BOLD,
+        italic=SANS_ITALIC,
+        boldItalic=SANS_BOLD_ITALIC,
+    )
+
+
+_register_embedded_fonts()
+rl_config.canvas_basefontname = SANS
+graphics_shapes.STATE_DEFAULTS["fontName"] = SERIF
 
 
 def load_metrics() -> dict[str, Any]:
@@ -123,11 +193,46 @@ def validate_bibliography(manuscript: str) -> None:
         raise RuntimeError("Bibliography URL drift between references.bib and PAPER.md")
 
 
+def _linkified_text(text: str) -> str:
+    """Escape text and add PDF links for bare URLs and DOI identifiers."""
+    pattern = re.compile(r"https?://\S+|doi:(10\.\d{4,9}/\S+)", re.IGNORECASE)
+    parts: list[str] = []
+    cursor = 0
+    for match in pattern.finditer(text):
+        parts.append(escape(text[cursor : match.start()]))
+        label = match.group(0)
+        trailing = ""
+        while label.endswith((".", ",", ";")):
+            trailing = label[-1] + trailing
+            label = label[:-1]
+        destination = label if label.lower().startswith("http") else f"https://doi.org/{label[4:]}"
+        escaped_destination = escape(destination, {'"': "&quot;"})
+        parts.append(
+            f'<link href="{escaped_destination}" color="#{BLUE.hexval()[2:]}">{escape(label)}</link>'
+        )
+        parts.append(escape(trailing))
+        cursor = match.end()
+    parts.append(escape(text[cursor:]))
+    return "".join(parts)
+
+
+def _code_markup(match: re.Match[str]) -> str:
+    """Render equations as serif math and literal search strings as monospaced text."""
+    content = match.group(1)
+    is_math = bool(re.search(r"(?:=|_[A-Za-z]|\b(?:score|C|P)\()", content))
+    if not is_math:
+        return f'<font name="{MONO}">{content}</font>'
+
+    content = re.sub(r"\b([pknrd])\b", r"<i>\1</i>", content)
+    content = re.sub(r"\b([wP])_([A-Za-z]+)\b", r"<i>\1</i><sub>\2</sub>", content)
+    return f'<font name="{SERIF}">{content}</font>'
+
+
 def _inline_markup(text: str) -> str:
     """Convert the small Markdown inline subset used by the manuscript."""
-    marked = escape(text)
+    marked = _linkified_text(text)
     marked = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", marked)
-    marked = re.sub(r"`(.+?)`", r'<font name="Courier">\1</font>', marked)
+    marked = re.sub(r"`(.+?)`", _code_markup, marked)
     marked = re.sub(r"(?<!\*)\*([^*]+?)\*(?!\*)", r"<i>\1</i>", marked)
     return marked
 
@@ -139,7 +244,7 @@ def _styles() -> dict[str, ParagraphStyle]:
         "title": ParagraphStyle(
             "XPTitle",
             parent=base["Title"],
-            fontName="Helvetica-Bold",
+            fontName=SANS_BOLD,
             fontSize=18,
             leading=21,
             alignment=TA_CENTER,
@@ -149,7 +254,7 @@ def _styles() -> dict[str, ParagraphStyle]:
         "subtitle": ParagraphStyle(
             "XPSubtitle",
             parent=base["Normal"],
-            fontName="Helvetica",
+            fontName=SANS,
             fontSize=11.5,
             leading=14,
             alignment=TA_CENTER,
@@ -159,7 +264,7 @@ def _styles() -> dict[str, ParagraphStyle]:
         "author": ParagraphStyle(
             "XPAuthor",
             parent=base["Normal"],
-            fontName="Helvetica-Bold",
+            fontName=SANS_BOLD,
             fontSize=8.8,
             leading=11,
             alignment=TA_CENTER,
@@ -168,7 +273,7 @@ def _styles() -> dict[str, ParagraphStyle]:
         "affiliation": ParagraphStyle(
             "XPAffiliation",
             parent=base["Normal"],
-            fontName="Helvetica",
+            fontName=SANS,
             fontSize=7.7,
             leading=10,
             alignment=TA_CENTER,
@@ -178,7 +283,7 @@ def _styles() -> dict[str, ParagraphStyle]:
         "h1": ParagraphStyle(
             "XPH1",
             parent=base["Heading1"],
-            fontName="Helvetica-Bold",
+            fontName=SANS_BOLD,
             fontSize=12.2,
             leading=14,
             textColor=INK,
@@ -189,7 +294,7 @@ def _styles() -> dict[str, ParagraphStyle]:
         "h2": ParagraphStyle(
             "XPH2",
             parent=base["Heading2"],
-            fontName="Helvetica-Bold",
+            fontName=SANS_BOLD,
             fontSize=9.8,
             leading=11.5,
             textColor=BLUE,
@@ -200,7 +305,7 @@ def _styles() -> dict[str, ParagraphStyle]:
         "body": ParagraphStyle(
             "XPBody",
             parent=base["BodyText"],
-            fontName="Times-Roman",
+            fontName=SERIF,
             fontSize=9.1,
             leading=11.0,
             alignment=TA_JUSTIFY,
@@ -210,7 +315,7 @@ def _styles() -> dict[str, ParagraphStyle]:
         "abstract": ParagraphStyle(
             "XPAbstract",
             parent=base["BodyText"],
-            fontName="Times-Roman",
+            fontName=SERIF,
             fontSize=8.5,
             leading=10.3,
             alignment=TA_JUSTIFY,
@@ -220,50 +325,54 @@ def _styles() -> dict[str, ParagraphStyle]:
         "reference": ParagraphStyle(
             "XPReference",
             parent=base["BodyText"],
-            fontName="Times-Roman",
-            fontSize=7.0,
-            leading=8.2,
+            fontName=SERIF,
+            fontSize=7.8,
+            leading=9.1,
             alignment=TA_LEFT,
             textColor=INK,
-            spaceAfter=1.5,
+            leftIndent=10,
+            firstLineIndent=-10,
+            spaceAfter=2.0,
         ),
         "bullet": ParagraphStyle(
             "XPBullet",
             parent=base["BodyText"],
-            fontName="Times-Roman",
+            fontName=SERIF,
             fontSize=9.0,
             leading=10.8,
-            alignment=TA_JUSTIFY,
+            alignment=TA_LEFT,
             textColor=INK,
             leftIndent=13,
             firstLineIndent=0,
             bulletIndent=1,
+            bulletFontName=SERIF,
+            bulletFontSize=9.0,
             spaceAfter=2,
         ),
         "caption": ParagraphStyle(
             "XPCaption",
             parent=base["BodyText"],
-            fontName="Times-Roman",
-            fontSize=7.2,
-            leading=8.6,
+            fontName=SERIF,
+            fontSize=7.6,
+            leading=9.0,
             textColor=INK,
             spaceAfter=5,
         ),
         "table_header": ParagraphStyle(
             "XPTableHeader",
             parent=base["BodyText"],
-            fontName="Helvetica-Bold",
-            fontSize=5.5,
-            leading=6.4,
+            fontName=SANS_BOLD,
+            fontSize=7.0,
+            leading=8.0,
             alignment=TA_CENTER,
             textColor=colors.white,
         ),
         "table_cell": ParagraphStyle(
             "XPTableCell",
             parent=base["BodyText"],
-            fontName="Helvetica",
-            fontSize=5.7,
-            leading=6.7,
+            fontName=SANS,
+            fontSize=7.0,
+            leading=8.0,
             alignment=TA_CENTER,
             textColor=INK,
         ),
@@ -303,8 +412,8 @@ class ResultsChart(Flowable):
                     x,
                     top + 5,
                     f"{tick:.0%}",
-                    fontName="Helvetica",
-                    fontSize=6,
+                    fontName=SANS,
+                    fontSize=7.0,
                     textAnchor="middle",
                     fillColor=MUTED,
                 )
@@ -316,8 +425,8 @@ class ResultsChart(Flowable):
                     label_width - 7,
                     y + 1,
                     label,
-                    fontName="Helvetica",
-                    fontSize=6.7,
+                    fontName=SANS,
+                    fontSize=7.2,
                     textAnchor="end",
                     fillColor=INK,
                 )
@@ -339,8 +448,8 @@ class ResultsChart(Flowable):
                     label_width + chart_width * value / maximum + 3,
                     y + 1,
                     f"{value:.1%}",
-                    fontName="Helvetica-Bold",
-                    fontSize=6.4,
+                    fontName=SANS_BOLD,
+                    fontSize=7.0,
                     fillColor=INK,
                 )
             )
@@ -390,8 +499,8 @@ class TemporalProtocolDiagram(Flowable):
                     x + box_width / 2,
                     y + 18,
                     title,
-                    fontName="Helvetica-Bold",
-                    fontSize=6.4,
+                    fontName=SANS_BOLD,
+                    fontSize=7.0,
                     textAnchor="middle",
                     fillColor=INK,
                 )
@@ -401,8 +510,8 @@ class TemporalProtocolDiagram(Flowable):
                     x + box_width / 2,
                     y + 8,
                     subtitle,
-                    fontName="Helvetica",
-                    fontSize=5.8,
+                    fontName=SANS,
+                    fontSize=7.0,
                     textAnchor="middle",
                     fillColor=MUTED,
                 )
@@ -424,8 +533,8 @@ class TemporalProtocolDiagram(Flowable):
                 self.width / 2,
                 8,
                 "No outcome or policy choice crosses left of its availability time",
-                fontName="Helvetica-Oblique",
-                fontSize=6.2,
+                fontName=SANS_ITALIC,
+                fontSize=7.0,
                 textAnchor="middle",
                 fillColor=MUTED,
             )
@@ -460,11 +569,11 @@ def monthly_results_table(metrics: dict[str, Any]) -> Table:
             [
                 ("BACKGROUND", (0, 0), (-1, 0), INK),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("FONTNAME", (0, 0), (-1, 0), SANS_BOLD),
+                ("FONTNAME", (0, -1), (-1, -1), SANS_BOLD),
                 ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#EEF3FA")),
-                ("FONTNAME", (0, 1), (-1, -2), "Helvetica"),
-                ("FONTSIZE", (0, 0), (-1, -1), 6.5),
+                ("FONTNAME", (0, 1), (-1, -2), SANS),
+                ("FONTSIZE", (0, 0), (-1, -1), 7.1),
                 ("ALIGN", (1, 0), (-1, -1), "CENTER"),
                 ("ALIGN", (0, 0), (0, -1), "LEFT"),
                 ("GRID", (0, 0), (-1, -1), 0.4, GRID),
@@ -499,7 +608,8 @@ def prior_work_table(styles: dict[str, ParagraphStyle]) -> Table:
             [
                 ("BACKGROUND", (0, 0), (-1, 0), INK),
                 ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E4F3F1")),
-                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("FONTNAME", (0, 0), (-1, -1), SANS),
+                ("FONTNAME", (0, -1), (-1, -1), SANS_BOLD),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("GRID", (0, 0), (-1, -1), 0.4, GRID),
                 ("TOPPADDING", (0, 0), (-1, -1), 2.5),
@@ -517,11 +627,11 @@ def _page(canvas: Any, _document: BaseDocTemplate) -> None:
     if page_number > 1:
         canvas.setStrokeColor(colors.HexColor("#CFD7E5"))
         canvas.line(LEFT, HEIGHT - TOP + 1, WIDTH - RIGHT, HEIGHT - TOP + 1)
-        canvas.setFont("Helvetica", 7.2)
+        canvas.setFont(SANS, 7.2)
         canvas.setFillColor(MUTED)
         canvas.drawString(LEFT, HEIGHT - TOP + 5, "XP 2027 RESEARCH SHORT-PAPER DRAFT")
         canvas.drawRightString(WIDTH - RIGHT, HEIGHT - TOP + 5, "AGILE PRACTICE GUIDANCE")
-    canvas.setFont("Helvetica", 7)
+    canvas.setFont(SANS, 7)
     canvas.setFillColor(MUTED)
     canvas.drawString(LEFT, 11 * mm, "Provisional short-paper format - official XP 2027 call pending")
     canvas.drawRightString(WIDTH - RIGHT, 11 * mm, str(page_number))
@@ -568,7 +678,21 @@ def manuscript_story(manuscript: str, metrics: dict[str, Any]) -> list[Flowable]
         text = " ".join(part.strip() for part in paragraph_lines)
         paragraph_lines.clear()
         style = styles["reference"] if in_references else styles["abstract"] if in_abstract else styles["body"]
-        story.append(Paragraph(_inline_markup(text), style))
+        paragraph = Paragraph(_inline_markup(text), style)
+        keep_intact = text.startswith("The strongest comparator independently selects") or any(
+            text.startswith(prefix)
+            for prefix in (
+                "**Construct validity.**",
+                "**Internal and conclusion validity.**",
+                "**Selection and use validity.**",
+                "**External and reproducibility validity.**",
+            )
+        )
+        if keep_intact:
+            # Keep short section-boundary and named-validity paragraphs from splitting across pages.
+            story.append(KeepTogether([paragraph]))
+        else:
+            story.append(paragraph)
 
     def flush_bullets() -> None:
         if not bullet_lines:
@@ -579,7 +703,8 @@ def manuscript_story(manuscript: str, metrics: dict[str, Any]) -> list[Flowable]
         story.append(Spacer(1, 2))
 
     while index < len(lines):
-        stripped = lines[index].strip()
+        raw_line = lines[index]
+        stripped = raw_line.strip()
         index += 1
         if not stripped:
             flush_paragraph()
@@ -599,6 +724,8 @@ def manuscript_story(manuscript: str, metrics: dict[str, Any]) -> list[Flowable]
             heading_flowable = Paragraph(
                 _inline_markup(heading), styles["h2"] if secondary else styles["h1"]
             )
+            if heading == "References":
+                story.append(PageBreak())
             if heading == "3 Study Design":
                 diagram = TemporalProtocolDiagram()
                 caption = Paragraph(
@@ -647,6 +774,9 @@ def manuscript_story(manuscript: str, metrics: dict[str, Any]) -> list[Flowable]
             flush_paragraph()
             bullet_lines.append(stripped[2:])
             continue
+        if bullet_lines and (raw_line.startswith("  ") or raw_line.startswith("\t")):
+            bullet_lines[-1] = f"{bullet_lines[-1]} {stripped}"
+            continue
         if in_references and re.match(r"\d+\. ", stripped):
             flush_paragraph()
             story.append(Paragraph(_inline_markup(stripped), styles["reference"]))
@@ -657,6 +787,51 @@ def manuscript_story(manuscript: str, metrics: dict[str, Any]) -> list[Flowable]
     flush_paragraph()
     flush_bullets()
     return story
+
+
+def _font_is_embedded(font_reference: Any) -> bool:
+    """Return whether a PDF font resource contains an embedded font program."""
+    font = font_reference.get_object()
+    descriptor_reference = font.get("/FontDescriptor")
+    if descriptor_reference is not None:
+        descriptor = descriptor_reference.get_object()
+        return any(key in descriptor for key in ("/FontFile", "/FontFile2", "/FontFile3"))
+    descendants = font.get("/DescendantFonts", [])
+    return bool(descendants) and all(_font_is_embedded(descendant) for descendant in descendants)
+
+
+def validate_pdf_format(reader: PdfReader, manuscript: str) -> None:
+    """Fail when portable fonts or expected reference hyperlinks are missing."""
+    missing_fonts: set[str] = set()
+    uri_targets: set[str] = set()
+    for page in reader.pages:
+        resources = page.get("/Resources", {})
+        for reference in resources.get("/Font", {}).values():
+            if not _font_is_embedded(reference):
+                font = reference.get_object()
+                missing_fonts.add(str(font.get("/BaseFont", "unknown")))
+        for annotation_reference in page.get("/Annots", []):
+            annotation = annotation_reference.get_object()
+            action_reference = annotation.get("/A")
+            if action_reference is None:
+                continue
+            action = action_reference.get_object()
+            if action.get("/S") == "/URI" and action.get("/URI"):
+                uri_targets.add(str(action["/URI"]))
+    if missing_fonts:
+        raise RuntimeError(f"Built paper contains unembedded fonts: {sorted(missing_fonts)}")
+
+    expected_links = {
+        match.rstrip(".,;")
+        for match in re.findall(r"https?://\S+", manuscript)
+    }
+    expected_links.update(
+        f"https://doi.org/{doi.rstrip('.,;')}"
+        for doi in re.findall(r"doi:(10\.\d{4,9}/\S+)", manuscript, re.IGNORECASE)
+    )
+    missing_links = expected_links - uri_targets
+    if missing_links:
+        raise RuntimeError(f"Built paper is missing hyperlinks: {sorted(missing_links)}")
 
 
 def build_paper(metrics: dict[str, Any], output: Path = OUTPUT) -> Path:
@@ -686,6 +861,7 @@ def build_paper(metrics: dict[str, Any], output: Path = OUTPUT) -> Path:
     document.build(manuscript_story(manuscript, metrics))
 
     reader = PdfReader(str(output))
+    validate_pdf_format(reader, manuscript)
     if not 5 <= len(reader.pages) <= 8:
         raise RuntimeError(f"Expected a five-to-eight-page short-paper draft, got {len(reader.pages)} pages")
     text = "\n".join(page.extract_text() or "" for page in reader.pages)

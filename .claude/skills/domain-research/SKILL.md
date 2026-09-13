@@ -9,15 +9,15 @@ description: Aggregate-only XP conference evidence, manuscript generation, revie
 
 The research domain converts the tested production `PolicyEngine` into a privacy-preserving, reproducible conference
 submission. It freezes the estimand and comparisons before analysis, computes aggregate evidence without emitting team
-identities, builds an eight-page preparation draft, and creates a scanned archive that excludes organizational source
+identities, builds a five-to-eight-page preparation draft, and creates a scanned archive that excludes organizational source
 data. It does not alter the production recommender.
 
 ## Data flows
 
 - Evidence: reference workbook -> production data/ML components -> fixed case cohort -> selected blend and declared
   comparators -> team-cluster bootstrap -> aggregate JSON and Markdown.
-- Paper: aggregate JSON + manuscript wording -> deterministic ReportLab build -> eight-page PDF -> page-count/text/render
-  QA.
+- Paper: aggregate JSON + manuscript wording -> deterministic ReportLab build -> five-to-eight-page PDF -> page-count,
+  required-text, embedded-font, reference-link, and rendered-page QA.
 - Package: allowlisted manuscript, evidence, protocol, and artifact documentation -> confidentiality scan -> ZIP archive.
 
 ## Invariants

@@ -20,7 +20,12 @@ from scripts.build_xp2027_evidence import (
     team_cluster_bootstrap,
     validate_reference_results,
 )
-from scripts.build_xp2027_paper import load_manuscript, validate_bibliography
+from scripts.build_xp2027_paper import (
+    load_manuscript,
+    load_metrics,
+    manuscript_story,
+    validate_bibliography,
+)
 from scripts.package_xp2027_submission import ALLOWLIST
 
 DATA_PATH = Path("data/raw/combined_dataset.xlsx")
@@ -139,6 +144,22 @@ def test_aggregate_output_does_not_expose_team_names(evidence):
 
 def test_paper_and_bibliography_are_synchronized():
     validate_bibliography(load_manuscript())
+
+
+def test_wrapped_research_questions_remain_single_bullets():
+    story = manuscript_story(load_manuscript(), load_metrics())
+    paragraph_text = [
+        flowable.getPlainText()
+        for flowable in story
+        if callable(getattr(flowable, "getPlainText", None))
+    ]
+    expected_questions = [
+        "RQ1: How effectively can organization-specific maturity histories identify practices associated "
+        "with a team's next recorded improvement under walk-forward evaluation?",
+        "RQ2: What incremental value and stability do peer similarity and practice-transition evidence "
+        "provide beyond time-aware organizational popularity?",
+    ]
+    assert all(question in paragraph_text for question in expected_questions)
 
 
 def test_package_allowlist_contains_no_gitignored_files():
