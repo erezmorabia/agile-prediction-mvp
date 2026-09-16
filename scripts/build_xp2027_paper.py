@@ -850,7 +850,7 @@ def build_paper(metrics: dict[str, Any], output: Path = OUTPUT) -> Path:
             "Can Organizational History Inform What Agile Teams Improve Next? "
             "A Walk-Forward Study of 87 Teams"
         ),
-        author="Erez Morabia",
+        author="Erez Morabia; Shmuel Tyszberowicz",
         subject="XP 2027 provisional research short-paper draft",
         creator="XP 2027 manuscript builder",
         invariant=True,

@@ -13,9 +13,12 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "output/xp2027/xp2027-submission-preparation.zip"
 ALLOWLIST = [
     ROOT / "LICENSE",
-    ROOT / "output/pdf/Morabia_XP2027_Paper_Draft.pdf",
-    ROOT / "submission/xp2027/manuscript/PAPER.md",
+    ROOT / "output/pdf/Morabia_Tyszberowicz_XP2027_Paper_Draft.pdf",
+    ROOT / "submission/xp2027/manuscript/main.tex",
     ROOT / "submission/xp2027/manuscript/references.bib",
+    ROOT / "submission/xp2027/manuscript/llncs.cls",
+    ROOT / "submission/xp2027/manuscript/splncs04.bst",
+    ROOT / "submission/xp2027/manuscript/OVERLEAF.md",
     ROOT / "submission/xp2027/RESEARCH_PROTOCOL.md",
     ROOT / "submission/xp2027/REPRODUCIBILITY.md",
     ROOT / "submission/xp2027/LITERATURE_REVIEW.md",
@@ -24,12 +27,12 @@ ALLOWLIST = [
     ROOT / "submission/xp2027/evidence/PRIMARY_RESULTS.md",
     ROOT / "submission/xp2027/artifact/README.md",
     ROOT / "scripts/build_xp2027_evidence.py",
-    ROOT / "scripts/build_xp2027_paper.py",
+    ROOT / "scripts/build_xp2027_latex.py",
     ROOT / "tests/test_xp2027_evidence.py",
 ]
 FORBIDDEN_NAMES = {"combined_dataset.xlsx", "level_definitions.xlsx"}
 FORBIDDEN_TEXT = [re.compile(r"data/raw/", re.I), re.compile(r"\bAvaya\b", re.I)]
-TEXT_SUFFIXES = {".md", ".py", ".json", ".bib", ".txt"}
+TEXT_SUFFIXES = {".md", ".py", ".json", ".bib", ".txt", ".tex", ".cls", ".bst"}
 
 
 def parse_args() -> argparse.Namespace:

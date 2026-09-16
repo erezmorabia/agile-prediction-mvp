@@ -1,26 +1,28 @@
 # Professor Email Draft
 
-**Subject:** XP 2027 paper draft – your feedback
+**Subject:** XP 2027 paper – LaTeX and co-authorship update
 
 Dear Professor,
 
-I am sending you my short paper draft and supporting aggregate evidence for a possible submission to XP 2027. The
-detailed call has not yet been published, so I will update the manuscript and package once it is available.
+Thank you for your feedback. I have converted the paper to an Overleaf-ready LaTeX project using Springer's official
+proceedings template. The detailed XP 2027 call has not yet been published, so I will update the track-specific details
+and page length once they are available.
 
 The paper uses past data to examine whether the approach can make useful recommendations. It does not claim that the
 approach itself caused teams to improve. The draft and supporting materials include the methodology, results,
 limitations, and reproducibility details.
 
-I would appreciate your feedback on the paper, and especially on these points:
+I have listed the authors as:
 
-- At the moment, I have listed myself as the sole and corresponding author, with The Open University of Israel
-  affiliation. I was not sure how you would prefer to be mentioned—whether as a co-author or in the acknowledgments.
-- Is there a formal way to submit the paper through The Open University, or should I use the regular conference
-  submission process?
-- Do you have any concerns or university requirements that I should address before submission?
+- Erez Morabia, first and corresponding author
+- Prof. Shmuel Tyszberowicz, second author
 
-Once the official call is published, I will update everything and send you the final version for approval before
-submitting.
+Both authors currently use The Open University of Israel affiliation. Please confirm your preferred English name,
+affiliation, email address, ORCID (if applicable), contribution wording, and competing-interest declaration for the
+submission metadata.
+
+Once the official call is published, I will right-size the manuscript if needed and send you the exact final version for
+approval before submitting.
 
 Best regards,
 

@@ -12,8 +12,9 @@
 
 - Production implementation: `src/ml/policy.py` and its data/validation dependencies.
 - Research adapter: `scripts/build_xp2027_evidence.py`.
-- Canonical manuscript: `manuscript/PAPER.md`; the PDF builder reads this file rather than duplicating its prose.
-- Bibliography guard: the build verifies entry counts, DOIs, and URLs against `manuscript/references.bib`.
+- Canonical manuscript: `manuscript/main.tex`, using Springer's official `llncs.cls` and `splncs04.bst`; the complete
+  source directory can be uploaded directly to Overleaf.
+- Bibliography source: `manuscript/references.bib`; Tectonic runs BibTeX with Springer's `splncs04` style.
 - Team-cluster bootstrap: 10,000 replicates, seed 22997; exploratory all-recommendable intervals use seed 22998; the
   selection-refit robustness analysis uses seed 22999.
 - Generated evidence: `evidence/metrics.json` and `evidence/PRIMARY_RESULTS.md`.
@@ -37,5 +38,6 @@ make xp2027-package
 ```
 
 `make xp2027-check` validates source quality, the aggregate evidence tests, the existing canonical model reproduction,
-temporal-boundary guards, the five-to-eight-page preparation PDF, and a temporary sanitized archive. The distributable archive is generated
+temporal-boundary guards, the Springer/Overleaf manuscript PDF, and a temporary sanitized archive. The full-content
+LaTeX conversion currently occupies 11 Springer pages; the official XP 2027 page rule remains pending. The distributable archive is generated
 from an explicit allowlist and receives a fixed ZIP timestamp for byte-stable rebuilds when its inputs are unchanged.

@@ -2,7 +2,7 @@
 
 ## A Walk-Forward Study of 87 Teams
 
-**Erez Morabia**
+**Erez Morabia and Shmuel Tyszberowicz**
 The Open University of Israel, Ra'anana, Israel
 
 ## Abstract
@@ -304,17 +304,20 @@ retrospective analysis; XP materials contain aggregate results, use an unnamed o
 identifiers. The author created and maintained the workbooks and reports that the responsible manager verbally approved
 their academic use and knew they would be public in the prior-project GitHub repository; no written record exists. That
 repository is not the conference artifact, does not guarantee non-inferability of the organization, and grants no
-license to the organizational data. Erez Morabia is the sole and corresponding author, affiliated with The Open
-University of Israel. This research received no external funding. The author was formerly employed by the source
+license to the organizational data. Erez Morabia is the first and corresponding author, and Shmuel Tyszberowicz is the
+second author; both are affiliated with The Open University of Israel. This research received no external funding. The
+first author was formerly employed by the source
 organization and participated in data collection in that professional role; the employment ended more than five years
-ago, the project was developed years later, and the author reports no current competing interests. Software and original
+ago, the project was developed years later, and the authors report no current competing interests. Software and original
 documentation are Apache-2.0 licensed; organizational data are excluded. The unpublished public MSc report [18] is prior
 work. Generative AI assistance used for planning, language refinement, and methodological checks will be disclosed under
-the final venue rule; the author verified and remains accountable for the work.
+the final venue rule; the authors verified and remain accountable for the work.
 
-## Acknowledgments
+## Author Contributions
 
-The author thanks Prof. Shmuel Tyszberowicz for supervising the MSc project and reviewing the work.
+Erez Morabia contributed the conceptualization, methodology, software, validation, formal analysis, investigation, data
+curation, visualization, and original draft. Shmuel Tyszberowicz contributed supervision, methodological guidance, and
+critical review and editing. Both authors reviewed the manuscript and will approve the final version before submission.
 
 ## References
 
