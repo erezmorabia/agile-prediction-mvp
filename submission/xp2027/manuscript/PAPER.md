@@ -2,8 +2,8 @@
 
 ## A Walk-Forward Study of 87 Teams
 
-**Erez Morabia and Shmuel Tyszberowicz**
-The Open University of Israel, Ra'anana, Israel
+**Erez Morabia², Shmuel Tyszberowicz¹,²**
+¹Afeka Academic College of Engineering, Tel Aviv, Israel; ²The Open University of Israel, Ra'anana, Israel
 
 ## Abstract
 
@@ -301,17 +301,15 @@ people making the decision.
 
 The organizational dataset is excluded from the sanitized XP package. No formal ethics approval was required for this
 retrospective analysis; XP materials contain aggregate results, use an unnamed organizational description, and omit team
-identifiers. The author created and maintained the workbooks and reports that the responsible manager verbally approved
-their academic use and knew they would be public in the prior-project GitHub repository; no written record exists. That
-repository is not the conference artifact, does not guarantee non-inferability of the organization, and grants no
-license to the organizational data. Erez Morabia is the first and corresponding author, and Shmuel Tyszberowicz is the
-second author; both are affiliated with The Open University of Israel. This research received no external funding. The
-first author was formerly employed by the source
-organization and participated in data collection in that professional role; the employment ended more than five years
-ago, the project was developed years later, and the authors report no current competing interests. Software and original
-documentation are Apache-2.0 licensed; organizational data are excluded. The unpublished public MSc report [18] is prior
-work. Generative AI assistance used for planning, language refinement, and methodological checks will be disclosed under
-the final venue rule; the authors verified and remain accountable for the work.
+identifiers. The first author created and maintained the workbooks and reports that the responsible manager verbally
+approved for academic use and knew would be public in the prior-project GitHub repository; no written record exists.
+That repository is not the conference artifact, does not guarantee non-inferability of the organization, and grants no
+license to the organizational data. This research received no external funding. The first author was formerly employed
+by the source organization and participated in data collection in that professional role; the employment ended more
+than five years ago, and the project was developed years later. Software and original documentation are Apache-2.0
+licensed; organizational data are excluded. The unpublished public MSc report [18] is prior work. Generative AI
+assistance used for planning, language refinement, and methodological checks will be disclosed under the final venue
+rule; the authors verified and remain accountable for the work.
 
 ## Author Contributions
 

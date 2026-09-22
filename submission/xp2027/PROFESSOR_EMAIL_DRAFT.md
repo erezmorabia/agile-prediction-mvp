@@ -1,29 +1,17 @@
 # Professor Email Draft
 
-**Subject:** XP 2027 paper – LaTeX and co-authorship update
+**Subject:** XP 2027 paper – easier file to edit + affiliation update
 
-Dear Professor,
+Hi Shmuel,
 
-Thank you for your feedback. I have converted the paper to an Overleaf-ready LaTeX project using Springer's official
-proceedings template. The detailed XP 2027 call has not yet been published, so I will update the track-specific details
-and page length once they are available.
+Attached is `PAPER.md` – plain text, so you can just open it and edit directly (any editor or Google Docs works),
+much easier than marking up the PDF. The LaTeX/Overleaf version stays the actual submission source; I'll merge
+whatever you change back into it.
 
-The paper uses past data to examine whether the approach can make useful recommendations. It does not claim that the
-approach itself caused teams to improve. The draft and supporting materials include the methodology, results,
-limitations, and reproducibility details.
+Also updated your affiliation as requested: Afeka Academic College of Engineering (Tel Aviv) listed first, Open
+University second. Mine stays Open University only. Can you confirm the exact English spelling for Afeka, plus your
+email/ORCID for the submission metadata?
 
-I have listed the authors as:
+Will send the final version once the official XP 2027 call is out.
 
-- Erez Morabia, first and corresponding author
-- Prof. Shmuel Tyszberowicz, second author
-
-Both authors currently use The Open University of Israel affiliation. Please confirm your preferred English name,
-affiliation, email address, ORCID (if applicable), contribution wording, and competing-interest declaration for the
-submission metadata.
-
-Once the official call is published, I will right-size the manuscript if needed and send you the exact final version for
-approval before submitting.
-
-Best regards,
-
-Erez Morabia
+Erez
