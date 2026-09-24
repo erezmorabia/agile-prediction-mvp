@@ -2,7 +2,7 @@
 
 ## A Walk-Forward Study of 87 Teams
 
-**Erez Morabia², Shmuel Tyszberowicz¹,²**
+**Erez Morabia² (emorabia@gmail.com), Shmuel Tyszberowicz¹,² (ORCID 0000-0003-4937-8138; tyshbe@tauex.tau.ac.il)**
 ¹Afeka Academic College of Engineering, Tel Aviv, Israel; ²The Open University of Israel, Ra'anana, Israel
 
 ## Abstract
