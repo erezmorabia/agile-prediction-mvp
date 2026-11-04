@@ -6,7 +6,7 @@ description: View learned empirical practice-transition patterns between consecu
 # UC-04: Explore Improvement Sequences
 
 ## Summary
-User browses empirical transition patterns learned from historical data, seeing which practices tend to follow which, and with what frequency and conditional probability.
+User browses empirical transition patterns learned from historical data, seeing which practices tend to follow which, with counts and shares of outgoing transitions.
 
 ## Actor & Preconditions
 - **Actor:** Analyst
@@ -18,8 +18,9 @@ User clicks the "Sequences" tab.
 ## Main Flow
 1. User clicks Sequences tab → `GET /api/sequences`
 2. Page shows sequence stats: total transition types, total transitions observed, number of practices that improved
-3. Sequences displayed grouped by "from practice": each entry shows the practice that typically follows with its transition count and probability
-4. User can browse to understand organizational patterns (e.g., "CI/CD → Test Automation occurred 12 times with 0.63 probability")
+3. Sequences are grouped under “After [source practice] improved → what improved next?”, with a summary of distinct next practices and total observed transitions. Each expanded group explains that the next step is within the same team and displays a table: Next practice / Observed transitions / Share of transitions.
+4. Shares divide each pair count by all outgoing transition counts from its source; several practices improving in the next step each create a transition. No average probability is shown.
+5. The page explains that recommendations blend similar-team behavior, transitions, and time-aware popularity with weights selected per prediction month using previously completed outcomes, without a fixed transition percentage.
 
 ## Alternative / Error Flows
 - **No sequences learned** (fewer than 2 consecutive months for any team): stats show zeros; transition list is empty

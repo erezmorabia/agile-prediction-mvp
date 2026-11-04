@@ -79,3 +79,6 @@ popularity   = recency_weight Ã— recent_popularity_norm + (1 - recency_weight) Ã
 ## Cross-references
 - **Related Use Case Skills:** `/uc-01-get-recommendations` (primary consumer of recommendations), `/uc-02-run-backtest-validation` (calls `PolicyEngine` per prediction month)
 - **Related Domain Skills:** `/domain-data` (provides `DataProcessor` and team histories), `/domain-validation` (wraps `PolicyEngine` for the backtest), `/domain-api` (exposes recommendations via REST)
+
+## Per-practice score audit
+`score_case(..., breakdowns=dict)` optionally records each candidate's normalized similarity, transitions and time-aware popularity scores, policy weights and weighted contributions from the same calculation used for ranking. `explain_practice()` returns these as `score_breakdown`; contributions sum to the final score. Zero-weight evidence contributes zero, including in bootstrap months.

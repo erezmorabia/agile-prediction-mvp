@@ -489,8 +489,11 @@ class PolicyEngine:
         except ValueError:
             sequence_info = []
 
+        score_breakdowns: dict = {}
+        self.score_case(components, selected.policy, breakdowns=score_breakdowns)
         return {
             "practice": practice,
+            "score_breakdown": score_breakdowns.get(practice, []),
             "similar_teams_improved": len(improved_teams),
             "total_similar_teams_checked": len(selected_indices),
             "similar_teams_list": improved_teams,
@@ -508,7 +511,7 @@ class PolicyEngine:
         indices = [i for i, (_team, similarity, _month) in enumerate(case.peers) if similarity >= policy.min_similarity]
         return indices[: policy.peer_count]
 
-    def score_case(self, case: CaseComponents, policy: Policy) -> dict:
+    def score_case(self, case: CaseComponents, policy: Policy, *, breakdowns: dict | None = None) -> dict:
         """Final blended score per candidate practice for one case under one policy.
 
         Normalization scope (research-exact, see plan doc decision 1 and
@@ -516,6 +519,9 @@ class PolicyEngine:
         - similarity, sequence: normalize over all evidence, then mask to candidates.
         - historical popularity: mask to candidates, then normalize.
         - recent popularity: normalize org-wide, then mask to candidates.
+
+        If supplied, breakdowns receives normalized scores, policy weights and weighted
+        contributions for each candidate, using the same values as the final score.
         """
         similarity_raw: dict = {}
         for i in self._selected_peer_indices(case, policy):
@@ -542,6 +548,15 @@ class PolicyEngine:
                 + policy.sequence_weight * seq
                 + policy.popularity_weight * popularity
             )
+            if breakdowns is not None:
+                breakdowns[practice] = [
+                    {"component": name, "score": value, "weight": weight, "contribution": value * weight}
+                    for name, value, weight in (
+                        ("similarity", sim, policy.similarity_weight),
+                        ("transitions", seq, policy.sequence_weight),
+                        ("popularity", popularity, policy.popularity_weight),
+                    )
+                ]
         return scores
 
     def top_practices(self, case: CaseComponents, policy: Policy) -> tuple:

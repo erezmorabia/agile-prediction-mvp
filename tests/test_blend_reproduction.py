@@ -68,6 +68,24 @@ def test_prediction_months(engine):
     assert engine.prediction_months() == [m for m, *_ in EXPECTED_PER_MONTH]
 
 
+@pytest.mark.parametrize("month", [20200503, 20200803])
+def test_explanation_contributions_match_recommendation(engine, month):
+    """Both bootstrap and mixed policies explain the exact score used to rank practices."""
+    result = engine.recommend("Black Pearl", month)
+    for practice in result.practices:
+        explanation = engine.explain_practice("Black Pearl", month, practice)
+        rows = explanation["score_breakdown"]
+        assert [row["component"] for row in rows] == ["similarity", "transitions", "popularity"]
+        assert sum(row["contribution"] for row in rows) == pytest.approx(result.scores[practice], abs=1e-12)
+        for row in rows:
+            assert row["contribution"] == pytest.approx(row["score"] * row["weight"], abs=1e-12)
+        if month == 20200503:
+            assert rows[0]["contribution"] == rows[1]["contribution"] == 0
+        elif practice == "Scrum Master":
+            assert [row["contribution"] for row in rows] == pytest.approx([0, 0.25, 0.5])
+            assert result.scores[practice] == pytest.approx(0.75)
+
+
 def test_source_duplicate_audit(engine):
     """The source workbook stays intact while analysis uses unique team-month keys."""
     processor = engine.processor

@@ -37,3 +37,6 @@ User opens the Recommendations tab (default on page load), selects a team, choos
 ## Cross-references
 - **Related Domain Skills:** `/domain-ml` (`PolicyEngine`: policy selection, scoring, explanation logic), `/domain-api` (route handler, service layer, response model), `/domain-frontend` (dropdown population, card + policy-audit-box rendering)
 - **Related Use Case Skills:** `/uc-02-run-backtest-validation` (validates the same `PolicyEngine` in aggregate, replaying the same month-specific policy selection), `/uc-05-view-system-statistics` (provides context on data shape before selecting a team)
+
+## Score explanation
+Recommendation cards expose all three components through `score_breakdown` (normalized score, selected weight, weighted contribution) and a final total. The backend uses the ranking calculation for this audit. The explanation names only positive weighted contributors, so zero-weight evidence is not described as driving the recommendation.

@@ -672,6 +672,29 @@ function displayRecommendations(data) {
                         <div class="rec-detail">
                             <strong>Recommendation Score:</strong>${tip('A weighted blend of similarity, sequence, and time-aware popularity evidence, using this month\'s selected policy. Higher = more evidence from the dataset.')} ${rec.score.toFixed(3)} <span class="score-range">(range: 0.0-1.0, higher = stronger)</span>
                         </div>
+                        ${rec.score_breakdown && rec.score_breakdown.length ? `
+                            <div class="score-breakdown">
+                                <table>
+                                    <caption>Score breakdown${tip('Each contribution is the normalized component score multiplied by its policy weight. Contributions add up to the recommendation score before rounding. These scores are ranking evidence, not success probabilities.')}</caption>
+                                    <thead><tr>
+                                        <th scope="col">Component</th>
+                                        <th scope="col">Score</th>
+                                        <th scope="col">Weight</th>
+                                        <th scope="col">Contribution</th>
+                                    </tr></thead>
+                                    <tbody>${rec.score_breakdown.map(item => `
+                                        <tr>
+                                            <th scope="row">${({similarity: 'Similarity', transitions: 'Transitions', popularity: 'Time-aware popularity'})[item.component]}</th>
+                                            <td>${item.score.toFixed(3)}</td>
+                                            <td>${(item.weight * 100).toFixed(0)}%</td>
+                                            <td>${item.contribution.toFixed(3)}</td>
+                                        </tr>
+                                    `).join('')}</tbody>
+                                    <tfoot><tr><th scope="row" colspan="3">Total</th><td>${rec.score.toFixed(3)}</td></tr></tfoot>
+                                </table>
+                                <p class="score-breakdown-note">Score × weight = contribution. Values rounded to 3 decimals.</p>
+                            </div>
+                        ` : ''}
                         <div class="rec-detail">
                             <strong>Current Level:</strong>${tip('Your team\'s maturity on this practice. 0 = not implemented, 1 = basic, 2 = intermediate, 3 = mature. Only practices below maturity level 3 are eligible for recommendation.')} ${rec.level_display || `Level ${rec.level_num} (${rec.level_description})`}
                         </div>
@@ -1005,14 +1028,14 @@ function renderScopeSummary(scope, label) {
                     scope.overall_recall,
                     scope.random_recall,
                     scope.recall_improvement_factor,
-                    'Correct recommendations ÷ practices actually improved. Capped at top_n ÷ actual improvements.'
+                    'Of all practices the team actually improved, what percentage appeared in its two recommendations? For example, recommending 2 of 4 improved practices gives 50% recall.'
                 )}
                 ${renderRankMetricCard(
-                    'MRR',
+                    'First correct recommendation rank (MRR)',
                     scope.overall_mrr,
                     scope.random_mrr,
                     scope.mrr_improvement_factor,
-                    'Mean Reciprocal Rank of the first correct recommendation. Sensitive to ranking order, unlike Overall Accuracy.'
+                    'Rewards placing a practice that actually improved higher in the list. Each case scores 1 if the first recommendation improved, 0.5 if only the second improved, or 0 if neither improved. MRR is the average of these scores.'
                 )}
             </div>
         </div>
@@ -1558,8 +1581,8 @@ function displaySequences(data) {
             
             <div class="info-box" style="margin-bottom: 20px;">
                 <strong>What these transitions mean</strong>
-                <p>Each row shows how often Practice B improved at the next improvement-bearing step after Practice A improved. The displayed probability is the conditional frequency of that observed transition across the organization; same-step improvements are not treated as ordered transitions.</p>
-                <p>The Practice Transition Model contributes <strong>30% of the recommendation score</strong> — the rest comes from similar-team behavior.</p>
+                <p>Each row counts observed transitions from the source practice improving to a listed practice improving at the same team’s next improvement-bearing step, pooled across all teams. The displayed percentage is that next practice’s share of all observed transitions from the source practice. Steps without improvements are skipped; same-step improvements are not treated as ordered transitions.</p>
+                <p>Recommendations combine <strong>similar-team behavior, practice transitions, and time-aware popularity</strong>. Their weights are selected automatically for each prediction month using previously completed outcomes; the Practice Transition Model has no fixed percentage weight.</p>
             </div>
             
             <div style="margin-bottom: 20px; display: flex; gap: 10px;">
@@ -1594,17 +1617,24 @@ function generateSequenceGroups(sortedPractices, grouped) {
 
     sortedPractices.forEach((fromPractice, index) => {
         const transitions = grouped[fromPractice].sort((a, b) => b.count - a.count);
-        const avgProb = transitions.reduce((sum, t) => sum + t.probability, 0) / transitions.length;
+        const totalTransitions = transitions.reduce((sum, t) => sum + t.count, 0);
 
         html += `
-            <details class="sequence-group" data-practice="${fromPractice}">
+            <details class="sequence-group" data-practice="${escapeHtml(fromPractice)}">
                 <summary class="sequence-summary">
                     <span class="sequence-arrow">▶</span>
                     <span class="sequence-index">${index + 1}.</span>
-                    <span>When '<strong>${fromPractice}</strong>' improved:</span>
-                    <span class="sequence-summary-stats">${transitions.length} transitions, avg ${(avgProb * 100).toFixed(1)}% probability</span>
+                    <span>After “<strong>${escapeHtml(fromPractice)}</strong>” improved → what improved next?</span>
+                    <span class="sequence-summary-stats">${transitions.length} next ${transitions.length === 1 ? 'practice' : 'practices'} · ${totalTransitions} observed ${totalTransitions === 1 ? 'transition' : 'transitions'}</span>
                 </summary>
-                <ul class="sequence-transitions">
+                <p class="sequence-context">Across teams, at their next step with any improvement.</p>
+                <table class="sequence-transitions">
+                    <thead><tr>
+                        <th scope="col">Next practice</th>
+                        <th scope="col">Observed transitions</th>
+                        <th scope="col">Share of transitions${tip('Count for this next practice divided by all observed transitions from the source practice. If several practices improve at the next step, each creates a transition. Bar color: green ≥ 60%, amber 30–59%, gray < 30%.')}</th>
+                    </tr></thead>
+                    <tbody>
         `;
         
         for (const transition of transitions) {
@@ -1613,22 +1643,24 @@ function generateSequenceGroups(sortedPractices, grouped) {
                            : 'sequence-prob-low';
             
             html += `
-                <li class="sequence-transition ${probClass}" data-prob="${transition.probability}" data-count="${transition.count}" data-to-practice="${transition.to_practice}">
-                    <span class="sequence-arrow-visual">→</span>
-                    <strong>${transition.to_practice}</strong>
-                    <span class="sequence-meta">
-                        <span class="sequence-count">${transition.count} times</span>
-                        <span class="sequence-prob-text">${(transition.probability * 100).toFixed(1)}%${tip('Bar color: green ≥ 60%, amber 30–59%, gray < 30%. Higher probability = a more frequently observed transition to this practice at the next improvement-bearing step.')}</span>
-                        <div class="probability-bar">
-                            <div class="probability-fill ${probClass}" style="width: ${transition.probability * 100}%"></div>
+                <tr class="sequence-transition ${probClass}" data-prob="${transition.probability}" data-count="${transition.count}" data-to-practice="${escapeHtml(transition.to_practice)}">
+                    <th scope="row"><span class="sequence-arrow-visual" aria-hidden="true">→</span>${escapeHtml(transition.to_practice)}</th>
+                    <td class="sequence-count">${transition.count}</td>
+                    <td>
+                        <div class="sequence-meta">
+                            <span class="sequence-prob-text">${(transition.probability * 100).toFixed(1)}%</span>
+                            <div class="probability-bar" aria-hidden="true">
+                                <div class="probability-fill ${probClass}" style="width: ${transition.probability * 100}%"></div>
+                            </div>
                         </div>
-                    </span>
-                </li>
+                    </td>
+                </tr>
             `;
         }
         
         html += `
-                </ul>
+                    </tbody>
+                </table>
             </details>
         `;
     });

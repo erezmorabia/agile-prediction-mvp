@@ -251,6 +251,30 @@ class TestAPIService:
             assert 'validated' in rec
             assert 'improved_in_months' in rec
 
+    @pytest.mark.parametrize('transition_weight, expected', [
+        (0.25, 'practice-transition patterns + organization-wide popularity'),
+        (0.0, 'organization-wide popularity'),
+    ])
+    def test_explanation_uses_weighted_contributions(self, api_service, mock_recommender, transition_weight, expected):
+        """Expose the breakdown and omit evidence whose selected weight is zero."""
+        mock_recommender.recommend.return_value = self._recommend_result()
+        rows = [
+            {'component': 'similarity', 'score': 0.0, 'weight': 0.25, 'contribution': 0.0},
+            {'component': 'transitions', 'score': 1.0, 'weight': transition_weight, 'contribution': transition_weight},
+            {'component': 'popularity', 'score': 1.0, 'weight': 1 - transition_weight - 0.25,
+             'contribution': 1 - transition_weight - 0.25},
+        ]
+        mock_recommender.get_recommendation_explanation.return_value = {
+            'score_breakdown': rows, 'has_sequence_boost': True, 'similar_teams_list': [],
+        }
+        result = api_service.get_recommendations('Team1', 202003)
+        from src.api.models import RecommendationResponse
+
+        serialized = RecommendationResponse(**result).model_dump()
+        for rec in serialized['recommendations']:
+            assert rec['score_breakdown'] == rows
+            assert rec['why'] == 'Recommended based on ' + expected
+
     def test_get_recommendations_validation_summary(self, api_service, mock_recommender, mock_processor):
         """Test get_recommendations includes validation summary."""
         mock_recommender.recommend = Mock(return_value=self._recommend_result(practices=('Practice1',)))

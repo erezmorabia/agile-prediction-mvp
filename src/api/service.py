@@ -368,22 +368,23 @@ class APIService:
 
             # Get explanation with similar teams details
             explanation = self.recommender.get_recommendation_explanation(team_name, month, practice)
-            similar_count = explanation.get("similar_teams_improved", 0)
-            has_sequence_boost = explanation.get("has_sequence_boost", False)
-            no_peers_for_practice = explanation.get("no_similar_teams_found", False)
+            score_breakdown = explanation.get("score_breakdown", [])
             similar_teams_list = explanation.get("similar_teams_list", [])
 
-            # Determine why based on similarity, sequence, and popularity contribution
-            if similar_count > 0 and has_sequence_boost:
-                why = f"{similar_count} similar team(s) improved this practice + sequence patterns"
-            elif similar_count > 0:
-                why = f"{similar_count} similar team(s) improved this practice"
-            elif has_sequence_boost:
-                why = "Recommended based on improvement sequences"
-            elif no_peers_for_practice:
-                why = "No comparable team was found; recommended based on organization-wide popularity and improvement sequences"
-            else:
-                why = "Recommended based on organization-wide popularity"
+            # Explain actual weighted contributions, including zero-weight policy cases.
+            component_labels = {
+                "similarity": "similar-team improvements",
+                "transitions": "practice-transition patterns",
+                "popularity": "organization-wide popularity",
+            }
+            contributing = [
+                component_labels[item["component"]] for item in score_breakdown if item["contribution"] > 0
+            ]
+            why = (
+                "Recommended based on " + " + ".join(contributing)
+                if contributing
+                else "No positive weighted evidence; ranked by practice name among tied scores"
+            )
 
             # Check if validated and which month(s) it improved in
             validated = False
@@ -420,6 +421,7 @@ class APIService:
                     "level_description": level_description,
                     "level_display": level_display,
                     "why": why,
+                    "score_breakdown": score_breakdown,
                     "similar_teams": formatted_similar_teams,
                     "validated": validated,
                     "improved_in_months": [int(m) for m in improved_in_months] if improved_in_months else None,

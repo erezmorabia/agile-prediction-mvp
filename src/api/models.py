@@ -111,6 +111,15 @@ class SimilarTeamInfo(BaseModel):
     similar_at_month: int
 
 
+class ScoreContribution(BaseModel):
+    """One component's normalized score, policy weight and contribution to the total."""
+
+    component: Literal["similarity", "transitions", "popularity"]
+    score: float
+    weight: float
+    contribution: float
+
+
 class RecommendationItem(BaseModel):
     """Single recommendation item."""
 
@@ -122,6 +131,7 @@ class RecommendationItem(BaseModel):
     level_description: str
     level_display: str
     why: str
+    score_breakdown: list[ScoreContribution] = Field(default_factory=list)
     similar_teams: list[SimilarTeamInfo] = []
     validated: bool
     improved_in_months: list[int] | None = None

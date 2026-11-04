@@ -44,3 +44,6 @@ description: FastAPI app factory, route handlers, APIService orchestration, Pyda
 ## Cross-references
 - **Related Use Case Skills:** `/uc-01-get-recommendations`, `/uc-02-run-backtest-validation`, `/uc-04-explore-improvement-sequences`, `/uc-05-view-system-statistics`
 - **Related Domain Skills:** `/domain-ml` (called by service), `/domain-validation` (called by service), `/domain-data` (processor passed to service), `/domain-frontend` (consumes all endpoints)
+
+## Per-practice contribution response
+Each recommendation includes `score_breakdown: list[ScoreContribution]` with component (`similarity`, `transitions`, `popularity`), normalized `score`, policy `weight`, and weighted `contribution`. The `why` text lists only components with positive weighted contributions, including popularity. If all contributions are zero, it explains the deterministic practice-name tie-break.

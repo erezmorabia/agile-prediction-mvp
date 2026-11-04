@@ -1,0 +1,92 @@
+[
+  {
+    "slide": 1,
+    "phase": "Why",
+    "title": "Identifying Likely Large-Scale Agile Implementation Pathways"
+  },
+  {
+    "slide": 2,
+    "phase": "Why",
+    "title": "The challenge: choosing the next practice"
+  },
+  {
+    "slide": 3,
+    "phase": "What",
+    "title": "Learning organizational improvement behavior"
+  },
+  {
+    "slide": 4,
+    "phase": "What",
+    "title": "Three signals form one ranking"
+  },
+  {
+    "slide": 5,
+    "phase": "How",
+    "title": "Representing the organizational history"
+  },
+  {
+    "slide": 6,
+    "phase": "How",
+    "title": "One shared engine serves the application"
+  },
+  {
+    "slide": 7,
+    "phase": "How",
+    "title": "One recommendation request, end to end"
+  },
+  {
+    "slide": 8,
+    "phase": "How",
+    "title": "Each component uses its own history"
+  },
+  {
+    "slide": 9,
+    "phase": "How",
+    "title": "Why these two practices rank highest"
+  },
+  {
+    "slide": 10,
+    "phase": "Evidence",
+    "title": "Temporal controls prevent future-data leakage"
+  },
+  {
+    "slide": 11,
+    "phase": "Evidence",
+    "title": "What counts as a successful ranking?"
+  },
+  {
+    "slide": 12,
+    "phase": "Evidence",
+    "title": "Primary historical results"
+  },
+  {
+    "slide": 13,
+    "phase": "Implications",
+    "title": "Capabilities, practical value and limits"
+  },
+  {
+    "slide": 14,
+    "phase": "Implications",
+    "title": "A prospective pilot can test practical benefit"
+  },
+  {
+    "slide": 15,
+    "phase": "Implications",
+    "title": "Conclusions"
+  },
+  {
+    "slide": 16,
+    "phase": "Backup",
+    "title": "A1. Results by prediction month"
+  },
+  {
+    "slide": 17,
+    "phase": "Backup",
+    "title": "A2. Policy search grid"
+  },
+  {
+    "slide": 18,
+    "phase": "Backup",
+    "title": "A3. One shared policy is selected each month"
+  }
+]

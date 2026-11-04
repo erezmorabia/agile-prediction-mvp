@@ -639,6 +639,52 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.95em;
 }
 
+.score-breakdown {
+    max-width: 680px;
+    margin: 8px 0;
+    overflow-x: auto;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+.score-breakdown table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.score-breakdown caption {
+    text-align: left;
+    font-weight: 600;
+    padding-bottom: 8px;
+}
+
+.score-breakdown th,
+.score-breakdown td {
+    padding: 8px 10px;
+    text-align: right;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--gray-300);
+}
+
+.score-breakdown th:first-child {
+    text-align: left;
+}
+
+.score-breakdown tbody th {
+    font-weight: 400;
+}
+
+.score-breakdown tfoot {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.score-breakdown-note {
+    margin-top: 6px;
+    font-size: 0.85em;
+}
+
 .validation-status {
     margin-top: 10px;
     padding-top: 10px;
@@ -1363,28 +1409,45 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.84em;
 }
 
+.sequence-context {
+    margin: 0 15px 10px;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
 .sequence-transitions {
-    margin: 0;
-    padding: 10px 15px 15px 15px;
-    list-style: none;
+    width: calc(100% - 30px);
+    margin: 0 15px 15px;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    table-layout: fixed;
 }
 
-.sequence-transition {
-    margin: 8px 0;
+.sequence-transitions th,
+.sequence-transitions td {
     padding: 10px 12px;
-    border-radius: 6px;
-    background: var(--bg-card);
-    border-left: 3px solid;
-    transition: all 0.2s ease;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
+    text-align: left;
+    overflow-wrap: anywhere;
 }
 
-.sequence-transition:hover {
-    transform: translateX(3px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+.sequence-transitions thead th {
+    color: var(--text-secondary);
+    font-size: 0.84em;
+    font-weight: 500;
+    vertical-align: bottom;
+}
+
+.sequence-transitions th:first-child { width: 45%; }
+.sequence-transitions th:nth-child(2) { width: 22%; }
+
+.sequence-transition > :first-child {
+    border-left: 3px solid;
+    border-color: inherit;
+    border-radius: 6px 0 0 6px;
+}
+
+.sequence-transition > :last-child {
+    border-radius: 0 6px 6px 0;
 }
 
 /* Probability color coding */
@@ -1798,6 +1861,21 @@ h1, h2, h3, h4, h5, h6 {
 
     .sequence-summary {
         flex-wrap: wrap;
+    }
+
+    .sequence-transitions th,
+    .sequence-transitions td {
+        padding: 8px 6px;
+    }
+
+    .sequence-meta {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .sequence-transitions .probability-bar {
+        width: 40px;
+        max-width: 100%;
     }
 
     .sequence-summary-stats {

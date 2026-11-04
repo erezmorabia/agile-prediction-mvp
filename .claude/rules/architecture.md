@@ -95,7 +95,7 @@ For detailed domain information, see `/domain-data`, `/domain-ml`, `/domain-vali
 | GET | `/api/teams` | List all teams with metadata |
 | GET | `/api/teams/with-improvements` | Teams/months where improvements occurred |
 | GET | `/api/teams/{team_name}/months` | Available prediction months for a team |
-| POST | `/api/recommendations` | Generate practice recommendations |
+| POST | `/api/recommendations` | Generate practice recommendations with per-practice `score_breakdown` (component, normalized score, policy weight, weighted contribution) |
 | POST | `/api/backtest` | Run rolling window backtest |
 | GET | `/api/stats` | System statistics |
 | GET | `/api/sequences` | Learned improvement sequences |

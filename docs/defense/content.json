@@ -1,0 +1,585 @@
+{
+  "title": "Identifying Likely Large-Scale Agile Implementation Pathways",
+  "author": "Erez Morabia",
+  "supervisor": "Prof. Shmuel Tyszberowicz",
+  "assumptions": "English. Plan 20-25 minutes plus discussion within the one-hour Zoom meeting. The PDF edition has 14 main slides and 8 backups, with prior work and gap-to-contribution framing before the method. Talk duration is a rehearsal plan, not a professor requirement.",
+  "slides": [
+    {
+      "title": "Identifying Likely Large-Scale Agile Implementation Pathways",
+      "kind": "cover",
+      "subtitle": "Erez Morabia\nSupervisor: Prof. Shmuel Tyszberowicz\nThe Open University of Israel\nM.Sc. Advanced Project in Computer Science · 22997",
+      "notes": "45 seconds. Open with the decision: a team has dozens of practices it could improve, but limited capacity. Which two practices should it consider next? This project turns the organization's recorded improvement history into a ranked recommendation. I built a functional system and evaluated its historical alignment with later improvements. The evaluation supports feasibility and motivates a prospective pilot. It does not establish that receiving a recommendation causes faster adoption. Working presentation assumptions: English and about 20 minutes, subject to supervisor guidance.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, title page, abstract and sections 1.1–1.4"
+    },
+    {
+      "title": "The team's next practice decision",
+      "lead": "Which two agile practices should this team focus on next?",
+      "rows": [
+        [
+          "Current state",
+          "Each team has a different maturity profile across 35 practices."
+        ],
+        [
+          "Available evidence",
+          "Other teams have already followed observable improvement paths."
+        ],
+        [
+          "Decision support",
+          "Rank eligible practices using the organization's own history."
+        ]
+      ],
+      "bottom": "The organization provides the context. Historical maturity changes provide the evidence.",
+      "notes": "75 seconds. Describe an agile coach working across many teams. A prescribed adoption sequence may not fit the team's current state or organizational context. The opportunity is to reuse evidence that already exists in monthly maturity assessments. A recommendation here means a practice to consider, not a commitment or a guarantee. Define a practice as an assessed agile capability, such as managing technical debt or reducing work in progress. This opening frames the software problem before introducing algorithms. Avoid quoting estimated time savings as measured benefits.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 1.1–1.3 and 7.4"
+    },
+    {
+      "title": "Project contribution",
+      "lead": "A working recommendation system grounded in organizational improvement histories",
+      "rows": [
+        [
+          "Method",
+          "Combine peer-team evidence, practice transitions and improvement popularity."
+        ],
+        [
+          "Implementation",
+          "Build a reusable engine with web, API and command-line access."
+        ],
+        [
+          "Evaluation",
+          "Replay historical decisions with temporal controls and meaningful baselines."
+        ]
+      ],
+      "bottom": "The contribution is the applied approach and system. The component algorithms build on established methods.",
+      "notes": "75 seconds. Separate the contribution from claims of algorithmic invention. Collaborative filtering and empirical transition models are established techniques. My contribution is applying organizational improvement histories to this decision, implementing their combination in a functioning prototype, and evaluating it with an explicit temporal protocol. Be ready to explain personal design and implementation work accurately. Distinguish any reused libraries, external support and AI assistance if asked. The advanced-project objective is to turn advanced computer science knowledge into a practical working system.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, executive summary and sections 1.2, 4–5 and 8.1"
+    },
+    {
+      "title": "Recorded organizational maturity",
+      "kind": "data",
+      "stats": [
+        [
+          "87",
+          "teams"
+        ],
+        [
+          "35",
+          "practices"
+        ],
+        [
+          "10",
+          "recorded months"
+        ]
+      ],
+      "rows": [
+        [
+          "Observation",
+          "A team, a snapshot date and 35 maturity scores"
+        ],
+        [
+          "Maturity scale",
+          "Levels 0–3, normalized to 0–1"
+        ],
+        [
+          "Coverage",
+          "654 unique team-month observations from 655 source rows"
+        ],
+        [
+          "Completeness",
+          "48 teams have all 10 months. 39 have partial histories."
+        ]
+      ],
+      "bottom": "One organization. Snapshot history records outcomes, but does not record attempted practices.",
+      "notes": "75 seconds. The report uses real organizational data from Avaya. Each observation is an assessed maturity profile, rather than an attempt log. Normalizing the raw levels makes component calculations consistent, but does not turn ordinal assessment levels into calibrated probabilities. Uneven observation coverage matters: a window of three recorded team snapshots is not necessarily three calendar months. One repeated team-month key resolves deterministically to its final source occurrence, leaving 654 analytical observations. Keep detailed cleaning and missing-value questions for backup slide E.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 3.2 and 6.1"
+    },
+    {
+      "title": "Three sources of recommendation evidence",
+      "rows": [
+        [
+          "Similar teams",
+          "Find comparable historical maturity profiles. Score practices those peers subsequently improved."
+        ],
+        [
+          "Practice transitions",
+          "Learn what tended to improve after the team's recently improved practices."
+        ],
+        [
+          "Time-aware popularity",
+          "Count organization-wide improvements using historical and recent evidence."
+        ]
+      ],
+      "bottom": "Normalize the components, blend their scores, and rank practices below maximum maturity.",
+      "notes": "105 seconds. Similarity uses cosine similarity of maturity profiles, keeps distinct peer teams and weights their observed improvement magnitudes. The transition signal counts transitions between consecutive improvement-bearing steps. It skips steps without improvement and imposes no ordering on practices that improve in the same step. Popularity captures organization-wide trends and provides a strong simple comparator. Every signal uses historical evidence bounded by the baseline. The blend scores are ranking values. A score of 0.75 does not mean a 75 percent chance of success. The exact normalization rules differ by component and are available in the report and backup.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 3.3–3.5 and 3.7"
+    },
+    {
+      "title": "One policy for each prediction month",
+      "lead": "Select the policy using completed earlier outcomes",
+      "rows": [
+        [
+          "Search",
+          "Evaluate a fixed grid of 675 candidate policies."
+        ],
+        [
+          "Select",
+          "Use only earlier prediction months whose outcome windows have closed."
+        ],
+        [
+          "Apply",
+          "Use the same selected policy for every eligible team in that month."
+        ],
+        [
+          "Bootstrap",
+          "With no completed prior outcomes, use 100% popularity with equal historical and recent shares."
+        ]
+      ],
+      "bottom": "Each eligible request returns two practices. The user does not tune the policy.",
+      "notes": "90 seconds. The grid covers peer count, minimum similarity, the three component weights and popularity recency. Selection optimizes the mean monthly Conditional Hit Rate@2 over completed earlier prediction months. All teams use one global policy for that month, which reduces the amount of available data needed compared with per-team fitting. The target month's outcomes never participate in selecting its policy. With little history, the fallback is popularity. If fewer than two non-maxed candidates remain, the implementation returns an explanatory empty result. A fixed grid can still overfit sparse historical validation evidence. Temporal validity does not remove all statistical uncertainty.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 3.5 and 6.5"
+    },
+    {
+      "title": "Worked example: Black Pearl",
+      "lead": "Prediction: 3 August 2020. Baseline: 5 July 2020.",
+      "kind": "example",
+      "table": [
+        [
+          "Recommended practice",
+          "Baseline level",
+          "Blended score",
+          "Later improvement"
+        ],
+        [
+          "Scrum Master",
+          "2 of 3",
+          "0.750",
+          "No"
+        ],
+        [
+          "Tech debt strategy",
+          "1 of 3",
+          "0.726",
+          "Yes"
+        ]
+      ],
+      "bottom": "One recommendation matches a later improvement: this case counts as a Hit@2.",
+      "notes": "105 seconds. This is a documented case, not a hypothetical example. August selects 10 peers, a 0.75 minimum cosine similarity, weights of 0.25 similarity, 0.25 sequence and 0.50 popularity, with zero recent-popularity share. Only May has a completed prior prediction window available for selecting this policy. The two ranked practices are Scrum Master and Tech debt strategy. In the August, September and October outcome snapshots, the team improves Tech debt strategy, Tasking and Reducing WIP. One of two recommendations matches. The historical team did not receive these recommendations. The example illustrates retrospective alignment, not an intervention. Keep the score decomposition in backup if asked.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, section 3.7"
+    },
+    {
+      "title": "The implemented system",
+      "rows": [
+        [
+          "Data processing",
+          "Excel ingestion, validation, normalization and indexed team histories"
+        ],
+        [
+          "Recommendation engine",
+          "SimilarityEngine, SequenceMapper and global PolicyEngine"
+        ],
+        [
+          "User access",
+          "FastAPI service, web interface and command-line interface"
+        ],
+        [
+          "Validation",
+          "BacktestEngine replays the same monthly policy used by the application"
+        ]
+      ],
+      "bottom": "A shared policy engine keeps operational recommendations and historical evaluation consistent.",
+      "notes": "90 seconds. Explain one end-to-end request: choose a team and prediction month, validate eligibility, find its earlier baseline, obtain the month's policy, score eligible practices, and return two recommendations. The modular design separates data handling, model components and API delivery. The application loads organizational data at startup. Caches reuse per-month policies and case components. The backtest uses the same policy logic, limiting discrepancies between evaluation and the interface. Expensive backtesting runs in a worker thread. The system is a functional prototype for supervised pilot use. Production access control, monitoring and automated ingestion remain future work. Optional demonstration steps appear in backup F.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 4.1–4.4, 5.4 and 7.3"
+    },
+    {
+      "title": "Temporal controls in the backtest",
+      "lead": "Every historical prediction uses evidence available at its baseline",
+      "table": [
+        [
+          "At prediction time",
+          "Permitted evidence"
+        ],
+        [
+          "Component learning",
+          "Team states and transitions strictly before baseline"
+        ],
+        [
+          "Peer follow-up",
+          "Peer improvements observed by the baseline"
+        ],
+        [
+          "Policy selection",
+          "Earlier prediction months with completed outcomes"
+        ],
+        [
+          "Evaluation only",
+          "Up to three recorded team snapshots after baseline"
+        ]
+      ],
+      "bottom": "The first outcome snapshot is the prediction month. Recorded snapshots can be irregular.",
+      "notes": "120 seconds. Be precise about two clocks: the prediction month and the team's most recent earlier baseline. Recommendation scoring uses the earlier baseline state, not the target month's maturity values. Comparable snapshots and sequence learning precede the baseline. Peer follow-up ends at the baseline. Policy selection uses only completed earlier prediction-month outcomes. After producing the recommendation, evaluation looks at up to the first three recorded team snapshots after the baseline, beginning with the prediction snapshot. This is why it is inaccurate to call the evaluation window simply the next three calendar months after prediction. These controls guard against future information entering scoring or selection. Outcome conditioning still limits interpretation, which the next slide makes explicit.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 3.6, 6.4 and 6.5; docs/flowcharts/global-three-factor-policy-blend.md"
+    },
+    {
+      "title": "What the primary metric measures",
+      "lead": "Conditional Hit Rate@2: at least one recommendation matches a later improvement",
+      "rows": [
+        [
+          "Denominator",
+          "Eligible team-months with at least one observed improvement"
+        ],
+        [
+          "Numerator",
+          "Those cases where either recommendation matches an improved practice"
+        ],
+        [
+          "Aggregation",
+          "Compute a rate for each month, then give each month equal weight."
+        ]
+      ],
+      "bottom": "Complete team-window audit: 120 cases with improvement and 178 without improvement, out of 298.",
+      "notes": "120 seconds. Define a hit as a nonempty intersection between the two recommended practices and eligible practices that later improve. The measure is conditional on observing at least one improvement. It does not give an unconditional success probability for any team. The primary reported cohort contains 121 outcome-bearing cases over five globally complete months. One case has fewer than three subsequent team snapshots. In the stricter audit requiring three subsequent team snapshots, there are 298 cases: 120 with an improvement and 178 without one. Do not silently add the 121 and 178 because they refer to different completeness definitions. Without records of attempted practices, the no-improvement cases cannot establish intervention success or failure. The conditional cohort evaluates identification of observed successes.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 3.6, 6.2 and 6.3"
+    },
+    {
+      "title": "Primary historical results",
+      "kind": "results",
+      "lead": "Mean monthly Conditional Hit Rate@2",
+      "chart": {
+        "categories": [
+          "Random baseline",
+          "Time-aware popularity",
+          "Adaptive blend"
+        ],
+        "values": [
+          0.306,
+          0.557,
+          0.58
+        ]
+      },
+      "bottom": "Five primary months, 121 outcome-bearing cases. Blend: 1.9× random, +2.3 percentage points over popularity.",
+      "notes": "120 seconds. Read the chart in two comparisons. Candidate-aware random selection yields an expected 30.6 percent. The stronger time-aware-popularity arm yields 55.7 percent. The blend yields 58.0 percent. All three use the same monthly macro-aggregation convention. The random baseline accounts for each case's eligible candidate count and number of improvements. The popularity arm independently selects its recency setting from completed earlier outcomes. The 2.3 percentage-point gap is exploratory. It does not establish statistical superiority or an individual-team guarantee. Three of the five primary months use the same bootstrap policy in both arms. Pooled hits are 71 of 121, or 58.7 percent, but that is a different descriptive aggregation and is not the headline comparison.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 6.2–6.3"
+    },
+    {
+      "title": "Interpretation and limits of the evidence",
+      "rows": [
+        [
+          "Observed",
+          "Historical rankings align with later improvements more often than random selection."
+        ],
+        [
+          "Exploratory",
+          "The blend adds 2.3 percentage points over time-aware popularity."
+        ],
+        [
+          "Limited history",
+          "Three of five primary months use identical popularity bootstrap policies."
+        ],
+        [
+          "Still untested",
+          "Whether receiving recommendations increases improvement or reduces adoption time"
+        ]
+      ],
+      "bottom": "One organization and a short history limit generalization. Recommendation scores are not calibrated probabilities.",
+      "notes": "105 seconds. This is the central interpretation slide. Most of the improvement over random is already captured by organization-wide popularity. The remaining gap is the relevant comparison for assessing the blend's additional value. Only August and September among the five primary months use mixed policies. Both are ahead of popularity, but two months provide limited evidence. Repeated observations from the same teams and overlapping outcome windows further complicate inferential claims. Generalization needs more time periods and other organizations. Observational assessments can reflect common organizational initiatives or measurement differences. Be candid that the project does not demonstrate causal acceleration or statistically proven superiority.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 6.3, 7.3 and 7.5"
+    },
+    {
+      "title": "A prospective pilot",
+      "lead": "Test whether access to recommendations changes adoption outcomes",
+      "rows": [
+        [
+          "Comparison",
+          "Recommendation-assisted coaching versus usual coaching"
+        ],
+        [
+          "Assignment",
+          "Predefine allocation and account for shared coaches or team dependencies."
+        ],
+        [
+          "Records",
+          "Capture recommendations, attempted practices, failed attempts and maturity changes."
+        ],
+        [
+          "Outcomes",
+          "Measure improvement frequency and time to improvement."
+        ]
+      ],
+      "bottom": "Agree on duration and success criteria before the pilot. Track actual recommendation use.",
+      "notes": "75 seconds. Present this as a proposed next experiment, not an implemented study. If feasible, use randomized allocation, accounting for contamination through shared coaches. Record whether coaches actually consult the system and whether teams attempt recommended practices. Define outcome measures and analysis in advance. Include cases with no improvement, because the prospective question concerns the effect of offering recommendations across all enrolled cases. The pilot needs more than the current retrospective metric. It should measure time to improvement and unsuccessful attempts, while keeping assessment procedures comparable between groups. Exact sample size and duration require a separate study design.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 3.6, 7.3 and 8.2; allocation details are a proposed study design"
+    },
+    {
+      "title": "Conclusion",
+      "lead": "Organizational history provides usable evidence for the next-practice decision",
+      "rows": [
+        [
+          "Delivered",
+          "A working system that ranks two eligible practices for a team"
+        ],
+        [
+          "Evaluated",
+          "58.0% conditional hit rate in the primary historical backtest"
+        ],
+        [
+          "Next question",
+          "Can recommendation-assisted coaching improve outcomes in practice?"
+        ]
+      ],
+      "bottom": "Questions and discussion",
+      "notes": "45 seconds. Return to the opening question. The project demonstrates a complete implementation and a reproducible historical evaluation. The evidence supports the feasibility of using organizational history for practice ranking. The comparison against popularity also clarifies the limited incremental evidence available for the richer blend. The next step is supervised prospective evaluation. Stop here for discussion. Backup slides follow and can be opened directly if a question calls for detail. Main talk target: approximately 20–22 minutes, with optional detail shortened during rehearsal.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 8.1–8.3"
+    },
+    {
+      "title": "A. Candidate-aware random baseline",
+      "backup": true,
+      "lead": "P(hit) = 1 − C(n − k, 2) / C(n, 2)",
+      "rows": [
+        [
+          "n",
+          "Number of eligible, non-maxed candidate practices for the case"
+        ],
+        [
+          "k",
+          "Number of those candidates that later improve"
+        ],
+        [
+          "Aggregation",
+          "Average case probabilities within each month, then average across months."
+        ]
+      ],
+      "bottom": "Illustration: n = 10, k = 2 gives 1 − 28/45 = 37.8%.",
+      "notes": "This is the exact probability of at least one hit when drawing two distinct candidates uniformly without replacement. It adapts to each team's available candidates and observed improvements. It is not 2 divided by 35 because cases differ in both eligible practices and later improvement counts. The numeric illustration is hypothetical and is labelled as such. The popularity comparator is a separate, stronger baseline that selects recency under the same temporal rule. The random formula uses the convention C(a,2)=0 for a<2.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, section 3.6"
+    },
+    {
+      "title": "B. Results by prediction month",
+      "backup": true,
+      "table": [
+        [
+          "Month (2020)",
+          "Cases",
+          "Blend",
+          "Popularity",
+          "Scope"
+        ],
+        [
+          "3 May",
+          "21",
+          "28.6%",
+          "28.6%",
+          "Primary, bootstrap"
+        ],
+        [
+          "8 June",
+          "22",
+          "63.6%",
+          "63.6%",
+          "Primary, bootstrap"
+        ],
+        [
+          "5 July",
+          "27",
+          "66.7%",
+          "66.7%",
+          "Primary, bootstrap"
+        ],
+        [
+          "3 August",
+          "24",
+          "79.2%",
+          "75.0%",
+          "Primary, mixed"
+        ],
+        [
+          "6 September",
+          "27",
+          "51.9%",
+          "44.4%",
+          "Primary, mixed"
+        ],
+        [
+          "5 October",
+          "24",
+          "33.3%",
+          "20.8%",
+          "Sensitivity only"
+        ],
+        [
+          "4 November",
+          "6",
+          "33.3%",
+          "33.3%",
+          "Sensitivity only"
+        ]
+      ],
+      "bottom": "All seven months: blend 50.9%, popularity 47.5%. October and November have truncated global windows.",
+      "notes": "The primary monthly macro-average uses exact rates before rounding. For the blend the five exact rates correspond to 6/21, 14/22, 18/27, 19/24 and 14/27. Their mean rounds to 58.0 percent. Popularity corresponds to 6/21, 14/22, 18/27, 18/24 and 12/27 and rounds to 55.7 percent. Pooled blend hits are 71/121=58.7 percent. Three primary months tie by construction through the bootstrap. The seven-month sensitivity cohort totals 151 outcome-bearing cases. Keep primary and sensitivity interpretations separate.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, section 6.3"
+    },
+    {
+      "title": "C. Policy grid and deterministic selection",
+      "backup": true,
+      "table": [
+        [
+          "Parameter",
+          "Candidate values"
+        ],
+        [
+          "Distinct peers",
+          "5, 10, 19"
+        ],
+        [
+          "Minimum cosine similarity",
+          "0, 0.50, 0.75"
+        ],
+        [
+          "Similarity / sequence / popularity",
+          "15 weight triples in 0.25 steps, summing to 1"
+        ],
+        [
+          "Recent-popularity share",
+          "0, 0.25, 0.50, 0.75, 1"
+        ]
+      ],
+      "bottom": "3 × 3 × 15 × 5 = 675 policies. Peer follow-up and target recency each stay fixed at two observed snapshots.",
+      "notes": "Select the policy with the highest mean monthly Conditional Hit Rate@2 on completed earlier prediction months. Deterministic ties prefer more popularity, then lower recency, lower similarity weight, lower sequence weight, lower peer count and lower threshold. Candidate practice-score ties resolve by practice name. The blend uses independently normalized components. Bootstrap uses 100 percent popularity with equal historical/recent shares. Selection is automatic and global for each month. The grid is fixed in code. Temporal separation prevents future outcome leakage, but sparse earlier validation evidence still permits overfitting.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 3.5 and 6.5"
+    },
+    {
+      "title": "D. Component mechanics",
+      "backup": true,
+      "table": [
+        [
+          "Component",
+          "Calculation",
+          "Important boundary"
+        ],
+        [
+          "Similarity",
+          "cos(A,B) = (A·B) / (‖A‖‖B‖)",
+          "Use distinct peer teams and historical follow-up."
+        ],
+        [
+          "Transition",
+          "P(B given A) = count(A,B) / total outgoing A",
+          "Count consecutive improvement-bearing steps. No same-step ordering."
+        ],
+        [
+          "Blended score",
+          "wₛ × sim + wₜ × transition + wₚ × popularity",
+          "Weights sum to 1. Scores rank candidates."
+        ]
+      ],
+      "bottom": "Black Pearl: 0.25 × 0.513 + 0.25 × 0.525 + 0.50 × 0.933 ≈ 0.726 for Tech debt strategy.",
+      "notes": "The worked score uses rounded normalized component values. Scrum Master has components 0,1,1 and score 0.750. Tech debt strategy has components 0.513,0.525,0.933 and score about 0.726. Cosine compares profile direction and can underrepresent absolute maturity differences, which is a limitation to acknowledge. Dividing all maturity vectors by 3 does not change cosine similarity. The transition model aggregates empirical paths, not causal dependencies. A step can contain multiple improved practices. Count the cross-product between consecutive improvement-bearing steps, without ordering practices inside one step. Component-specific normalization occurs before blending. The implementation does not normalize the final blend again.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 3.3–3.5 and 3.7"
+    },
+    {
+      "title": "E. Data quality and eligibility",
+      "backup": true,
+      "rows": [
+        [
+          "Duplicate key",
+          "One repeated ASBCE team-month: retain the final source occurrence and report the duplicate."
+        ],
+        [
+          "Missing scores",
+          "Fill with zero before normalization. This may confound missingness with low maturity."
+        ],
+        [
+          "Public request",
+          "Require a valid prediction month, a team snapshot in that month and an earlier baseline."
+        ],
+        [
+          "Candidate count",
+          "Recommend exactly two practices when at least two remain below maturity level 3."
+        ]
+      ],
+      "bottom": "The raw workbook remains unchanged. Partial histories require explicit temporal handling.",
+      "notes": "The duplicate key is ASBCE at 20200107. The two source rows disagree on seven practice values. The final source occurrence matches the effective record retained by the earlier dictionary implementation. The report says explicit resolution does not change the reported results. There are 48 teams with all ten months and 39 with partial histories. Missing-to-zero handling is an implementation choice whose potential bias deserves acknowledgment. Public prediction months start at the fourth recorded global month. Fewer than two candidates yields an explanatory empty list, not one recommendation. These rules concern this prototype's observable-history contract rather than a general cold-start solution.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 1.3, 3.2, 5.5 and 6.1"
+    },
+    {
+      "title": "F. Optional system demonstration",
+      "backup": true,
+      "rows": [
+        [
+          "1. Open",
+          "Start the local application and select Black Pearl."
+        ],
+        [
+          "2. Predict",
+          "Choose prediction month 20200803 and generate recommendations."
+        ],
+        [
+          "3. Explain",
+          "Show Scrum Master and Tech debt strategy. Explain ranking scores."
+        ],
+        [
+          "4. Evaluate",
+          "Open a prepared backtest and identify primary results and comparison arms."
+        ]
+      ],
+      "bottom": "Allow about two minutes. Precompute the backtest before the session.",
+      "notes": "Rehearse before presenting. From the repository root, run ./start_mac_linux.sh or python src/web_main.py data/raw/combined_dataset.xlsx and open localhost:8000. Match the current UI labels during rehearsal rather than assuming this slide is a screenshot. Select Black Pearl and prediction snapshot 20200803. Expected practices and scores come from the checked-in worked example. First-time policy selection and backtesting can take time, so warm caches before the session. Keep slides 7 and 11 available as a static fallback if the demo cannot run. The live demonstration is optional until the supervisor confirms expectations.",
+      "source": "README.md, Run the web app; docs/PROJECT_DOCUMENTATION.md, sections 3.7, 5.4 and 10.4"
+    },
+    {
+      "title": "G. Prototype scope and next engineering work",
+      "backup": true,
+      "rows": [
+        [
+          "Implemented",
+          "End-to-end data ingestion, recommendations, interfaces and historical backtesting"
+        ],
+        [
+          "Pilot boundary",
+          "Use with a small number of trusted teams under supervision."
+        ],
+        [
+          "Operational work",
+          "Authentication, access control, monitoring and automated data refresh"
+        ],
+        [
+          "Scale work",
+          "Profile larger histories and policy sweeps. Load-test concurrent use."
+        ]
+      ],
+      "bottom": "Current dataset performance does not establish production scalability.",
+      "notes": "Recommendations are fast after caches warm, but first-time policy search evaluates up to 675 policies per prediction month. Do not claim linear scaling or production readiness. The service loads data in memory, uses cached scoring and offloads heavy backtesting to a single-worker executor. The prototype lacks hardened authorization, per-team isolation and operational monitoring. A wider rollout would need deployment, backup/recovery and refresh procedures. These are appropriate engineering next steps and do not change what the current implementation demonstrates.",
+      "source": "docs/PROJECT_DOCUMENTATION.md, sections 5.4, 6.6 and 7.3"
+    },
+    {
+      "title": "H. Sources and defense preparation",
+      "backup": true,
+      "rows": [
+        [
+          "Project report",
+          "docs/PROJECT_DOCUMENTATION.md: method §3, implementation §4–5, results §6, limitations §7"
+        ],
+        [
+          "Runnable project",
+          "github.com/erezmorabia/agile-prediction-mvp"
+        ],
+        [
+          "Official course",
+          "openu.ac.il/courses/22997.htm"
+        ],
+        [
+          "Department procedure",
+          "academic.openu.ac.il/cs/msc/pages/advance_project.aspx"
+        ]
+      ],
+      "bottom": "Timing, language, demonstration and advance-submission arrangements await supervisor confirmation.",
+      "notes": "The project report and checked-in README are the evidence sources for the technical and numerical claims. Full source locations appear in each slide's notes. The official course requires a working system, a public presentation before the supervisor(s) and an additional Computer Science faculty member, and deposit of source code with documentation. The departmental process also lists approval and presentation before supervisors, readers, staff and students. No fixed presentation length or slide count was found on those public pages. The presentation's English language and roughly twenty-minute structure are working assumptions. Official sources checked on 3 November 2026: https://www.openu.ac.il/courses/22997.htm?t=h and https://academic.openu.ac.il/cs/msc/pages/advance_project.aspx .",
+      "source": "docs/PROJECT_DOCUMENTATION.md; README.md; https://www.openu.ac.il/courses/22997.htm?t=h; https://academic.openu.ac.il/cs/msc/pages/advance_project.aspx"
+    }
+  ],
+  "session": {
+    "platform": "Zoom",
+    "day": "Sunday",
+    "time": "10:00-11:00",
+    "professor_guidance": "Make the presentation clear: what are the problems in the current state-of-the-art and how you improved.",
+    "calendar_date": null
+  }
+}
