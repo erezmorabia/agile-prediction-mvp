@@ -553,31 +553,49 @@ class PolicyEngine:
         If supplied, breakdowns receives normalized scores, policy weights and weighted
         contributions for each candidate, using the same values as the final score.
         """
-        similarity_raw: dict = {}
+        # 1. Similarity evidence
+        # Use the peers selected by the policy. Multiply each peer's practice improvements
+        # by its similarity score, then add the results for each practice and normalize.
+        # Normalization divides scores by the largest value, putting them between 0 and 1.
+        similarity_sum_per_practice_dict: dict = {}
         for i in self._selected_peer_indices(case, policy):
             _team, similarity, _month = case.peers[i]
             for practice, magnitude in case.peer_contributions[i].items():
-                similarity_raw[practice] = similarity_raw.get(practice, 0.0) + similarity * magnitude
-        similarity_norm = _normalize(similarity_raw)
+                similarity_sum_per_practice_dict[practice] = (
+                    similarity_sum_per_practice_dict.get(practice, 0.0) + similarity * magnitude
+                )
+        similarity_norm = _normalize(similarity_sum_per_practice_dict)
 
+        # 2. Transitions evidence
+        # Normalize the historical transition evidence gathered for this team.
+        # Divide each transition score by the largest score to put the values between 0 and 1.
         sequence_norm = _normalize(case.sequence_raw)
 
-        historical_masked = {p: case.historical_popularity_raw.get(p, 0.0) for p in case.candidates}
-        historical_norm = _normalize(historical_masked)
-        recent_norm = _normalize(case.recent_popularity_raw)
+        # 3. Popularity evidence
+        # Normalize historical counts using only practices eligible for improvement.
+        # Normalize recent counts using all practices across the organization.
+        historical_popularity_masked = {p: case.historical_popularity_raw.get(p, 0.0) for p in case.candidates}
+        historical_popularity_norm = _normalize(historical_popularity_masked)
+        recent_popularity_norm = _normalize(case.recent_popularity_raw)
 
+        # 4. Score each candidate practice
+        # Read its evidence scores, using zero when a source has no evidence for it.
         scores: dict = {}
         for practice in case.candidates:
             sim = similarity_norm.get(practice, 0.0)
             seq = sequence_norm.get(practice, 0.0)
-            recent = recent_norm.get(practice, 0.0)
-            historical = historical_norm.get(practice, 0.0)
+            recent = recent_popularity_norm.get(practice, 0.0)
+            historical = historical_popularity_norm.get(practice, 0.0)
+            # Mix recent and historical popularity using the policy's recency weight.
             popularity = policy.recency_weight * recent + (1.0 - policy.recency_weight) * historical
+            # Multiply each evidence score by its policy weight and add them together.
             scores[practice] = (
                 policy.similarity_weight * sim
                 + policy.sequence_weight * seq
                 + policy.popularity_weight * popularity
             )
+            # 5. Optional explanation
+            # Save each source's score, weight, and contribution to explain the final score.
             if breakdowns is not None:
                 breakdowns[practice] = [
                     {"component": name, "score": value, "weight": weight, "contribution": value * weight}
@@ -587,6 +605,7 @@ class PolicyEngine:
                         ("popularity", popularity, policy.popularity_weight),
                     )
                 ]
+        # Return all candidate scores; the caller can use them to select the top practices.
         return scores
 
     def top_practices(self, case: CaseComponents, policy: Policy) -> tuple:
