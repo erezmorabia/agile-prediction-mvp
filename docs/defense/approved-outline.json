@@ -27,66 +27,86 @@
   {
     "slide": 6,
     "phase": "How",
-    "title": "One shared engine serves the application"
+    "title": "High-level software architecture"
   },
   {
     "slide": 7,
     "phase": "How",
-    "title": "One recommendation request, end to end"
+    "title": "One shared engine serves the application"
   },
   {
     "slide": 8,
     "phase": "How",
-    "title": "Each component uses its own history"
+    "title": "One recommendation request, end to end"
   },
   {
     "slide": 9,
     "phase": "How",
-    "title": "Why these two practices rank highest"
+    "title": "Each component uses its own history"
   },
   {
     "slide": 10,
-    "phase": "Evidence",
-    "title": "Temporal controls prevent future-data leakage"
+    "phase": "How",
+    "title": "Why these two practices rank highest"
   },
   {
     "slide": 11,
     "phase": "Evidence",
-    "title": "What counts as a successful ranking?"
+    "title": "Temporal controls prevent future-data leakage"
   },
   {
     "slide": 12,
     "phase": "Evidence",
-    "title": "Primary historical results"
+    "title": "What counts as a successful ranking?"
   },
   {
     "slide": 13,
-    "phase": "Implications",
-    "title": "Capabilities, practical value and limits"
+    "phase": "Evidence",
+    "title": "Primary historical results"
   },
   {
     "slide": 14,
     "phase": "Implications",
-    "title": "A prospective pilot can test practical benefit"
+    "title": "Capabilities, practical value and limits"
   },
   {
     "slide": 15,
     "phase": "Implications",
-    "title": "Conclusions"
+    "title": "A prospective pilot can test practical benefit"
   },
   {
     "slide": 16,
-    "phase": "Backup",
-    "title": "A1. Results by prediction month"
+    "phase": "Implications",
+    "title": "Conclusions"
   },
   {
     "slide": 17,
     "phase": "Backup",
-    "title": "A2. Policy search grid"
+    "title": "A1. Results by prediction month"
   },
   {
     "slide": 18,
     "phase": "Backup",
+    "title": "A2. Policy search grid"
+  },
+  {
+    "slide": 19,
+    "phase": "Backup",
     "title": "A3. One shared policy is selected each month"
+  },
+  {
+    "slide": 20,
+    "phase": "Backup",
+    "title": "A4. How component scores are normalized"
+  },
+  {
+    "slide": 21,
+    "phase": "Backup",
+    "title": "A5. Where raw scores and divisors come from"
+  },
+  {
+    "slide": 22,
+    "phase": "Backup",
+    "title": "A6. Code walkthrough"
   }
 ]

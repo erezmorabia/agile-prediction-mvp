@@ -4,8 +4,8 @@ CURRENT EDITION: EXECUTIVE-SUMMARY-BASED DEFENSE PDF
 
 output/pdf/agile-project-defense.pdf
   16:9 audience slides with embedded Arial fonts and PDF bookmarks.
-  Pages 1-15 are the main talk. Pages 16-18 are backup slides A1-A3.
-  Stop after slide 15 for questions. Use the PDF outline to open backups.
+  Pages 1-16 are the main talk. Pages 17-22 are backup slides A1-A6.
+  Stop after slide 16 for questions. Use the PDF outline to open backups.
 
 output/pdf/agile-project-defense-presenter-notes.pdf
   Speaking notes, timing suggestions, sources and rehearsal guidance.
@@ -16,9 +16,9 @@ and how the project improves on them. No additional requirements specified.
 Agreed narrative:
   1-2  WHY: opening question and problem statement
   3-4  WHAT: proposed system and recommendation concept
-  5-9  HOW: data representation, architecture, software request component history and recommendation explanations
-  10-12 EVIDENCE: evaluation design, success metric, and results
-  13-15 IMPLICATIONS: contribution and limits, pilot, and closing answer
+  5-10 HOW: data representation, architecture, software request component history and recommendation explanations
+  11-13 EVIDENCE: evaluation design, success metric, and results
+  14-16 IMPLICATIONS: contribution and limits, pilot, and closing answer
 The executive summary of PROJECT_DOCUMENTATION.pdf (pages 5-7) supplies the
 main narrative: challenge, empirical organizational learning, three evidence
 signals, monthly adaptation, validation, results and pilot readiness. Architecture
@@ -27,8 +27,8 @@ are associations, not readiness guarantees. Estimated savings are not measured
 results and are not presented as such.
 
 The Black Pearl software request appears before its later outcomes, which are
-introduced only when defining evaluation success. Three backup slides retain
-the monthly results (A1), policy search grid (A2), and monthly selection explanation (A3).
+introduced only when defining evaluation success. Six backup slides retain
+the monthly results (A1), policy search grid (A2), monthly selection explanation (A3), and component normalization (A4), and raw evidence calculations (A5), and a code walkthrough (A6).
 Plan 20-25 minutes for the talk within the one-hour meeting, plus discussion.
 English remains a working choice. No calendar date is inferred in the deck.
 

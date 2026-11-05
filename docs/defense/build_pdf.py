@@ -7,6 +7,7 @@ The PDF is the redesigned edition. The earlier PPTX remains a separate draft.
 from __future__ import annotations
 
 import json
+import re
 from datetime import date
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -45,7 +46,7 @@ RELATED_WORK = [
 
 # Reuse the original explanations after moving the explicit contribution earlier.
 # Slots 3 and 4 receive new notes and sources in make_presenter().
-SOURCE_ORDER = [0, 1, 7, 4, 3, 5, 6, None, -1, 8, 9, 10, 11, 12, 13, 15, 16, -2]
+SOURCE_ORDER = [0, 1, 7, 4, 3, -3, 5, 6, None, -1, 8, 9, 10, 11, 12, 13, 15, 16, -2, -4, -5, -6]
 
 
 def clean(value):
@@ -57,7 +58,7 @@ class Deck:
         self.c = Canvas(str(OUT / "agile-project-defense.pdf"), pagesize=(W, H), pageCompression=1)
         self.c.setTitle(CONTENT["title"])
         self.c.setAuthor(CONTENT["author"])
-        self.c.setSubject("M.Sc. advanced-project defense. 15 main slides and 3 backup slides.")
+        self.c.setSubject("M.Sc. advanced-project defense. 16 main slides and 6 backup slides.")
         self.audit = []
         self.regions = []
         self.i = 0
@@ -131,13 +132,13 @@ class Deck:
         self.c.setFillColor(colors.white)
         self.c.rect(0,0,W,H,stroke=0,fill=1)
         self.c.bookmarkPage(f"slide-{self.i}")
-        if self.i==16:
-            self.c.addOutlineEntry("Backup slides", "slide-16", level=0, closed=False)
+        if self.i==17:
+            self.c.addOutlineEntry("Backup slides", "slide-17", level=0, closed=False)
         self.c.addOutlineEntry(title or CONTENT['title'], f"slide-{self.i}", level=1 if backup else 0, closed=False)
         self.text(title,48,37,864,size=34,bold=True,max_h=86,leading=40)
         self.rule(48,493,864)
         self.text(source_label or f"Project report {report}",48,504,730,size=10,color=GRAY)
-        folio = title.split(".", 1)[0] if backup else f"{self.i:02d} / 15"
+        folio = title.split(".", 1)[0] if backup else f"{self.i:02d} / 16"
         self.text(folio,854,502,60,size=12,color=GRAY,bold=True)
 
     def end(self):
@@ -240,29 +241,47 @@ def make_slides():
     d.text("Reserve the first 3 recorded snapshots for initial history.<br/>First evaluated prediction: May; latest earlier assessment (baseline): April.",48,431,864,size=20,leading=25)
     d.end()
 
+    d.new("High-level software architecture", "§4.1-4.2")
+    d.node("Web interface", "",250,105,460,54,title_size=25)
+    d.arrow([(480,159),(480,204)],color=TEAL)
+    d.text("HTTP / REST",498,171,250,size=17,color=GRAY)
+    d.node("API layer", "",185,204,590,54,emphasis=True,title_size=25)
+    d.arrow([(480,258),(480,282),(228,282),(228,300)],color=TEAL)
+    d.arrow([(480,258),(480,282),(555.5,282),(555.5,300)],color=TEAL)
+    d.arrow([(480,258),(480,282),(807.5,282),(807.5,300)],color=TEAL)
+    d.node("ML engine", "Learn from similar teams<br/>Learn practice-transition patterns<br/>Count improvements across teams<br/>Blend signals; recommend two practices",48,300,360,153,title_size=24,body_size=18)
+    d.node("Validation engine", "Backtest past predictions<br/>Compare with outcomes<br/>Calculate ranking metrics",433,300,245,153,title_size=23,body_size=18)
+    d.node("Data module", "Load Excel · validate<br/>Normalize maturity<br/>Index team histories",703,300,209,153,title_size=24,body_size=18)
+    d.arrow([(555.5,453),(555.5,479),(228,479),(228,453)],color=TEAL)
+    d.text("Request historical recommendations",251,456,310,size=13,color=TEAL,bold=True,max_h=18)
+    d.end()
+
     d.new("One shared engine serves the application", "§4.1-4.3, §5.4 and §6.5")
-    d.text("The same monthly policy drives recommendations and historical replay",48,115,864,size=24,color=TEAL)
-    d.node("Excel",'Team maturity<br/>snapshots',48,236,151,114,title_size=24,body_size=18)
-    d.node("Data processing",'Validate<br/>Normalize<br/>Index histories',237,216,174,153,title_size=22,body_size=18)
-    d.node("PolicyEngine",'Evidence signals<br/>Monthly policy<br/>Candidate ranking',449,216,226,153,emphasis=True,title_size=25,body_size=19)
-    d.node("Web / API / CLI",'Recommendations',723,178,189,98,title_size=21,body_size=17)
-    d.node("BacktestEngine",'Historical replay',723,324,189,94,title_size=20,body_size=18)
-    d.arrow([(199,293),(237,293)])
-    d.arrow([(411,293),(449,293)])
-    d.arrow([(675,267),(698,267),(698,227),(723,227)],color=TEAL)
-    d.arrow([(675,320),(698,320),(698,371),(723,371)],color=TEAL)
-    d.caption("One global policy per prediction month. The user does not tune the weights.",y=448,size=20)
+    d.node("Web interface / API", "",48,107,238,54,title_size=22)
+    d.text("Both actions start in the web interface",330,119,582,size=23,color=TEAL)
+    d.arrow([(167,161),(167,200)],color=TEAL)
+    d.arrow([(167,180),(32,180),(32,395),(48,395)],color=TEAL)
+    d.node("Recommend action", "Select team + month<br/>Request one case",48,200,238,110,title_size=22,body_size=18)
+    d.node("Run backtest action", "Validation engine loops<br/>over team-month cases",48,340,238,110,title_size=21,body_size=18)
+    d.node("Shared ML engine", "PolicyEngine<br/><b>For each prediction month:</b><br/>choose settings shared<br/>by all teams.<br/><br/><b>For each team:</b><br/>apply those settings and<br/>recommend two practices.",330,200,300,250,emphasis=True,title_size=24,body_size=18)
+    d.node("Display results", "Two ranked practices",674,200,238,110,title_size=24,body_size=18)
+    d.node("Evaluate results", "Compare improvements<br/>Display quality metrics",674,340,238,110,title_size=23,body_size=18)
+    for y in [255,395]:
+        d.arrow([(286,y),(330,y)],color=TEAL)
+        d.arrow([(630,y),(674,y)],color=TEAL)
+    d.caption("One case for Recommend; many historical cases for backtesting. Same ML engine.",y=472,size=16)
     d.end()
 
     d.new("One recommendation request, end to end", "§3.7 and §4.3")
-    d.text("Explanation by example: Black Pearl · 3 August 2020",48,105,864,size=24,color=GRAY)
-    d.node("Find baseline",'5 July 2020<br/><b>28 eligible practices</b><br/>below maturity level 3',48,149,268,166,title_size=24,body_size=20)
-    d.node("Apply policy",'Top 10 of 47 qualifying<br/>peer teams, matched by<br/>historical profile:<br/>cosine similarity ≥ 0.75',346,149,270,166,emphasis=True,title_size=24,body_size=20)
-    d.node("Score and rank",'Normalize and blend<br/>the three signals;<br/>rank all 28 candidates',646,149,266,166,title_size=24,body_size=20)
-    d.arrow([(316,230),(346,230)],color=TEAL)
-    d.arrow([(616,230),(646,230)],color=TEAL)
-    d.text("Similarity 25% · Transitions 25% · Popularity 50% (historical)",48,330,864,size=22,color=TEAL,bold=True)
-    d.text("Next: the history behind each signal, followed by<br/>the evidence supporting the two highest-ranked practices.",48,370,864,size=20,color=GRAY)
+    d.text("Example · Team: Black Pearl · Prediction month: August 2020",48,105,864,size=23,color=GRAY)
+    d.text("Which two practices should this team prioritize next?",48,144,864,size=23,color=TEAL)
+    d.node("Find current state",'Latest assessment:<br/>5 July 2020<br/><b>28 eligible practices</b><br/>below maturity level 3',48,188,268,166,title_size=24,body_size=20)
+    d.node("Apply policy",'Top 10 of 47 qualifying<br/>peer teams, matched by<br/>historical profile:<br/>cosine similarity ≥ 0.75',346,188,270,166,emphasis=True,title_size=24,body_size=20)
+    d.node("Score and rank",'Normalize and blend<br/>the three signals;<br/>rank all 28 candidates',646,188,266,166,title_size=24,body_size=20)
+    d.arrow([(316,269),(346,269)],color=TEAL)
+    d.arrow([(616,269),(646,269)],color=TEAL)
+    d.text("August 2020 policy",48,380,864,size=24,color=TEAL,bold=True)
+    d.text("Similarity 25% · Transitions 25% · Popularity 50% (historical only)",48,421,864,size=22,color=GRAY)
     d.end()
 
     d.new("Each component uses its own history", "§3.3-3.7", source_label="Source: src/ml/policy.py and src/ml/sequences.py; project report §3.3-3.7")
@@ -271,32 +290,51 @@ def make_slides():
     d.text("Component",60,155,202,size=22,color="FFFFFF",bold=True)
     d.text("History used for this recommendation",282,155,618,size=22,color="FFFFFF",bold=True)
     history_rows=[
-        ("Similarity", "Match July's profile to earlier peer states.<br/>Observe up to 2 later peer snapshots, capped at July.", 76),
-        ("Practice transitions", "Learn patterns across teams from January-June.<br/>Use Black Pearl's May-to-July and June-to-July<br/>improvements to trigger those patterns.", 97),
-        ("Popularity", "Count improvements across teams in January-June.<br/>This policy uses historical popularity only.", 76),
+        ("Similarity", "Find earlier peer assessments similar to Black Pearl's July state.<br/>Check improvements in their next two assessments.<br/>Use no peer observations after July.", 82),
+        ("Practice transitions", "Learn practice-following patterns from January-June history.<br/>Compare Black Pearl's July scores with its May and June scores.<br/>Collect improved practices once, then score practices that<br/>historically followed them.", 105),
+        ("Popularity", "Count improvements across teams in January-June.<br/>August's policy uses historical popularity only.", 62),
     ]
     y=189
     for label,body,height in history_rows:
         d.text(label,60,y+12,202,size=21,bold=True,color=TEAL,max_h=height-20,leading=26)
-        d.text(body,282,y+12,618,size=20,max_h=height-20,leading=25)
+        d.text(body,282,y+12,618,size=18,max_h=height-20,leading=20)
         d.rule(48,y+height,864)
         y+=height
-    d.text("Policy selection chooses weights/settings: replay May predictions<br/>and assess May-July outcomes. It does not limit component history to May.",48,448,864,size=18,color=GRAY,leading=22)
+    d.text("<b>Monthly policy: one shared set of settings for all teams.</b><br/>For August, test combinations across May prediction cases using their May-July outcomes.",48,445,864,size=17,color=GRAY,leading=21)
     d.end()
 
     d.new("Why these two practices rank highest", "§3.5 and §3.7")
     d.text("Black Pearl · August 2020 · 28 eligible practices ranked",48,105,864,size=23,color=GRAY)
-    d.table(["Normalized signal / weight", "#1 Scrum Master", "#2 Tech debt strategy"],[
-        ["Similarity · 25%", "0.000", "0.513"],
-        ["Transitions · 25%", "1.000", "0.525"],
-        ["Popularity · 50%", "1.000", "0.933"],
-        ["Weighted total", "0.750", "0.726"],
-    ],[330,240,294],y=146,row_h=43,size=20,highlight=(3,))
-    d.text("Scrum Master",48,386,410,size=22,color=TEAL,bold=True)
-    d.text("Strongest transition and popularity<br/>signals; no peer contribution.",48,420,410,size=20,leading=25)
-    d.text("Tech debt strategy",502,386,410,size=22,color=TEAL,bold=True)
-    d.text("Evidence from all three signals;<br/>the weighted total ranks second.",502,420,410,size=20,leading=25)
-    d.caption("Weighted total = 0.25 × similarity + 0.25 × transitions + 0.50 × popularity.",y=476,size=14)
+    d.text("Each component: raw evidence ÷ highest raw value. Final rank: weighted total.",48,137,864,size=17,color=GRAY)
+    widths=[228,212,212,212]
+    d.rect(48,164,864,50,NAVY)
+    x=48
+    for ci,(label,width) in enumerate(zip(["Component / weight", "#1 Scrum Master", "#2 Tech debt strategy", "#3 DoD"],widths)):
+        if ci in (1,2):
+            d.rect(x,164,width,50,TEAL)
+        d.text(label,x+12,170,width-24,size=17.5,color="FFFFFF",bold=True)
+        if ci:
+            d.text("Selected" if ci in (1,2) else "Ranked third",x+12,195,width-24,size=11,color="FFFFFF")
+        x+=width
+    score_rows=[
+        (["Similarity · 25%", "<b>0.000</b><br/>(0 ÷ 0.5944)", "<b>0.513</b><br/>(0.3047 ÷ 0.5944)", "<b>1.000</b><br/>(0.5944 ÷ 0.5944)"],56),
+        (["Transitions · 25%", "<b>1.000</b><br/>(1.333 ÷ 1.333)", "<b>0.525</b><br/>(0.700 ÷ 1.333)", "<b>0.000</b><br/>(0 ÷ 1.333)"],56),
+        (["Popularity · 50%", "<b>1.000</b><br/>(15 ÷ 15)", "<b>0.933</b><br/>(14 ÷ 15)", "<b>0.800</b><br/>(12 ÷ 15)"],56),
+        (["Weighted total", "0.750", "0.726", "0.650"],36),
+    ]
+    y=214
+    for row,height in score_rows:
+        if row[0]=="Weighted total":
+            d.rect(48,y,864,height,"F2F5F7")
+        x=48
+        for ci,(label,width) in enumerate(zip(row,widths)):
+            if ci in (1,2):
+                d.rect(x,y,width,height,PALE)
+            d.text(label,x+12,y+7,width-24,size=17.5,leading=21,max_h=height-14,bold=row[0]=="Weighted total",color=TEAL if ci in (1,2) else NAVY)
+            x+=width
+        d.rule(48,y+height,864)
+        y+=height
+    d.text("<b>Similarity:</b> combine how similar each peer was with how much it improved the practice.<br/><b>Transitions:</b> combine historical evidence that a practice follows Black Pearl's recent improvements.<br/><b>Popularity:</b> count how often the practice improved across teams.<br/>Each component is scaled relative to its highest raw score. Details: backup A4.",48,431,864,size=13,leading=14,max_h=56)
     d.end()
 
     d.new("Temporal controls prevent future-data leakage", "§3.6-3.7 and §6.5")
@@ -428,6 +466,54 @@ def make_slides():
     d.caption("No completed earlier outcomes: use default popularity. Reselect each month; settings may stay the same.",y=477,size=13)
     d.end()
 
+    d.new("A4. How component scores are normalized", "§3.5 and §3.7",True,source_label="Source: src/ml/policy.py; source workbook; project report §3.5 and §3.7")
+    d.text("Tech debt strategy · Black Pearl · August 2020",48,107,864,size=23,color=GRAY)
+    d.table(["Component", "Tech debt strategy<br/>raw score", "Highest raw score<br/>and practice", "Division and result"],[
+        ["Similarity", "0.3047", "0.5944<br/>(DoD)", "0.3047 ÷ 0.5944<br/>= <b>0.513</b>"],
+        ["Transitions", "0.700", "1.333<br/>(Scrum Master)", "0.700 ÷ 1.333<br/>= <b>0.525</b>"],
+        ["Popularity", "14 events", "15 events<br/>(Scrum Master)", "14 ÷ 15<br/>= <b>0.933</b>"],
+    ],[150,216,248,250],y=140,row_h=70,size=15)
+    d.text("Normalized score = raw evidence ÷ largest raw value for that component.",48,410,864,size=20,color=TEAL,bold=True)
+    d.text("Similarity: sum of peer similarity × observed maturity increase.<br/>Transitions: sum of learned successor probabilities for recent improvements.<br/>Popularity counts improvement events across teams. Values shown are rounded; full precision is used.",48,443,864,size=13,color=GRAY,leading=15,max_h=45)
+    d.end()
+
+    d.new("A5. Where raw scores and divisors come from", "§3.3-3.5 and §3.7",True,source_label="Source: source workbook; src/ml/policy.py and src/ml/sequences.py")
+    d.text("Black Pearl · August 2020 · the two inputs to each division in A4",48,105,864,size=21,color=GRAY)
+    widths=[150,357,357]
+    d.rect(48,143,864,44,NAVY)
+    x=48
+    for label,width in zip(["Component","Tech debt strategy's raw score","Highest raw score (divisor)"],widths):
+        d.text(label,x+12,154,width-24,size=17,color="FFFFFF",bold=True)
+        x+=width
+    raw_rows=[
+        (["Similarity", "ACM: 0.913998 × (1 ÷ 3)<br/>= <b>0.3047</b>", "DoD: ACM + Puffin<br/>0.3047 + 0.2897 = <b>0.5944</b>"],80),
+        (["Transitions", "Product Owner + Scrum Master<br/>0.500 + 0.200 = <b>0.700</b>", "Scrum Master:<br/>Backlog grooming + Retro<br/>2/6 + 1/1 = <b>1.333</b>"],80),
+        (["Popularity", "Tech debt strategy:<br/><b>14 improvement events</b>", "Scrum Master:<br/><b>15 improvement events</b> (maximum)"],60),
+    ]
+    y=187
+    for row,height in raw_rows:
+        x=48
+        for ci,(label,width) in enumerate(zip(row,widths)):
+            d.text(label,x+12,y+10,width-24,size=17.5,leading=20,max_h=height-18,bold=ci==0,color=TEAL if ci==0 else NAVY)
+            x+=width
+        d.rule(48,y+height,864)
+        y+=height
+    d.text("<b>Similarity:</b> ACM improved Tech debt strategy from level 1 to 2; the other nine selected peers contributed zero.<br/>For DoD, ACM and Puffin each improved one level. Each contribution is peer similarity × (level increase ÷ 3).<br/><b>Transitions:</b> values are learned probabilities that the candidate follows Black Pearl's recently improved practices.<br/>Scrum Master followed Backlog grooming in 2 of 6 successor links, and Retro in 1 of 1. Retro's evidence is one observation.<br/>Popularity counts events across teams before July. Values shown are rounded; calculations use full precision.",48,416,864,size=13,color=GRAY,leading=14,max_h=70)
+    d.end()
+
+    d.new("A6. Code walkthrough", "§4.2-4.3",True,source_label="Source: src/ml/policy.py · PolicyEngine._compute_components")
+    d.text("PolicyEngine._compute_components",48,116,864,size=29,color=TEAL,bold=True)
+    d.text('<link href="https://github.com/erezmorabia/agile-prediction-mvp/blob/main/src/ml/policy.py#L335"><u>src/ml/policy.py:335</u></link> · inputs: team + latest assessment date',48,163,864,size=20,color=TEAL)
+    d.text("Collects the team's current state and raw evidence<br/>for the three recommendation components.",48,214,864,size=24,leading=31)
+    d.rows([
+        ("Current state", "Read maturity scores; identify practices below level 3."),
+        ("Similarity", "Find earlier peer profiles and their later improvements."),
+        ("Transitions", "Use recent team improvements to look up likely successors."),
+        ("Popularity", "Collect historical and recent improvement counts across teams."),
+    ],y=302,step=37,label_w=180,body_size=19)
+    d.caption("Returns CaseComponents. score_case() later normalizes and combines the evidence.",y=466,size=17)
+    d.end()
+
     d.finish()
     return d.titles
 
@@ -444,16 +530,16 @@ def make_presenter(titles):
         return Paragraph(clean(text),styles[key])
     story.append(para('Defense presentation<br/>Presenter notes','title'))
     story.append(para('Erez Morabia · M.Sc. Advanced Project in Computer Science · 22997'))
-    story.append(para('Session: Zoom, Sunday, 10:00-11:00, as supplied by the student. The supervisor requests a clear explanation of problems in the current state of the art and how the project improves on them. No additional presentation requirements were specified. Plan approximately 20-25 minutes for the presentation within the one-hour meeting, leaving substantial time for discussion. English remains a working choice. The audience PDF contains 15 main slides and three backups with PDF outline navigation.'))
+    story.append(para('Session: Zoom, Sunday, 10:00-11:00, as supplied by the student. The supervisor requests a clear explanation of problems in the current state of the art and how the project improves on them. No additional presentation requirements were specified. Plan approximately 20-25 minutes for the presentation within the one-hour meeting, leaving substantial time for discussion. English remains a working choice. The audience PDF contains 16 main slides and six backups with PDF outline navigation.'))
     story.append(para('Executive-summary foundation','head'))
     story.append(para('The main narrative follows the Executive Summary on pages 5-7 of PROJECT_DOCUMENTATION.pdf: the challenge, empirical organizational learning, three evidence signals, monthly adaptive blending, validation, results and pilot readiness. Architecture and the Black Pearl example come from sections 3.7 and 4. The contribution is the applied learning approach and working system. Transition evidence does not guarantee readiness. The report\'s 4-8 hours per month is a practitioner estimate, so the deck does not present it as measured savings.'))
     story.append(para('Maturity assessments identify improvement gaps. This project addresses the practical decision: which practice should an individual team consider next? It uses longitudinal team and peer histories, observed practice transitions, and organization-wide trends to rank candidates. The working system and temporally controlled evaluation are the design contributions. The measured result is 58.0% conditional historical alignment, versus 30.6% random and 55.7% time-aware popularity. The small additional gain over popularity remains exploratory. The project did not compare implementations of the cited prior systems or test whether providing advice accelerates adoption.'))
     story.append(para('Design basis','head'))
-    story.append(para('The deck follows university guidance on legibility and attention: a white background, dark navy text, one teal accent, embedded Arial fonts, 34 pt headings and predominantly 24 pt body text. The agreed narrative is why (slides 1-2), what (3-4), how (5-9), evidence (10-12), and implications (13-15). Visuals show inputs and outputs, parallel recommendation signals, a shared-engine architecture, and the software request. The later example outcome appears only in the evaluation section. These are selectable vector diagrams in the PDF. Diagram detail and supporting captions use smaller type. Small source footers and page numbers are supporting metadata. Quantitative graphics use direct labels, so meaning does not depend on color. This is a custom academic design, not an official Open University template.'))
+    story.append(para('The deck follows university guidance on legibility and attention: a white background, dark navy text, one teal accent, embedded Arial fonts, 34 pt headings and predominantly 24 pt body text. The agreed narrative is why (slides 1-2), what (3-4), how (5-10), evidence (11-13), and implications (14-16). Visuals show inputs and outputs, parallel recommendation signals, a shared-engine architecture, and the software request. The later example outcome appears only in the evaluation section. These are selectable vector diagrams in the PDF. Diagram detail and supporting captions use smaller type. Small source footers and page numbers are supporting metadata. Quantitative graphics use direct labels, so meaning does not depend on color. This is a custom academic design, not an official Open University template.'))
     for org,title,url in RESEARCH:
         story.append(para(f'{escape(org)}: <link href="{url}">{escape(title)}</link>','source'))
     story.append(para('Projection and rehearsal','head'))
-    story.append(para('On Zoom, share the PDF application window and keep these presenter notes on a separate screen. Use presentation or full-screen mode and check that the shared view shows slides only. Stop after slide 15 for questions. The three backup pages are A1 (monthly results), A2 (policy search grid) and A3 (monthly policy selection). For a shorter talk, shorten algorithm and example details while preserving the problem statement, project response, metric definition and limits. Precompute any optional live backtest. Review your personal contribution before the session.'))
+    story.append(para('On Zoom, share the PDF application window and keep these presenter notes on a separate screen. Use presentation or full-screen mode and check that the shared view shows slides only. Stop after slide 16 for questions. The six backup pages are A1 (monthly results), A2 (policy search grid), A3 (monthly policy selection) A4 (component normalization) A5 (raw evidence calculations) and A6 (code walkthrough). For a shorter talk, shorten algorithm and example details while preserving the problem statement, project response, metric definition and limits. Precompute any optional live backtest. Review your personal contribution before the session.'))
     story.append(para('Timing','head'))
     story.append(para('Aim for 20-25 minutes before questions. The 10:00-11:00 slot describes the whole meeting, rather than a requirement to speak for an hour. The demonstration is optional and would add approximately two minutes. Rehearse the first four slides as one connected argument: practical problem, empirical learning proposal, and recommendation approach.'))
     replacements={
@@ -463,31 +549,59 @@ def make_presenter(titles):
         4:'90 seconds. Lead with the executive summary\'s central contribution: empirically learn how this organization improves, then use that evidence to identify likely next practices for one team. Collaborative filtering and transition modelling operationalize the approach. State the proposal before describing its implementation. Input is a team and prediction month, together with organizational history available at the earlier baseline. Output is two ranked practices that have not reached maximum maturity, when at least two candidates remain. The engine learns from prior organizational history using component-specific scoring windows. There is no fixed lookback for historical learning: each prediction uses only the history available under its baseline cutoffs. The dataset contains ten recorded months overall, not ten months of history for every prediction. The next slide notes explain the shorter component windows. The coach evaluates feasibility and context before deciding what to attempt. This slide specifies the decision aid rather than claiming a new algorithm or proven adoption acceleration. The next slide explains the recommendation idea conceptually, before the data and software architecture.',
         5:'105 seconds. Read the three evidence streams in parallel, not as sequential prerequisites. Similar teams contribute practices that comparable historical peer states later improved. Practice transitions contribute empirical successors to the target team\'s recently improved practices. Time-aware popularity contributes historical and recent organization-wide improvement counts. The arrows converge on component normalization and score blending. Monthly weights come from completed earlier outcomes. Only practices below maximum maturity enter the candidate set; the bottom ranking label does not mean candidate eligibility is decided after seeing the scores. The system returns exactly two practices when at least two candidates remain. Ranking scores are not calibrated success probabilities. Window details: collaborative filtering searches peer snapshots across all months strictly before the baseline, then measures improvements in each matched peer\'s next two recorded snapshots, stopping at the baseline. The Practice Transition Model learns patterns from all history strictly before the baseline; it identifies the target team\'s recent improvements by comparing the baseline against each of its two preceding snapshots. Time-aware popularity blends historical counts strictly before the baseline with the single latest organization-wide transition into the baseline. These shorter scoring windows do not cap the historical learning window. The three-snapshot forward window is for evaluating outcomes, not a scoring lookback. Snapshot counts need not equal calendar months. All signals remain bounded by the historical baseline.',
         12:'105 seconds. Follow the executive summary from results to practical value. The functional prototype accepts Excel data and provides recommendations through a web interface and API. Monthly policy selection reduces manual parameter tuning, and a shared ranking approach supports consistent coach-team discussions. These are delivered capabilities. They do not constitute measured time savings or evidence of faster adoption. The short single-organization history and three identical bootstrap months limit performance interpretation. The system is ready for supervised pilot testing, while access control, monitoring and automated data refresh remain future engineering work. The next slide explains what that pilot should measure.',
-        7:'90 seconds. Read the architecture from left to right as data and recommendation flow. Excel supplies team maturity snapshots. Data processing validates, normalizes and indexes histories. PolicyEngine combines evidence, selects one global policy for each prediction month, and ranks candidates. Its output serves the web interface, REST API and CLI as well as historical backtesting. The two branches emphasize a shared scoring policy rather than independent implementations. Policy selection uses 675 candidates and only completed earlier prediction-month outcomes. With no completed evidence it bootstraps with popularity alone. The grid and deterministic tie-breaking remain in backup A2. Caches reuse policies and evidence components. The prototype is suitable for supervised pilot use; access control and operational hardening remain future work.',
-        8:'120 seconds. Explicitly introduce this as an explanation by example using a reproducible historical request. Black Pearl at 3 August 2020 uses the 5 July baseline. Of the 30 retained practices, 28 are below raw maturity level 3 and eligible. There are 47 distinct qualifying peer teams with cosine similarity at least 0.75; the policy selects the 10 most similar. Each peer is represented by its best-matching historical snapshot strictly before the baseline, rather than necessarily its latest state. The selected 10 have similarities approximately 0.869-0.914. Weights are 25% collaborative-filtering similarity, 25% practice transitions and 50% popularity. The recent-popularity share is zero, so popularity is historical only. Policy selection uses all earlier prediction cohorts whose three-snapshot outcome windows have closed before August, not a fixed number of months back. Here only the 3 May prediction cohort qualifies: its outcome snapshots are 3 May, 8 June and 5 July. Thus selection relies on one completed prior prediction month, three calendar months before August; June and July predictions have not yet completed their outcome windows. This cohort selects the global policy across teams, rather than tuning it just for Black Pearl. Component learning separately uses the available historical evidence under its temporal cutoffs. After normalization and blending, the returned practices are Scrum Master at 0.750 and Tech debt strategy at 0.726. Scores rank candidates; they are not probabilities. Later improvements are reserved for the evaluation discussion on slide 10. Slide 9 decomposes the scores.',
+        7:'90 seconds. Read each row as a request and its returned result, not as independent data exports from PolicyEngine. In the top row, the user clicks Recommend; the API calls the shared recommendation engine with the selected team and prediction month. The engine returns two ranked practices, which are displayed in the browser. Both paths originate in the web interface and API: the upper branch is the Recommend action and the lower branch is the Run backtest action. In the bottom row, the API starts BacktestEngine, which loops over historical team-month cases and requests recommendations from the same engine. It then compares those results with later recorded improvements and calculates metrics. The two arrows in each row show logical call and response order; the result is returned to the caller. In the center, PolicyEngine has two responsibilities: once per prediction month it selects and caches global settings from completed earlier prediction outcomes, or uses the default popularity policy when none exist; for each team-month request it computes the evidence, applies the selected settings, ranks eligible practices and returns the top two. The 675-policy selection evaluates earlier cases and is distinct from the backtest outer loop over evaluated target months. Both live requests and historical replay consume the processed team histories introduced on the previous slides. The CLI also uses this engine but is omitted from the diagram for clarity. Backup A2 defines the grid and A3 explains monthly selection.' ,
+        8:'120 seconds. Explicitly introduce this as an explanation by example using a reproducible historical request. Explicitly identify Black Pearl as the team name and August 2020 as the prediction month. The question is which two practices this team should prioritize next. Find current state means locating the latest recorded assessment before that prediction: 5 July 2020, the baseline. The workbook encodes the August snapshot as 3 August 2020. Of the 30 retained practices, 28 are below raw maturity level 3 and eligible. There are 47 distinct qualifying peer teams with cosine similarity at least 0.75; the policy selects the 10 most similar. Each peer is represented by its best-matching historical snapshot strictly before the baseline, rather than necessarily its latest state. The selected 10 have similarities approximately 0.869-0.914. Weights are 25% collaborative-filtering similarity, 25% practice transitions and 50% popularity. The recent-popularity share is zero, so popularity is historical only. Policy selection uses all earlier prediction cohorts whose three-snapshot outcome windows have closed before August, not a fixed number of months back. Here only the 3 May prediction cohort qualifies: its outcome snapshots are 3 May, 8 June and 5 July. Thus selection relies on one completed prior prediction month, three calendar months before August; June and July predictions have not yet completed their outcome windows. This cohort selects the global policy across teams, rather than tuning it just for Black Pearl. Component learning separately uses the available historical evidence under its temporal cutoffs. After normalization and blending, the returned practices are Scrum Master at 0.750 and Tech debt strategy at 0.726. Scores rank candidates; they are not probabilities. Later improvements are reserved for the evaluation discussion on slide 10. Slide 9 decomposes the scores.',
         9:'120 seconds. Walk through the July-to-October date chart. The August prediction uses the most recent earlier team baseline, 5 July. Component learning precedes the baseline, and peer follow-up ends at the baseline. The August maturity values do not enter recommendation scoring. Policy selection uses only strictly earlier prediction months with completed outcomes. After generating the recommendations, evaluate against the August, September and October snapshots. Three recorded snapshots need not equal three calendar months because team observations can be irregular. These temporal controls separate scoring and policy selection from the later evaluation. Outcome conditioning still limits interpretation, as the next slide explains.',
         10:'120 seconds. Revisit Black Pearl: Tech debt strategy improved in the August-to-October outcome window, so one of the two returned suggestions matches and the case counts as a hit. Define a hit as a nonempty intersection between the two recommendations and eligible practices that later improve. The reported rate conditions on at least one observed improvement. The stacked bar audits the stricter complete-team-window cohort: 120 improvement-bearing and 178 no-improvement cases out of 298. The primary hit rate on the next slide uses 121 outcome-bearing cases because one additional case has a partial team-level window. Do not combine the 121-case rate cohort with the 178 no-improvement cases as if they shared one completeness definition. Without records of attempted practices, the no-improvement cases cannot establish whether providing a recommendation would have changed outcomes. Average case hit indicators within each month, then average the monthly rates.',
-        14:'45 seconds. Close with the takeaway: an empirical approach, learning from how teams improved, provides evidence for what another team could consider next. The approach is implemented in a working recommendation system, evaluated retrospectively, and ready for supervised pilot testing. Empirical means grounded in observed organizational improvement histories. Historical alignment does not establish faster adoption or a clear advantage over popularity alone. Stop here for questions; use the two appendix slides for monthly results or policy-search details when relevant.',
+        14:'45 seconds. Close with the takeaway: an empirical approach, learning from how teams improved, provides evidence for what another team could consider next. The approach is implemented in a working recommendation system, evaluated retrospectively, and ready for supervised pilot testing. Empirical means grounded in observed organizational improvement histories. Historical alignment does not establish faster adoption or a clear advantage over popularity alone. Stop here for questions; use the three appendix slides for monthly results, policy-search details or monthly policy selection when relevant.',
         22:'Backup. The 2022 ReMo chapter and the 2017 WebProcessPAIR abstract establish related process-improvement decision targets. The project report documents the implementation and reported results. Technical claims follow that report, not the separately developed conference manuscript. If asked about novelty, state the specific task and protocol rather than claiming no prior work exists. The cited prior systems were not implemented as evaluation arms. Primary sources: https://doi.org/10.1002/9781119821779.ch1 and https://doi.org/10.1145/3084100.3084365 .'
     }
+    def shifted_refs(note):
+        note=re.sub(r'\bslide (\d+)',lambda m: 'slide '+str(int(m[1])+1 if 6<=int(m[1])<=15 else int(m[1])),note,flags=re.I)
+        return note.replace('Slides 7 and 12','Slides 8 and 13')
     for i,(source_index,title) in enumerate(zip(SOURCE_ORDER,titles),1):
+        if source_index == -3:
+            note='75 seconds. This diagram follows section 4.1 of the project report, simplified for projection. The browser interface uses HTML, CSS and JavaScript and sends requests over HTTP/REST to the API layer. The API contains routes, request/response models and a service layer. Below it are three modules: the ML engine computes evidence and owns policy selection and ranking; validation replays historical predictions and computes metrics; the data module loads Excel, validates and normalizes maturity scores, and indexes histories. The upper arrows show API access to modules. The lower arrow from validation to ML explicitly shows that backtesting requests historical recommendations from the same ML engine, rather than maintaining an independent scoring implementation. The modules collaborate: validation uses the same recommendation engine and both consume processed history. Technical terms, if asked: PolicyEngine is the central scoring and policy-selection class. It selects the monthly settings from completed earlier outcomes and combines the three signals to rank eligible practices. RecommendationEngine is a thin compatibility wrapper: it exposes the recommendation interface and delegates the work to PolicyEngine, rather than implementing another model. The diagram uses responsibilities instead of these class names. Validation is where the BacktestEngine replays historical prediction cases, compares recommendations against later observed improvements and calculates ranking metrics, using the same scoring engine as the live application. The next slide explains those data dependencies and the shared scoring engine. CLI access is covered there. This slide shows the implemented modular structure and separation of responsibilities.'
+            source='PROJECT_DOCUMENTATION.pdf, page 21, section 4.1; docs/PROJECT_DOCUMENTATION.md, sections 4.1-4.3'
+            story.append(KeepTogether([para(f'{i:02d}. {escape(title)}','head'),para(escape(shifted_refs(note))),para('Sources: '+escape(source),'source')]))
+            continue
+
+        if source_index == -6:
+            note='Walk through PolicyEngine._compute_components(team, baseline_month), currently at src/ml/policy.py:335. It collects the baseline maturity levels, practices below maximum maturity, historical peer matches and per-practice improvements, target-team recent-improvement transition evidence, and historical/recent organizational popularity counts. It returns CaseComponents. Policy-specific peer selection, normalization and weighting occur later in score_case; final top-two selection occurs in top_practices. The PDF source pointer links to the repository source. Line numbers may move as the code changes.'
+            source='src/ml/policy.py:335, PolicyEngine._compute_components'
+            story.append(KeepTogether([para(f'{i:02d}. {escape(title)}','head'),para(escape(note)),para('Sources: '+escape(source),'source')]))
+            continue
+        if source_index == -5:
+            note='Use the visible examples on A5 to explain where raw evidence comes from. Among the ten selected peers, only ACM improved Tech debt strategy in the allowed follow-up, from raw level 1 on 8 June to raw level 2 on 5 July. Its cosine similarity is 0.9139982658084418; multiply by the normalized one-level increase of one-third to obtain 0.3046660886028139, displayed as 0.3047. For transition evidence before July, Backlog grooming sprint has six recorded outgoing successor links, two to Scrum Master; Retro has one outgoing link, to Scrum Master. Because Black Pearl recently improved both practices, their 2/6 and 1/1 probabilities contribute to Scrum Master, totaling 1.3333333333333333. These are counts of practice-to-practice links between consecutive improvement-bearing steps, not necessarily distinct teams or consecutive calendar months. Popularity counts improvement events across earlier organizational histories: Scrum Master 15 and Tech debt strategy 14. A4 then divides these raw evidence values by component-specific maxima.'
+            source='data/raw/combined_dataset.xlsx; src/ml/policy.py: _peer_contribution and _compute_components; src/ml/sequences.py: _learn_team_transitions and get_typical_next_practices'
+            story.append(KeepTogether([para(f'{i:02d}. {escape(title)}','head'),para(escape(note)),para('Sources: '+escape(source),'source')]))
+            continue
+        if source_index == -4:
+            note='105 seconds. Reproduce the values with the checked-in workbook using the standard 90-percent missingness filter, July baseline and August policy. For similarity, select the ten peers above the threshold. For each peer and practice, find the best observed normalized maturity increase in up to two follow-up snapshots, ending no later than July. Sum peer cosine similarity times that increase. Tech debt strategy has raw evidence 0.3046660886028139; the largest similarity evidence across practices is DoD at 0.5943733751712366. Division gives 0.5125836743865602, displayed as 0.513. This is not the peer cosine itself. For transitions, collect recently improved target practices once, sum their learned top-three successor probabilities into each successor practice, then divide by the largest combined transition score. Tech debt strategy has 0.7 divided by 1.3333333333333333, giving 0.525; Scrum Master provides the maximum. Popularity counts observed improvement events strictly before July: Tech debt strategy has 14 and the largest count among eligible candidates is Scrum Master at 15, giving 0.9333333333333333. The August recent share is zero. Normalization scopes differ: similarity and transitions are normalized over all evidence before masking to eligible practices; historical popularity is first restricted to eligible practices and then normalized. Thus similarity denominator DoD can be outside the candidate set. Scrum Master has zero similarity evidence, and maximum transition and historical popularity evidence, producing components 0, 1 and 1. Blend the unrounded normalized values with 25/25/50 weights to get 0.750 and 0.726. Scores rank historical evidence and are not probabilities.'
+            note+=' Explain frequency versus weighted improvement using this illustrative example, not actual Black Pearl peer records: one peer with similarity 0.90 improves a practice from level 1 to level 3. Its normalized increase is two-thirds, so its contribution is 0.90 times two-thirds = 0.60. For another practice, two peers each have similarity 0.80 and each improves from level 1 to level 2. Each contributes 0.80 times one-third, about 0.267; together they contribute about 0.533. The first practice has one improvement event but a higher similarity evidence total than the second practice with two events. Thus DoD having the largest actual similarity total means its selected peers provide the strongest combined similarity-and-magnitude evidence, not necessarily the most frequent improvement events. For a peer, the implementation uses its best increase within the allowed two-snapshot follow-up, rather than counting every intermediate increase. In contrast, popularity counts recorded improvement events across all teams, ignoring peer similarity and increase size; a level 1-to-3 increase is still one event. Scrum Master has 15 such events, Tech debt strategy 14 and DoD 12 in the historical window. The popularity denominator 15 is the largest count among eligible practices, not the total across practices.'
+            note+=' What is the divisor in each row? Similarity: divide by the largest combined peer-improvement evidence total across practices. Here DoD supplies that maximum, 0.5944. Transitions: divide by the largest sum of learned follow-on probabilities across practices. Here Scrum Master supplies that maximum, 1.333. Historical popularity: divide by the highest improvement-event count among eligible practices, meaning the most frequently improved eligible practice. Here Scrum Master supplies the maximum of 15 events, so Tech debt strategy is 14 divided by 15. These divisors are separate maxima, not sums across practices, not the number of teams and not the number of observations. They are calculated for this case from its available evidence, rather than being fixed constants. The maximum becomes 1; if a component has no positive evidence, all its scores are zero.'
+            source='data/raw/combined_dataset.xlsx; src/ml/policy.py: _peer_contribution, _compute_components, _normalize and score_case; docs/PROJECT_DOCUMENTATION.md, sections 3.5 and 3.7'
+            story.append(KeepTogether([para(f'{i:02d}. {escape(title)}','head'),para(escape(note)),para('Sources: '+escape(source),'source')]))
+            continue
         if source_index == -2:
             note='90 seconds. One global policy is selected for each prediction month, not separately for each team. The selection uses all earlier evaluated prediction months whose full three-snapshot outcome windows have closed strictly before the target month. Replay each of the 675 configurations using each earlier case historical components and candidate set, calculate Conditional Hit Rate@2 within each earlier month on the fixed outcome-bearing cohort, then average those monthly rates. Choose the maximum with deterministic tie-breaking. For August, only May predictions qualify because their May/June/July outcome snapshots are available before August. For September, May and June predictions qualify; June outcomes close in August. July predictions require September outcomes and cannot yet inform September settings. Apply the selected policy to target-month team evidence, so settings are shared but recommendations differ by team. Re-selection can return the same settings as before. With no completed earlier outcomes, use the fixed default of 100% popularity and equal historical/recent shares. The selection is cached per prediction month by PolicyEngine; it is not independently re-optimized for every request. Component learning still uses each case available history; May-only selection evidence does not restrict August component learning to May.'
             source='docs/PROJECT_DOCUMENTATION.md, sections 3.5, 3.7 and 6.5; src/ml/policy.py: completed_prior_months and select_policy'
-            story.append(KeepTogether([para(f'{i:02d}. {escape(title)}','head'),para(escape(note)),para('Sources: '+escape(source),'source')]))
+            story.append(KeepTogether([para(f'{i:02d}. {escape(title)}','head'),para(escape(shifted_refs(note))),para('Sources: '+escape(source),'source')]))
             continue
         if source_index == -1:
             note='105 seconds. Explain selection using only the evidence available for scoring, without revealing later outcomes. Both practices are eligible: Scrum Master is at raw level 2 and Tech debt strategy at raw level 1. Of 28 eligible candidates, these have the largest weighted totals. Scrum Master receives zero normalized similarity evidence, but the strongest transition and historical-popularity scores, both 1.000. Its score is 0.25 times 0 plus 0.25 times 1 plus 0.50 times 1 = 0.750. Zero similarity means no improvement contribution for this practice from the selected peers within the allowed windows; it does not mean no similar teams were found. Tech debt strategy receives support from all three components: 0.513 similarity, 0.525 transitions and 0.933 popularity. Their weighted contributions are approximately 0.128, 0.131 and 0.467, totaling 0.726 using unrounded inputs. A positive contribution from more components does not automatically yield a higher total. The model ranks numerical evidence; it does not prove suitability or predict a success probability. The component values shown are rounded and have component-specific normalization scopes. Later outcomes are discussed on slide 11.'
+            note+=' The main table now shows the numerator and denominator for every normalized component score, including DoD as the third-ranked eligible practice. Similarity raw values are 0, 0.3046660886028139 and 0.5943733751712366; divide each by the maximum 0.5943733751712366. Transition raw scores are 1.3333333333333333, 0.7 and 0; divide each by 1.3333333333333333. Historical popularity counts are 15, 14 and 12 improvement events, divided by the highest eligible-practice count of 15. Raw values in the slide are rounded; calculation uses full precision. The selected August weights are 25 percent similarity, 25 percent transitions and 50 percent historical popularity. Scrum Master total is 0.25 times 0 plus 0.25 times 1 plus 0.5 times 1, equal to 0.750. Tech debt strategy is approximately 0.25 times 0.513 plus 0.25 times 0.525 plus 0.5 times 0.933, equal to 0.726 with unrounded inputs. DoD is 0.25 times 1 plus 0.25 times 0 plus 0.5 times 0.8, equal to 0.650. It has the highest similarity score but lacks transition support and has lower popularity, so its overall rank is third. Similarity raw evidence sums each selected peer cosine times its best normalized maturity increase within the allowed follow-up. Transition raw evidence sums the learned top-three successor probabilities from each deduplicated recently improved target practice. Improvement counts may include multiple events across teams and time, not just distinct teams. Backup A4 elaborates the raw evidence and normalization scopes.'
             source='docs/PROJECT_DOCUMENTATION.md, sections 3.5 and 3.7; data/raw/combined_dataset.xlsx; src/ml/policy.py: score_case and top_practices'
-            story.append(KeepTogether([para(f'{i:02d}. {escape(title)}','head'),para(escape(note)),para('Sources: '+escape(source),'source')]))
+            story.append(KeepTogether([para(f'{i:02d}. {escape(title)}','head'),para(escape(shifted_refs(note))),para('Sources: '+escape(source),'source')]))
             continue
         if source_index is None:
-            note='90 seconds. Separate component evidence from policy selection. For the August request, the baseline is 5 July. The transition model learns organizational patterns from all available snapshots strictly before July: January, March, April, May and June. It then identifies Black Pearl practices that improved when its July baseline is compared separately with its May and June snapshots, and uses these as triggers for learned successor patterns. Similarity matches the July target profile to peer states before July and observes up to two subsequent peer snapshots, never beyond July. Historical popularity also counts improvements strictly before July; the selected policy assigns zero share to the recent-popularity component. May only refers to selecting the global settings: replay recommendations for May across teams using the history available for those May cases, score candidate policies against May, June and July outcomes, and choose the best policy. August scoring then applies that policy to the richer history available for August. May is the first prediction cohort because the implementation starts at the fourth recorded global snapshot; January, March and April supply initial history. June and July prediction cohorts do not yet have complete outcomes before August. These are recorded-snapshot windows, not fixed calendar durations.'
+            note='90 seconds. Separate component evidence from policy selection. For the August request, the baseline is 5 July. The transition model learns organizational patterns from all available snapshots strictly before July: January, March, April, May and June. It then identifies Black Pearl practices that improved when its July baseline is compared separately with its May and June snapshots. These are two comparisons, not two separate transition paths. A practice improved in either comparison enters one deduplicated set, and each practice contributes once as a trigger for learned successor patterns. Similarity matches the July target profile to peer states before July and observes up to two subsequent peer snapshots, never beyond July. Historical popularity also counts improvements strictly before July; the selected policy assigns zero share to the recent-popularity component. One cross-team policy is selected per prediction month and shared by all teams for that month; it is not fitted separately for Black Pearl. May only refers to selecting those global settings: replay recommendations for May across teams using the history available for those May cases, score candidate policies against May, June and July outcomes, and choose the best policy. August scoring then applies that policy to the richer history available for August. May is the first prediction cohort because the implementation starts at the fourth recorded global snapshot; January, March and April supply initial history. June and July prediction cohorts do not yet have complete outcomes before August. These are recorded-snapshot windows, not fixed calendar durations.'
             source='src/ml/policy.py: prediction_months, completed_prior_months, _peer_contribution, _month_popularity, _compute_components and select_policy; src/ml/sequences.py: learn_sequences_up_to_month'
-            story.append(KeepTogether([para(f'{i:02d}. {escape(title)}','head'),para(escape(note)),para('Sources: '+escape(source),'source')]))
+            story.append(KeepTogether([para(f'{i:02d}. {escape(title)}','head'),para(escape(shifted_refs(note))),para('Sources: '+escape(source),'source')]))
             continue
         slide=CONTENT['slides'][source_index]
-        old_i=((i if i<3 else i+1) if i<8 else i-1) if i<16 else source_index+1
+        prior_i=i if i<6 else i-1
+        old_i=((prior_i if prior_i<3 else prior_i+1) if prior_i<8 else prior_i-1) if prior_i<16 else source_index+1
         note=replacements.get(old_i,slide['notes'])
         note=note.replace('Slides 8 and 11','Slides 7 and 12').replace('slide 10.', 'slide 11.')
         note=note.replace('Keep detailed cleaning and missing-value questions for backup slide E.', 'Discuss detailed cleaning and missing-value questions using the project report.').replace('backup F','the presenter demonstration instructions')
@@ -524,7 +638,7 @@ def make_presenter(titles):
             source='docs/PROJECT_DOCUMENTATION.md, section 3.7; data/raw/combined_dataset.xlsx through the standard 90% missingness filter; src/ml/policy.py (case_components, completed_prior_months, select_policy, _selected_peer_indices); src/ml/similarity.py'
         if old_i==14:
             note=note.replace('Backup slides follow and can be opened directly if a question calls for detail.','Use the PDF outline to navigate directly to the relevant backup slide.')
-        block=[para(f'{i:02d}. {escape(title)}','head'),para(escape(note)),para('Sources: '+escape(source),'source')]
+        block=[para(f'{i:02d}. {escape(title)}','head'),para(escape(shifted_refs(note))),para('Sources: '+escape(source),'source')]
         story.append(KeepTogether(block))
     def page_footer(c,doc):
         c.setFont('Arial',9);c.setFillColor(colors.HexColor('#'+GRAY))
@@ -538,7 +652,7 @@ def audit_render():
     import pymupdf
     from PIL import Image
     doc=pymupdf.open(OUT/'agile-project-defense.pdf')
-    assert len(doc)==18
+    assert len(doc)==22
     alltext='\n'.join(p.get_text() for p in doc)
     for expected in ['58.0%', '55.7%', '30.6%', '120', '178', '0.726', '675']:
         assert expected in alltext,expected
@@ -579,11 +693,16 @@ def audit_render():
     embedded={font[3].split('+')[-1] for page in doc for font in page.get_fonts() if doc.extract_font(font[0])[3]}
     assert used_font_names <= embedded
     assert all(token in ' '.join(doc[3].get_text().split()) for token in ['Collaborative filtering','Practice Transition Model','popularity','Normalize'])
-    assert all(token in doc[5].get_text() for token in ['Excel','Data','PolicyEngine','BacktestEngine','Web / API / CLI'])
-    assert 'Find baseline' in doc[6].get_text() and 'Returned recommendations' not in doc[6].get_text()
-    assert all(token in doc[8].get_text() for token in ['0.750','0.726','0.513','Scrum Master','Tech debt strategy'])
-    assert all(token in doc[7].get_text() for token in ['January-June','May-to-July','June-to-July','Policy selection'])
-    assert all(token in doc[11].get_text() for token in ['58.0%','55.7%','30.6%'])
+    assert all(token in doc[6].get_text() for token in ['Web interface / API','Recommend action','Run backtest action','PolicyEngine','For each prediction month','For each team','Display results','Evaluate results'])
+    assert 'Find current state' in doc[7].get_text() and 'Returned recommendations' not in doc[7].get_text()
+    assert all(token in doc[9].get_text() for token in ['0.750','0.726','0.513','Scrum Master','Tech debt strategy'])
+    assert all(token in doc[8].get_text() for token in ['January-June','July scores','May and June','Monthly policy','all teams'])
+    assert all(token in doc[12].get_text() for token in ['58.0%','55.7%','30.6%'])
+    assert all(token in doc[21].get_text() for token in ['_compute_components','src/ml/policy.py:335','CaseComponents'])
+    assert any(link.get('uri','').endswith('src/ml/policy.py#L335') for link in doc[21].get_links())
+    assert all(token in doc[20].get_text() for token in ['ACM','0.913998','2/6 + 1/1','15 improvement events'])
+    assert all(token in doc[19].get_text() for token in ['0.3047','0.5944','1.333','14 events','15 events'])
+    assert all(token in doc[5].get_text() for token in ['Web interface','API layer','ML engine','Validation engine','Backtest past predictions','Data module'])
     report=dict(slide_pages=len(doc),notes_pages=len(notes),page_size_points=[W,H],embedded_fonts=sorted(font_names),out_of_bounds_text=bad,all_used_fonts_embedded=used_font_names <= embedded,verified_diagram_slides=[3,4,6,7],contrast_on_white=contrast,research=RESEARCH)
     (QA/'validation.json').write_text(json.dumps(report,indent=2))
     print(json.dumps(report,indent=2))
