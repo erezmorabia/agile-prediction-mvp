@@ -82,3 +82,6 @@ popularity   = recency_weight × recent_popularity_norm + (1 - recency_weight) �
 
 ## Per-practice score audit
 `score_case(..., breakdowns=dict)` optionally records each candidate's normalized similarity, transitions and time-aware popularity scores, policy weights and weighted contributions from the same calculation used for ranking. `explain_practice()` returns these as `score_breakdown`; contributions sum to the final score. Zero-weight evidence contributes zero, including in bootstrap months.
+
+## Evidence collection walkthrough
+`_compute_components()` labels its baseline/candidates, similarity, transitions, popularity, and assembly sections for code walkthroughs. Its descriptive local names map to the existing `CaseComponents` fields: `current_practice_score_dict` → `current_levels`, `candidate_to_improve_practices` → `candidates`, `similar_teams_by_score_month_full` → `peers`, and `similar_teams_per_practice_improvement` → `peer_contributions`. These names and comments do not change scoring behavior.

@@ -333,49 +333,79 @@ class PolicyEngine:
         return result
 
     def _compute_components(self, team: str, baseline_month: int) -> CaseComponents:
+        """Collect a team's baseline state and raw evidence for later policy scoring.
+
+        The baseline is the team's latest snapshot before the prediction month.
+        Evidence combines peer improvements, practice transitions, and organizational
+        popularity. Normalization, policy weights, and final ranking are applied later
+        by score_case() and top_practices().
+        """
+        # 1. Baseline and candidates
+        # Read the baseline maturity levels and identify practices with room to improve.
+        # Scores are normalized: 1.0 represents the maximum original maturity level of 3.
         history = self.processor.get_team_history(team)
         current_scores = history[baseline_month]
-        current_levels = {p: float(v) for p, v in zip(self.practices, current_scores, strict=True)}
-        candidates = tuple(p for p in self.practices if current_levels[p] < 1.0)
+        current_practice_score_dict = {p: float(v) for p, v in zip(self.practices, current_scores, strict=True)}
+        candidate_to_improve_practices = tuple(p for p in self.practices if current_practice_score_dict[p] < 1.0)
 
+        # 2. Similarity evidence
+        # Match this baseline against other teams' snapshots strictly before it.
+        # Keep each team's best match and the full ranking; the policy later chooses
+        # how many peers to use and the minimum similarity required.
         try:
-            peers_full = self.similarity_engine.find_similar_teams(
+            similar_teams_by_score_month_full = self.similarity_engine.find_similar_teams(
                 team, baseline_month, k=self._num_teams, min_similarity=0.0
             )
         except ValueError:
-            peers_full = []
-        no_similar_teams_found = not peers_full
+            # Without peers, transition and popularity evidence can still be collected.
+            similar_teams_by_score_month_full = []
+        no_similar_teams_found = not similar_teams_by_score_month_full
 
-        peer_contributions = tuple(
+        # For each peer, record its largest improvement per practice relative to the
+        # matching snapshot, over its next two recorded snapshots, never past the baseline.
+        similar_teams_per_practice_improvement = tuple(
             self._peer_contribution(peer_team, historical_month, baseline_month)
-            for peer_team, _similarity, historical_month in peers_full
+            for peer_team, _similarity, historical_month in similar_teams_by_score_month_full
         )
 
-        # Sequence: target team's own two preceding observed snapshots vs this baseline.
+        # 3. Transitions evidence
+        # Learn practice-transition patterns using snapshots strictly before the baseline.
         self.sequence_mapper.learn_sequences_up_to_month(baseline_month)
         team_months = sorted(history.keys())
         baseline_idx = team_months.index(baseline_month)
         recently_improved = set()
+        # Compare the team's current scores with its previous two recorded snapshots.
+        # Mark a practice as recently improved if its score is higher than in either snapshot.
         for back in range(1, min(FIXED_RECENCY_SNAPSHOTS, baseline_idx) + 1):
             past_scores = history[team_months[baseline_idx - back]]
             for j, (before, after) in enumerate(zip(past_scores, current_scores, strict=True)):
                 if after > before:
                     recently_improved.add(self.practices[j])
 
+        # For each recently improved practice, find up to 3 common next practices in past data.
+        # Add their scores when the same next practice appears more than once.
+        # The total is ranking evidence, not a probability of success.
         sequence_raw: dict = {}
         for practice in [p for p in self.practices if p in recently_improved]:
             for next_practice, probability in self.sequence_mapper.get_typical_next_practices(practice, top_n=3):
                 sequence_raw[next_practice] = sequence_raw.get(next_practice, 0.0) + probability
 
+        # 4. Popularity evidence
+        # Count how often each practice improved across all teams:
+        # historically before the baseline, and recently between the previous snapshot and the baseline.
+        # Recent counts use only teams with data in both snapshots.
         historical_popularity_raw, recent_popularity_raw = self._month_popularity(baseline_month)
 
+        # 5. Assemble the components
+        # Return the evidence without applying a policy, so different policies can
+        # score the same inputs without repeating the evidence-gathering work.
         return CaseComponents(
             team=team,
             baseline_month=baseline_month,
-            candidates=candidates,
-            current_levels=current_levels,
-            peers=tuple(peers_full),
-            peer_contributions=peer_contributions,
+            candidates=candidate_to_improve_practices,
+            current_levels=current_practice_score_dict,
+            peers=tuple(similar_teams_by_score_month_full),
+            peer_contributions=similar_teams_per_practice_improvement,
             sequence_raw=sequence_raw,
             historical_popularity_raw=historical_popularity_raw,
             recent_popularity_raw=recent_popularity_raw,
