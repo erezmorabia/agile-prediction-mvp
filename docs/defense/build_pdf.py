@@ -501,17 +501,15 @@ def make_slides():
     d.text("<b>Similarity:</b> ACM improved Tech debt strategy from level 1 to 2; the other nine selected peers contributed zero.<br/>For DoD, ACM and Puffin each improved one level. Each contribution is peer similarity × (level increase ÷ 3).<br/><b>Transitions:</b> values are learned probabilities that the candidate follows Black Pearl's recently improved practices.<br/>Scrum Master followed Backlog grooming in 2 of 6 successor links, and Retro in 1 of 1. Retro's evidence is one observation.<br/>Popularity counts events across teams before July. Values shown are rounded; calculations use full precision.",48,416,864,size=13,color=GRAY,leading=14,max_h=70)
     d.end()
 
-    d.new("A6. Code walkthrough", "§4.2-4.3",True,source_label="Source: src/ml/policy.py · PolicyEngine._compute_components")
-    d.text("PolicyEngine._compute_components",48,116,864,size=29,color=TEAL,bold=True)
-    d.text('<link href="https://github.com/erezmorabia/agile-prediction-mvp/blob/main/src/ml/policy.py#L335"><u>src/ml/policy.py:335</u></link> · inputs: team + latest assessment date',48,163,864,size=20,color=TEAL)
-    d.text("Collects the team's current state and raw evidence<br/>for the three recommendation components.",48,214,864,size=24,leading=31)
-    d.rows([
-        ("Current state", "Read maturity scores; identify practices below level 3."),
-        ("Similarity", "Find earlier peer profiles and their later improvements."),
-        ("Transitions", "Use recent team improvements to look up likely successors."),
-        ("Popularity", "Collect historical and recent improvement counts across teams."),
-    ],y=302,step=37,label_w=180,body_size=19)
-    d.caption("Returns CaseComponents. score_case() later normalizes and combines the evidence.",y=466,size=17)
+    d.new("A6. Code walkthrough", "§4.2-4.3",True,source_label="Source: src/ml/policy.py · PolicyEngine._compute_components and score_case")
+    d.text("1. _compute_components",48,113,864,size=28,color=TEAL,bold=True)
+    d.text('<link href="https://github.com/erezmorabia/agile-prediction-mvp/blob/main/src/ml/policy.py#L335"><u>src/ml/policy.py:335</u></link>',48,155,864,size=19,color=TEAL)
+    d.text("Collect eligible practices and raw evidence for the three signals.<br/>Inputs: team + latest assessment date. Output: CaseComponents.",48,195,864,size=22,leading=29)
+    d.rule(48,276,864)
+    d.text("2. score_case",48,298,864,size=28,color=TEAL,bold=True)
+    d.text('<link href="https://github.com/erezmorabia/agile-prediction-mvp/blob/main/src/ml/policy.py#L544"><u>src/ml/policy.py:544</u></link> · inputs: CaseComponents + selected policy',48,340,864,size=19,color=TEAL)
+    d.text("Select peers, normalize evidence, mix historical/recent popularity,<br/>and apply policy weights. Return a score for each eligible practice.",48,380,864,size=22,leading=29)
+    d.caption("top_practices() then selects the two highest-scoring practices.",y=466,size=17)
     d.end()
 
     d.finish()
@@ -567,7 +565,7 @@ def make_presenter(titles):
             continue
 
         if source_index == -6:
-            note='Walk through PolicyEngine._compute_components(team, baseline_month), currently at src/ml/policy.py:335. It collects the baseline maturity levels, practices below maximum maturity, historical peer matches and per-practice improvements, target-team recent-improvement transition evidence, and historical/recent organizational popularity counts. It returns CaseComponents. Policy-specific peer selection, normalization and weighting occur later in score_case; final top-two selection occurs in top_practices. The PDF source pointer links to the repository source. Line numbers may move as the code changes.'
+            note='Walk through PolicyEngine._compute_components(team, baseline_month), currently at src/ml/policy.py:335. It collects the baseline maturity levels, practices below maximum maturity, historical peer matches and per-practice improvements, target-team recent-improvement transition evidence, and historical/recent organizational popularity counts. It returns CaseComponents. Policy-specific peer selection, normalization and weighting occur later in score_case; final top-two selection occurs in top_practices. Also cover score_case(case, policy), currently at src/ml/policy.py:544. It selects the policy peer subset, combines similarity and improvement magnitudes, normalizes component evidence, mixes historical and recent popularity and applies the outer component weights. Its output maps each eligible practice to a blended score. It can also return component breakdowns. It does not select the monthly policy or choose the final top two; those responsibilities belong to select_policy and top_practices. Both PDF source pointers link to the repository source. Line numbers may move as the code changes.'
             source='src/ml/policy.py:335, PolicyEngine._compute_components'
             story.append(KeepTogether([para(f'{i:02d}. {escape(title)}','head'),para(escape(note)),para('Sources: '+escape(source),'source')]))
             continue
@@ -698,8 +696,9 @@ def audit_render():
     assert all(token in doc[9].get_text() for token in ['0.750','0.726','0.513','Scrum Master','Tech debt strategy'])
     assert all(token in doc[8].get_text() for token in ['January-June','July scores','May and June','Monthly policy','all teams'])
     assert all(token in doc[12].get_text() for token in ['58.0%','55.7%','30.6%'])
-    assert all(token in doc[21].get_text() for token in ['_compute_components','src/ml/policy.py:335','CaseComponents'])
+    assert all(token in doc[21].get_text() for token in ['_compute_components','src/ml/policy.py:335','score_case','src/ml/policy.py:544','CaseComponents'])
     assert any(link.get('uri','').endswith('src/ml/policy.py#L335') for link in doc[21].get_links())
+    assert any(link.get('uri','').endswith('src/ml/policy.py#L544') for link in doc[21].get_links())
     assert all(token in doc[20].get_text() for token in ['ACM','0.913998','2/6 + 1/1','15 improvement events'])
     assert all(token in doc[19].get_text() for token in ['0.3047','0.5944','1.333','14 events','15 events'])
     assert all(token in doc[5].get_text() for token in ['Web interface','API layer','ML engine','Validation engine','Backtest past predictions','Data module'])
